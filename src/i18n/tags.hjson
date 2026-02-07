@@ -1,8 +1,44 @@
 {
-  "en-US": [
-
-  ],
-  "pt-BR": [
-
-  ]
+  "en-US": {
+    "/guide/getting-started": "install setup start begin quick project structure",
+    "/guide/configuration": "config branding logo name version language links github docsector.config.js",
+    "/guide/pages-and-routing": "pages routes routing registry menu navigation path type status subpages",
+    "/guide/i18n-and-markdown": "i18n internationalization language locale hjson markdown content translation",
+    "/guide/theming": "theme dark light mode color css sass variables styling",
+    "/guide/deployment": "deploy hosting production build static nginx netlify vercel github pages",
+    "/guide/plugins": "plugins extensions addons customize",
+    "/manual/components/d-page": "page container scroll toolbar drawer layout subpage tabs",
+    "/manual/components/d-subpage": "subpage wrapper composition dh1 section hash",
+    "/manual/components/d-page-section": "section markdown renderer tokenizer parser heading paragraph list table code",
+    "/manual/components/d-headings": "h1 h2 h3 h4 h5 h6 heading title anchor navigation toc",
+    "/manual/components/d-page-source-code": "code syntax highlight prism php bash html copy clipboard line numbers",
+    "/manual/components/d-page-blockquote": "blockquote important warning note quote",
+    "/manual/components/d-menu": "menu sidebar navigation search branding links tree expansion",
+    "/manual/components/d-page-anchor": "anchor toc table contents tree drawer navigation scroll",
+    "/manual/components/d-page-meta": "meta footer edit github translation progress prev next navigation",
+    "/manual/components/q-zoom": "zoom overlay fullscreen scale mouse wheel escape",
+    "/manual/composables/use-navigator": "navigator composable anchor scroll register navigate toc",
+    "/manual/store/modules": "vuex store state mutations getters actions app i18n page layout settings"
+  },
+  "pt-BR": {
+    "/guide/getting-started": "instalar configurar iniciar começar rápido projeto estrutura",
+    "/guide/configuration": "config branding logo nome versão idioma links github docsector.config.js",
+    "/guide/pages-and-routing": "páginas rotas roteamento registro menu navegação caminho tipo status subpages",
+    "/guide/i18n-and-markdown": "i18n internacionalização idioma locale hjson markdown conteúdo tradução",
+    "/guide/theming": "tema escuro claro modo cor css sass variáveis estilização",
+    "/guide/deployment": "deploy hospedagem produção build estático nginx netlify vercel github pages",
+    "/guide/plugins": "plugins extensões complementos customizar",
+    "/manual/components/d-page": "página container scroll toolbar drawer layout subpágina abas",
+    "/manual/components/d-subpage": "subpágina wrapper composição dh1 seção hash",
+    "/manual/components/d-page-section": "seção markdown renderizador tokenizador parser título parágrafo lista tabela código",
+    "/manual/components/d-headings": "h1 h2 h3 h4 h5 h6 título heading âncora navegação toc",
+    "/manual/components/d-page-source-code": "código sintaxe highlight prism php bash html copiar clipboard números linha",
+    "/manual/components/d-page-blockquote": "blockquote importante aviso nota citação",
+    "/manual/components/d-menu": "menu lateral navegação busca branding links árvore expansão",
+    "/manual/components/d-page-anchor": "âncora toc índice conteúdo árvore drawer navegação scroll",
+    "/manual/components/d-page-meta": "meta rodapé editar github tradução progresso anterior próximo navegação",
+    "/manual/components/q-zoom": "zoom overlay tela cheia escala roda mouse escape",
+    "/manual/composables/use-navigator": "navegador composable âncora scroll registro navegar toc",
+    "/manual/store/modules": "vuex store estado mutations getters actions app i18n page layout settings"
+  }
 }

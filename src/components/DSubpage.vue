@@ -1,35 +1,33 @@
-<template lang="pug">
-d-page
-  header
-    d-h1(:id="0")
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+// components
+import DPage from "./DPage.vue";
+import DH1 from "./DH1.vue";
+import DPageSection from "./DPageSection.vue";
 
-  main
-    d-page-section(:id="id")
-</template>
+const route = useRoute()
 
-<script>
-import Subpages from 'src/components/subpages'
+const id = computed(() => {
+  const path = route.path
 
-export default {
-  name: 'DSubpage',
-
-  mixins: [
-    Subpages
-  ],
-
-  computed: {
-    id () {
-      const path = this.$route.path
-
-      let hash = 5381
-      for (let i = 0; i < path.length; i++) {
-        hash = (hash * 33) ^ path.charCodeAt(i)
-      }
-
-      return hash >>> 0
-    }
+  let hash = 5381
+  for (let i = 0; i < path.length; i++) {
+    hash = (hash * 33) ^ path.charCodeAt(i)
   }
-}
+
+  return hash >>> 0
+})
 </script>
 
-<style scoped></style>
+<template>
+<d-page>
+  <header>
+    <d-h1 :id="0" />
+  </header>
+
+  <main>
+    <d-page-section :id="id" />
+  </main>
+</d-page>
+</template>

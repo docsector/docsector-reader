@@ -5,7 +5,12 @@ export default {
   getters: {},
   mutations: {},
   actions: {
-    configureLanguage ({ commit, state }, routeMatched) { // TODO refactor
+    configureLanguage ({ commit, state }, routeMatched) {
+      // Reset stale nodes before configuring new language state
+      commit('page/resetAnchor', null, { root: true })
+      commit('page/resetAnchors', null, { root: true })
+      commit('page/resetNodes', null, { root: true })
+
       // Route
       const firstRoutePath = routeMatched[0].path
       const secondRoutePath = routeMatched[1].path

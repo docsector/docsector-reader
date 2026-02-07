@@ -1,55 +1,175 @@
-# Docsphere Reader
+# Docsector Reader
 
-> "Streamline your documentation process with Docsphere."
+> A documentation rendering engine built with Vue 3, Quasar v2 and Vite.
 
-Introducing Docsphere, the ultimate documentation system for all your needs. With a user-friendly interface and a range of features, Docsphere makes it easy to create and manage your documentation with subpages:
-
-The "Overview" subpage provides a comprehensive introduction to your documentation, allowing you to showcase the key features and benefits of your project. Use this page to highlight the most important information about your project and explain its purpose and goals.
-With the "Samples" subpage, you can easily demonstrate how your project works in real-world scenarios. Show off your project's capabilities by creating sample use cases that highlight its most powerful features.
-Finally, the "Vs" subpage allows you to compare your project with other technologies and competitors in your industry. Use this page to show why your project is superior and how it can benefit users in ways that other products can't.
-
-Overall, Docsphere is the perfect solution for anyone who needs to create high-quality documentation quickly and easily. Whether you're a software developer, product manager, or technical writer, Docsphere has everything you need to create effective and engaging documentation for your project.
-
-You can clone this repository, run on a **web server** and have access to everything completely **offline** on your computer!
-You can also **compile** for **mobile** and **desktop** devices.
-
-Some others features of this documentation system are listed below!
-See the projects tab for more details!
-
-## Compliances
-
-### Contrast Checker 7+
-
-The World Wide Web Consortium (W3C) has developed the Web Content Accessibility Guidelines, better known as WCAG, for color contrast and text.
-People who are color blind and have impaired vision can experience sensitivity and often physical pain to certain colors and shades of light.
-([Read more](https://www.w3.org/TR/2008/REC-WCAG20-20081211/#visual-audio-contrast-contrast "Read more"))
+Transform Markdown content into beautiful, navigable documentation sites — with i18n, syntax highlighting, dark/light mode, and anchor navigation.
 
 ## Features
 
-### Internationalization with i18n
+- **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
+- **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
+- **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking
+- **Search** — Menu search across all documentation content and tags
+- **Responsive** — Mobile-friendly with collapsible sidebar and drawers
+- **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
+- **Edit on GitHub** — Direct links to edit pages on your repository
+- **Translation Progress** — Automatic translation percentage based on header coverage
+- **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 
-We want the documentation to be available in any language so that it can reach **everyone**.
+## Quick Start
 
-### Menu search engine based in i18n content
+### Install from NPM
 
-The search for content in the documentation is simple, fast and easy.
-The search input text in the **menu** makes it easy to **search** for any content (headers, paragraphs, source codes) and you can do it in your favorite language.
-If the defined language is not English and if the search term is not found or has not been set in current language, by default a search is still performed using keywords in English.
+```bash
+npm install @docsector/docsector-reader
+```
 
-### Source code highlighted
+### Scaffold a new project
 
-This documentation generates codes with Syntax highlighting from texts with multiline and line indented stored in i18n files. So you can access the codes of the documentation **offline** and we can also use i18n for example to translate code comments.
+```bash
+npx degit docsector/docsector-reader my-docs
+cd my-docs
+npm install
+```
 
-### Navigation using anchored links
+### Development
 
-Anchor links work in hash and history mode and provide **faster navigation** and **better orientation** when navigating through subsections of documentation.
+```bash
+npx docsector dev
+# or
+npx quasar dev
+```
+
+The documentation site will be available at **http://localhost:8181**.
+
+### Production Build
+
+```bash
+npx docsector build
+# or
+npx quasar build
+```
+
+Output is placed in `dist/spa/` — ready to deploy to any static hosting.
+
+## Configuration
+
+Edit `docsector.config.js` at the project root:
+
+```javascript
+export default {
+  branding: {
+    logo: '/images/logo.png',
+    name: 'My Project',
+    version: 'v1.0.0'
+  },
+
+  links: {
+    github: 'https://github.com/org/repo',
+    discussions: 'https://github.com/org/repo/discussions',
+    chat: 'https://discord.gg/invite',
+    changelog: '/changelog'
+  },
+
+  github: {
+    editBaseUrl: 'https://github.com/org/repo/edit/main/src/pages'
+  },
+
+  languages: [
+    { image: '/images/flags/united-states-of-america.png', label: 'English (US)', value: 'en-US' },
+    { image: '/images/flags/brazil.png', label: 'Português (BR)', value: 'pt-BR' }
+  ],
+
+  defaultLanguage: 'en-US'
+}
+```
+
+## Project Structure
+
+```
+├── docsector.config.js      # Branding, links, languages
+├── src/
+│   ├── pages/
+│   │   ├── index.js         # Page registry (routes + metadata)
+│   │   ├── guide/           # Guide pages (.md files)
+│   │   └── manual/          # Manual pages (.md files)
+│   ├── components/          # Docsector Vue components
+│   ├── composables/         # Vue composables (useNavigator)
+│   ├── store/               # Vuex 4 modules
+│   ├── i18n/                # Language files (.hjson) + loader
+│   ├── layouts/             # DefaultLayout + SystemLayout
+│   └── boot/                # Boot files (store, i18n, QZoom, axios)
+└── public/                  # Static assets (logo, flags, icons)
+```
+
+## Adding Pages
+
+1. Register in `src/pages/index.js`:
+
+```javascript
+export default {
+  '/my-page': {
+    config: {
+      icon: 'description',
+      status: 'done',        // 'done' | 'draft' | 'empty'
+      type: 'guide',         // 'guide' | 'manual'
+      menu: {},
+      subpages: { showcase: false }
+    },
+    data: {
+      'en-US': { title: 'My Page' },
+      'pt-BR': { title: 'Minha Página' }
+    }
+  }
+}
+```
+
+2. Create Markdown files:
+
+```
+src/pages/guide/my-page.overview.en-US.md
+src/pages/guide/my-page.overview.pt-BR.md
+```
+
+## CLI Commands
+
+```bash
+docsector dev              # Start dev server (port 8181)
+docsector dev --port 3000  # Custom port
+docsector build            # Build for production
+docsector serve            # Serve production build
+docsector help             # Show help
+```
+
+## Programmatic API
+
+```javascript
+import { createDocsector, definePage } from '@docsector/docsector-reader'
+
+const config = createDocsector({
+  branding: { name: 'My Docs', version: 'v2.0.0' },
+  links: { github: 'https://github.com/org/repo' }
+})
+```
+
+## Tech Stack
+
+- **Vue 3** (Composition API + `<script setup>`)
+- **Quasar v2** (UI framework)
+- **Vite** (Build tool)
+- **Vuex 4** (State management)
+- **vue-i18n 9** (Internationalization)
+- **markdown-it** (Markdown parsing)
+- **Prism.js** (Syntax highlighting)
+- **HJSON** (Human-friendly JSON for locale files)
 
 ## Contributing
 
-Wait for the CONTRIBUTING.md file to initiate a contribution to this repository.
+Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-Copyright (c) 2018-Present - Rodrigo Vieira (rodrigo@slayer.tech)
+Copyright (c) 2018-Present — Rodrigo de Araujo Vieira
 
 [MIT License](http://en.wikipedia.org/wiki/MIT_License)

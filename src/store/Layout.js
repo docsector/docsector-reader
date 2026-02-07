@@ -28,7 +28,6 @@ export default {
 
     // Main
     scrolling: true,
-    // TODO rename to anchor?
     meta: true,
     metaToggle: false
   },
@@ -57,7 +56,6 @@ export default {
       state.footerReveal = val
     },
 
-    // TODO change to Sidebar? Menu?
     setLeft (state, val) {
       state.left = val
     },

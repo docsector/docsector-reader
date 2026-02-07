@@ -1,18 +1,19 @@
-
 import pages from 'pages'
 
 const pagesRoutes = []
 for (const [path, page] of Object.entries(pages)) {
   const config = page.config
-
   if (config === null) {
     continue
   }
 
+  const topPage = config.type ?? 'manual'
+
+  // @ Construct children
   const children = [
     {
       path: 'overview',
-      component: () => import('components/DSubpage'),
+      component: () => import('components/DSubpage.vue'),
       meta: {
         status: config.status
       }
@@ -21,7 +22,7 @@ for (const [path, page] of Object.entries(pages)) {
   if (config?.subpages?.showcase === true) {
     children.push({
       path: 'showcase',
-      component: () => import('components/DSubpage'),
+      component: () => import('components/DSubpage.vue'),
       meta: {
         status: config.status
       }
@@ -30,17 +31,21 @@ for (const [path, page] of Object.entries(pages)) {
   if (config?.subpages?.vs === true) {
     children.push({
       path: 'vs',
-      component: () => import('components/DSubpage'),
+      component: () => import('components/DSubpage.vue'),
       meta: {
         status: config.status
       }
     })
   }
 
+  // @ Push route to pageRoutes
   pagesRoutes.push({
-    path,
-    component: () => import('layouts/DefaultLayout'),
-    meta: config,
+    path: '/' + topPage + path,
+    component: () => import('layouts/DefaultLayout.vue'),
+    meta: {
+      ...config,
+      type: topPage
+    },
     children
   })
 }
@@ -50,7 +55,7 @@ const routes = [
 
   {
     path: '/',
-    component: () => import('layouts/DefaultLayout'),
+    component: () => import('layouts/DefaultLayout.vue'),
     meta: {
       layouts: {
         footer: false,
@@ -61,35 +66,10 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/@/BootPage'),
+        component: () => import('pages/@/BootPage.vue'),
         meta: {
           icon: 'home',
           menu: 'home'
-        }
-      },
-
-      {
-        path: '/changelog',
-        component: () => import('pages/@/ChangelogPage'),
-        meta: {
-          icon: 'assignment',
-          menu: 'changelog'
-        }
-      },
-      {
-        path: '/roadmap',
-        component: () => import('pages/@/RoadmapPage'),
-        meta: {
-          icon: 'playlist_add_check_circle',
-          menu: 'roadmap'
-        }
-      },
-      {
-        path: '/sponsor',
-        component: () => import('pages/@/SponsorPage'),
-        meta: {
-          icon: 'favorite',
-          menu: 'sponsor'
         }
       }
     ]
@@ -97,14 +77,14 @@ const routes = [
 
   {
     path: '/(.*)*',
-    component: () => import('layouts/SystemLayout'),
+    component: () => import('layouts/SystemLayout.vue'),
     meta: {
       menu: {}
     },
     children: [
       {
         path: '',
-        component: () => import('pages/@/404Page')
+        component: () => import('pages/@/404Page.vue')
       }
     ]
   }

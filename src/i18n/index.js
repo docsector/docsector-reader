@@ -1,13 +1,17 @@
+// @ Import language HJSON files (Vite-compatible eager import)
+const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
+// @ Import markdown files (Vite-compatible eager import as raw strings)
+const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
+
+// @ Import pages
+import boot from 'pages/boot'
+import pages from 'pages'
+
 const langs = [
   'en-US',
   'pt-BR'
 ]
 const i18n = {}
-// @ Import pages
-// boot
-import boot from 'pages/boot'
-// index
-import pages from 'pages'
 
 function filter (source) {
   const regex1 = /{/gm
@@ -21,19 +25,26 @@ function filter (source) {
 
   return source
 }
-function load (path, subpage, lang) {
-  const markdown = require(`pages/${path}/${subpage}.${lang}.md`)
 
-  const content = String(markdown.default)
+function load (topPage, path, subpage, lang) {
+  const key = `../pages/${topPage}/${path}.${subpage}.${lang}.md`
+  const content = mdModules[key]
 
-  const source = filter(content)
+  if (!content) {
+    console.warn(`[i18n] Missing markdown: ${key}`)
+    return ''
+  }
+
+  const source = filter(typeof content === 'string' ? content : String(content))
 
   return source
 }
 
 // @ Iterate langs
 for (const lang of langs) {
-  i18n[lang] = require(`./${lang}/index.hjson`)
+  // Load HJSON language file
+  const langKey = `./languages/${lang}.hjson`
+  i18n[lang] = langModules[langKey]?.default || langModules[langKey] || {}
 
   // @ Iterate pages
   for (const [key, page] of Object.entries(pages)) {
@@ -43,16 +54,16 @@ for (const lang of langs) {
     const data = page.data
     const meta = page.meta || boot.meta
 
+    const topPage = config?.type ?? 'manual'
+
     // ---
 
-    const dirs = path.split('/')
-    const _ = dirs.reduce((accumulator, current) => {
+    const _ = path.split('/').reduce((accumulator, current) => {
       let node = accumulator[current]
 
       // Set object if not exists
       if (node === undefined) {
         accumulator[current] = {}
-
         node = accumulator[current]
       }
 
@@ -69,28 +80,28 @@ for (const lang of langs) {
       // Set subpages sources if not exists
       if (node.overview === undefined) {
         node.overview = {
-          _translations: meta[lang].overview?._translations,
-          _sections: meta[lang].overview?._sections,
+          _translations: meta[lang]?.overview?._translations,
+          _sections: meta[lang]?.overview?._sections,
           source: ''
         }
       }
-      if (config.subpages.showcase && node.showcase === undefined) {
+      if (config.subpages?.showcase && node.showcase === undefined) {
         node.showcase = {
-          _translations: meta[lang].showcase?._translations,
-          _sections: meta[lang].showcase?._sections,
+          _translations: meta[lang]?.showcase?._translations,
+          _sections: meta[lang]?.showcase?._sections,
           source: ''
         }
       }
-      if (config.subpages.vs && node.vs === undefined) {
+      if (config.subpages?.vs && node.vs === undefined) {
         node.vs = {
-          _translations: meta[lang].vs?._translations,
-          _sections: meta[lang].vs?._sections,
+          _translations: meta[lang]?.vs?._translations,
+          _sections: meta[lang]?.vs?._sections,
           source: ''
         }
       }
 
       return node
-    }, i18n[lang]._)
+    }, i18n[lang]._[topPage])
 
     // ---
 
@@ -98,15 +109,16 @@ for (const lang of langs) {
       continue
     }
 
+    // @ Subpages
     // Overview
-    _.overview.source = load(path, 'overview', lang)
+    _.overview.source = load(topPage, path, 'overview', lang)
     // showcase
-    if (config.subpages.showcase === true) {
-      _.showcase.source = load(path, 'showcase', lang)
+    if (config.subpages?.showcase === true) {
+      _.showcase.source = load(topPage, path, 'showcase', lang)
     }
     // Vs
-    if (config.subpages.vs === true) {
-      _.vs.source = load(path, 'vs', lang)
+    if (config.subpages?.vs === true) {
+      _.vs.source = load(topPage, path, 'vs', lang)
     }
   }
 }

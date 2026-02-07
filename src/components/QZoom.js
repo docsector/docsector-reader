@@ -1,6 +1,6 @@
 /*
  * forked from https://github.com/quasarframework/app-extension-qzoom
- * converted from Vue 2 to Vue 3 by Rodrigo Vieira
+ * converted from Vue 2 to Vue 3 by Rodrigo de Araujo Vieira
  * author: Jeff Galbraith
  */
 
@@ -228,8 +228,7 @@ export default {
       document.removeEventListener('scroll', onScroll)
       document.removeEventListener('keyup', onKeyup)
     })
-    // ...
-    // ...
+
     // @
     const __renderOverlayContent = () => {
       const slot = slots.default

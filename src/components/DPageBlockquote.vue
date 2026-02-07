@@ -1,24 +1,19 @@
-<template lang="pug">
-blockquote
-  strong(v-if="message === 'important'") Important
-  strong(v-else-if="warning") Warning
-  strong(v-else-if="note") Note
-  slot
-</template>
+<script setup>
+// defineProps is a compiler macro in <script setup>, no import needed
 
-<script>
-export default {
-  name: 'QPageBlockquote',
-
-  props: {
-    message: {
-      type: String,
-      default: ''
-    }
+const props = defineProps({
+  message: {
+    type: String,
+    default: ''
   }
-}
+})
 </script>
 
-<style scoped>
-
-</style>
+<template>
+<blockquote>
+  <strong v-if="message === 'important'">Important</strong>
+  <strong v-else-if="message === 'warning'">Warning</strong>
+  <strong v-else-if="message === 'note'">Note</strong>
+  <slot />
+</blockquote>
+</template>

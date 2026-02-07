@@ -1,0 +1,98 @@
+{
+  // @ Pages
+  _: {
+    home: {
+      texts: [
+        'The official documentation of ',
+        'Developed by ',
+        'Documentation under construction...'
+      ]
+    },
+
+    API: {}
+    guide: {}
+    manual: {}
+  },
+
+  // @ Page
+  page: {
+    edit: {
+      github: {
+        start: 'Start this page',
+        complete: 'Complete this page',
+        edit: 'Edit this page'
+      },
+      progress: 'Translation Progress',
+      translations: 'Available translations',
+      anchor: 'Anchor navigation',
+      of: 'of'
+    },
+    nav: {
+      prev: 'Previous page',
+      next: 'Next page'
+    }
+  },
+
+  menu: {
+    search: 'Search',
+
+    home: 'Home',
+    changelog: 'Changelog',
+    roadmap: 'Roadmap',
+    sponsor: 'Sponsor',
+    explore: 'Explore GitHub Repositories',
+
+    status: {
+      empty: {
+        _: 'empty',
+        tooltip: 'This page is empty!'
+      },
+      draft: {
+        _: 'draft',
+        tooltip: 'This page is under constrution.'
+      }
+    },
+
+    settings: 'Settings',
+
+    _404: '404 Error - Not Found'
+  },
+  submenu: {
+    guides: 'Guides',
+    manuals: 'Manuals',
+    references: 'References',
+
+    overview: 'Overview',
+    showcase: 'Showcase',
+    versus: 'Vs',
+
+    changelog: 'Changelog'
+  },
+
+  // @
+  system: {
+    documentation: 'Documentation',
+    support: 'Sponsor this project',
+    backToTop: 'Back to top'
+  },
+  changelog: {},
+  settings: {
+    general: {
+      _: 'General Settings',
+      language: {
+        _: 'Language'
+      }
+    },
+    appearance: {
+      _: 'Appearance',
+      background: {
+        _: 'Background Color'
+      }
+    }
+  },
+
+  _a: ' and ',
+  _o: ' or ',
+  _f: ' files ',
+  _s: 'Source Code'
+}

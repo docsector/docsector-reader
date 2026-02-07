@@ -1,197 +1,173 @@
-<template lang="pug">
-q-page-container#page
-  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (showcase || vs)")
-    q-toolbar-title.toolbar-container
-      q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
-        q-btn(v-if="overview"
-          no-caps flat
-          v-bind:class="pActive('/overview')"
-          :label="$t('submenu.overview')" icon="pageview"
-          @click="subroute('/overview')"
-        )
-        q-btn(v-if="showcase"
-          no-caps flat
-          v-bind:class="pActive('/showcase')"
-          :label="$t('submenu.showcase')" icon="play_circle_filled"
-          @click="subroute('/showcase')"
-        )
-        q-btn(v-if="vs"
-          no-caps flat
-          v-bind:class="pActive('/vs')"
-          :label="$t('submenu.versus')" icon="compare"
-          @click="subroute('/vs')"
-        )
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useStore } from 'vuex'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 
-  q-page(style="min-height: calc(100vh - 115px)")
-    q-scroll-area.content(:class="main" ref="pageScrollArea")
-      slot
-      d-page-nav(v-if="!disableNav")
-      q-scroll-observer(@scroll="scrolling" :debounce="300")
-    //-q-page-sticky(v-if="showBackToTop" position="bottom-right" :offset="[18, 18]")
-        q-btn.rotate-90(
-          round :aria-label="$t('system.backToTop')"
-          color="primary" icon="arrow_back" @click="backToTop"
-        )
+import useNavigator from 'src/composables/useNavigator'
 
-  q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
-    d-page-anchor#anchor
-</template>
+import DPageAnchor from 'components/DPageAnchor.vue'
+import DPageMeta from 'components/DPageMeta.vue'
 
-<script>
-import DPageAnchor from 'components/DPageAnchor'
-import DPageNav from 'components/DPageNav'
+const store = useStore()
+const router = useRouter()
+const route = useRoute()
+const $q = useQuasar()
 
-import Navigator from 'components/navigator'
+const { scrolling, navigate } = useNavigator()
 
-export default {
-  name: 'DPage',
+const props = defineProps({
+  disableNav: {
+    type: Boolean,
+    default: false
+  }
+})
 
-  components: {
-    DPageAnchor,
-    DPageNav
-  },
+const pageScrollArea = ref(null)
 
-  mixins: [
-    Navigator
-  ],
+const overview = computed(() => route.matched[0].path)
+const showcase = computed(() => {
+  const showcase = route.matched[0].meta.subpages.showcase
+  return showcase ? overview.value + '/showcase' : false
+})
+const vs = computed(() => {
+  const vs = route.matched[0].meta.subpages.vs
+  return vs ? overview.value + '/vs' : false
+})
+const layoutMeta = computed({
+  get: () => store.state.layout.meta,
+  set: (value) => store.commit('layout/setMeta', value)
+})
+const main = computed(() => {
+  switch (store.state.page.relative) {
+    case '/showcase':
+      return 'showcase'
+    case '/vs':
+      return 'vs'
+    default:
+      return 'overview'
+  }
+})
 
-  props: {
-    disableNav: {
-      type: Boolean,
-      default: false
+const toggleSectionsTree = () => {
+  layoutMeta.value = !layoutMeta.value
+}
+
+const pActive = (relative) => {
+  if (relative === '/' && (store.state.page.relative === relative || store.state.page.relative === '')) {
+    return 'active'
+  } else if (store.state.page.relative === relative) {
+    return 'active'
+  }
+  return null
+}
+
+const subroute = (to) => {
+  const base = '/' + store.state.page.base
+  const relative = store.state.page.relative
+  let path = base
+
+  if (to !== '/') {
+    path += to
+  }
+
+  if (relative === to) {
+    if (to !== '/showcase') {
+      return router.push({ hash: '#0' })
+    } else {
+      return router.push({ hash: '#1' })
     }
-  },
+  }
 
-  computed: {
-    overview () {
-      return this.$route.matched[0].path
-    },
-    showcase () {
-      const showcase = this.$route.matched[0].meta.subpages.showcase
-      if (showcase === true) {
-        return this.overview + '/showcase'
-      }
-      return false
-    },
-    vs () {
-      const vs = this.$route.matched[0].meta.subpages.vs
-      if (vs === true) {
-        return this.overview + '/vs'
-      }
-      return false
-    },
+  router.push(path)
+  return true
+}
 
-    // Set CSS classes
-    layoutMeta: {
-      get () {
-        return this.$store.state.layout.meta
-      },
-      set (value) {
-        this.$store.commit('layout/setMeta', value)
-      }
-    },
-    main () {
-      let classes = ''
-
-      switch (this.$store.state.page.relative) {
-        case '/showcase':
-          classes = 'showcase'
-          break
-        case '/vs':
-          classes = 'vs'
-          break
-        default:
-          classes = 'overview'
-      }
-
-      if (this.showcase || this.vs) {
-        classes += ' with-submenu'
-      } else {
-        classes += ' without-submenu'
-      }
-
-      return classes
-    }
-  },
-
-  methods: {
-    pActive (relative) {
-      if (relative === '/' && (this.$store.state.page.relative === relative || this.$store.state.page.relative === '')) {
-        return 'active'
-      } else if (this.$store.state.page.relative === relative) {
-        return 'active'
-      }
-
-      return null
-    },
-    subroute (to) {
-      const base = '/' + this.$store.state.page.base
-      const relative = this.$store.state.page.relative
-      let path = base
-
-      if (to !== '/') {
-        path += to
-      }
-
-      if (relative === to) {
-        if (to !== '/showcase') {
-          return this.push('0')
-        } else {
-          return this.push('1')
-        }
-      }
-
-      this.$router.push(path)
-
-      return true
-    },
-    resetPageScroll () {
-      const pageScrollArea = this.$refs.pageScrollArea
-
-      if (pageScrollArea !== null) {
-        this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 0)
-      }
-    }
-    // @ Events
-
-    /*
-    backToTop () {
-      this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 300)
-      this.$store.commit('page/setAnchor', 0)
-    }
-    */
-  },
-  // @ Events
-  mounted () {
-    this.$router.beforeEach((to, from, next) => {
-      this.resetPageScroll()
-
-      if (to.hash === '' && from.path !== to.path) {
-        this.$store.commit('page/resetAnchor')
-        this.$store.commit('page/resetAnchors')
-        this.$store.commit('page/resetNodes')
-      }
-
-      next()
-    })
+const resetPageScroll = () => {
+  if (pageScrollArea.value !== null) {
+    pageScrollArea.value.setScrollPosition('vertical', 0, 0)
   }
 }
+
+onMounted(() => {
+  router.beforeEach((to, from, next) => {
+    resetPageScroll()
+
+    if (to.hash === '' && from.path !== to.path) {
+      store.commit('page/resetAnchor')
+      store.commit('page/resetAnchors')
+      store.commit('page/resetNodes')
+    }
+
+    next()
+  })
+})
 </script>
 
+<template>
+<q-page-container id="page-container">
+  <q-toolbar id="submenu" class="bg-grey-8 text-white">
+    <q-toolbar-title class="toolbar-container">
+      <q-btn-group :class="$q.screen.lt.md ? 'mobile' : null">
+        <q-btn
+          v-if="overview && (showcase || vs)"
+          no-caps flat
+          :class="pActive('/overview')"
+          :label="$t('submenu.overview')" icon="pageview"
+          @click="subroute('/overview')"
+        />
+        <q-btn
+          v-if="showcase"
+          no-caps flat
+          :class="pActive('/showcase')"
+          :label="$t('submenu.showcase')" icon="play_circle_filled"
+          @click="subroute('/showcase')"
+        />
+        <q-btn
+          v-if="vs"
+          no-caps flat
+          :class="pActive('/vs')"
+          :label="$t('submenu.versus')" icon="compare"
+          @click="subroute('/vs')"
+        />
+      </q-btn-group>
+    </q-toolbar-title>
+    <q-btn @click="toggleSectionsTree" icon="account_tree" />
+  </q-toolbar>
+
+  <q-page id="page">
+    <q-scroll-area class="content" :class="main" ref="pageScrollArea">
+      <div id="scroll-container">
+        <slot />
+      </div>
+      <d-page-meta v-if="!disableNav" />
+      <q-scroll-observer @scroll="scrolling" :debounce="300" />
+    </q-scroll-area>
+  </q-page>
+
+  <q-drawer elevated show-if-above side="right" v-model="layoutMeta">
+    <d-page-anchor id="anchor" />
+  </q-drawer>
+</q-page-container>
+</template>
+
 <style lang="sass">
-#page
-  padding-bottom: 30px !important
+#page-container
+  padding-bottom: 0 !important
 
-.content.with-submenu,
-.content.with-submenu > div.scroll
-  min-height: calc(100vh - 115px)
-
-.content.without-submenu,
-.content.without-submenu > div.scroll
-  min-height: calc(100vh - 80px)
+.content,
+.content > div.scroll
+  min-height: calc(100vh - 86px)
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
-  padding: 20px
+  padding: 15px
+
+#page
+  min-height: calc(100vh - 86px) !important
+
+#scroll-container
+  max-width: 1200px
+  margin: auto
 
 #submenu
   min-height: 36px
@@ -233,7 +209,14 @@ body.body--light
 body.body--dark
   #submenu a.active,
   #submenu button.active
-    background-color: #000 !important
+    background-color: var(--q-dark-page) !important
     color: #fff
-    box-shadow: 0 10px 0 0 #000
+    box-shadow: 0 10px 0 0 var(--q-dark-page)
+
+body.mobile.body--dark
+  .q-drawer--right
+    background: rgba(18, 0, 0, 0.7)
+body.mobile
+  .q-drawer--right
+    background: rgba(255, 255, 255, 0.7)
 </style>

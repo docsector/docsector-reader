@@ -1,0 +1,97 @@
+{
+  // @ Pages
+  _: {
+    home: {
+      texts: [
+        'Documentação oficial do ',
+        'Desenvolvido por ',
+        'Documentação em construção...'
+      ]
+    },
+
+    API: {}
+    guide: {}
+    manual: {}
+  },
+
+  page: {
+    edit: {
+      github: {
+        start: 'Comece esta página',
+        complete: 'Complete esta página',
+        edit: 'Edite esta página'
+      },
+      progress: 'Progresso da tradução',
+      translations: 'Traduções disponíveis',
+      anchor: 'Navegação por âncoras',
+      of: 'de'
+    },
+    nav: {
+      prev: 'Página anterior',
+      next: 'Próxima página'
+    }
+  },
+
+  menu: {
+    search: 'Pesquisar',
+
+    home: 'Página inicial',
+    changelog: 'Changelog',
+    roadmap: 'Roadmap',
+    sponsor: 'Patrocine',
+    explore: 'Explore repositórios no GitHub',
+
+    status: {
+      empty: {
+        _: 'vazia',
+        tooltip: 'Esta página está vazia!'
+      },
+      draft: {
+        _: 'rascunho',
+        tooltip: 'Esta página está em construção.'
+      }
+    },
+
+    settings: 'Configurações',
+
+    _404: 'Erro 404 - Não encontrado'
+  },
+  submenu: {
+    guides: 'Guias',
+    manuals: 'Manuais',
+    references: 'Referências',
+
+    overview: 'Apresentação',
+    showcase: 'Demonstração',
+    versus: 'Vs',
+
+    changelog: 'Changelog'
+  },
+
+  // @
+  system: {
+    documentation: 'Documentação',
+    support: 'Patrocine este projeto',
+    backToTop: 'Voltar para o topo'
+  },
+  changelog: {},
+  settings: {
+    general: {
+      _: 'Configurações gerais',
+      language: {
+        _: 'Idioma'
+      }
+    },
+    appearance: {
+      _: 'Aparência',
+      background: {
+        _: 'Cor de fundo'
+      }
+    }
+  },
+
+  _a: ' e ',
+  _o: ' ou ',
+  _f: ' arquivos ',
+  _s: 'Código Fonte'
+}

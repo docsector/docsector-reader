@@ -1,58 +1,36 @@
-<template lang="pug">
-h2(:id="id" @click="navigate(id)" v-html="value")
-</template>
+<script setup>
+import { watch, onMounted, onUpdated } from 'vue'
 
-<script>
-import Navigator from 'components/navigator'
+import useNavigator from 'src/composables/useNavigator'
 
-export default {
-  name: 'DH2',
-
-  mixins: [
-    Navigator
-  ],
-
-  props: {
-    id: {
-      type: Number,
-      required: true
-    },
-    value: {
-      type: String,
-      required: true
-    }
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true
   },
-
-  // @ Events
-  beforeCreated () {
-    // console.log(`DH2 ${this.value} beforeCreated!`)
-  },
-  created () {
-    // console.log(`DH2 ${this.value} created!`)
-  },
-
-  beforeMount () {
-    // console.log(`DH2 ${this.value} mounted!`)
-  },
-  mounted () {
-    // console.log(`DH2 ${this.value} mounted!`)
-
-    this.register(this.id)
-    this.index(this.id)
-  },
-
-  beforeUpdate () {
-    // console.log('DH2 - beforeUpdate!')
-  },
-  updated () {
-    // console.log('DH2.mounted!')
-
-    this.register(this.id)
-    this.index(this.id)
+  value: {
+    type: String,
+    required: true
   }
-}
+})
+
+const { register, index, navigate, selected } = useNavigator()
+
+watch(() => props.value, (val) => {
+  selected.value = val
+}, { immediate: true })
+
+onMounted(() => {
+  register(props.id)
+  index(props.id)
+})
+
+onUpdated(() => {
+  register(props.id)
+  index(props.id)
+})
 </script>
 
-<style lang="sass">
-
-</style>
+<template>
+<h2 :id="id" @click="navigate(id)" v-html="value"></h2>
+</template>

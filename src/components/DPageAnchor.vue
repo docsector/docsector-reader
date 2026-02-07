@@ -1,101 +1,91 @@
-<template lang="pug">
-q-tree(
+<script setup>
+import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { useStore } from 'vuex'
+import { useQuasar } from 'quasar'
+import { useRoute } from "vue-router";
+
+import useNavigator from 'src/composables/useNavigator'
+
+const store = useStore()
+const $q = useQuasar()
+const route = useRoute()
+const { navigate, anchor, selected: navigatorSelected } = useNavigator()
+
+const nodes = computed(() => store.getters['page/nodes'])
+const expanded = computed({
+  get() {
+    return store.getters['page/nodesExpanded']
+  },
+  set(value) {
+    // console.log(value)
+  }
+})
+const selected = computed({
+  get() {
+    let anchor = store.state.page.anchor
+
+    if (store.state.page.relative !== '' && anchor === 0) {
+      anchor = anchor + 1
+    }
+
+    return anchor
+  },
+  set(value) {
+    navigate(value)
+  }
+})
+
+navigatorSelected.value = selected.value
+
+const stylize = computed(() => {
+  if ($q.platform.is.mobile && !$q.screen.lt.lg) {
+    return 'fixed'
+  } else {
+    return 'q-ma-xs'
+  }
+})
+
+onMounted(() => {
+  store.commit('layout/setMetaToggle', true)
+
+  setTimeout(() => {
+    store.commit('page/setScrolling', true)
+  }, 1000)
+
+  const id = route.hash.replace(/^#+/g, '')
+  if (id) {
+    setTimeout(() => {
+      anchor(id)
+    }, 500)
+  }
+})
+
+onBeforeUnmount(() => {
+  store.commit('layout/setMetaToggle', false)
+
+  store.commit('page/resetAnchor')
+  store.commit('page/resetAnchors')
+  store.commit('page/resetNodes')
+
+  store.commit('page/setScrolling', false)
+})
+</script>
+
+<template>
+<q-tree
   v-model:selected="selected"
   v-model:expanded="expanded"
   default-expand-all
   :class="stylize"
   :nodes="nodes"
   node-key="id"
-)
-  template(v-slot:default-header="props")
-    b(v-if="props.node.label")
-      | {{ props.node.label }}
-    b(v-else)
-      | {{ $t(`_.${$store.state.i18n.base}._`) }}
+>
+  <template v-slot:default-header="props">
+    <b v-if="props.node.label">{{ props.node.label }}</b>
+    <b v-else>{{ $t(`_.${$store.state.i18n.base}._`) }}</b>
+  </template>
+</q-tree>
 </template>
-
-<script>
-import Navigator from 'components/navigator'
-
-export default {
-  name: 'DPageAnchor',
-
-  mixins: [
-    Navigator
-  ],
-
-  computed: {
-    nodes () {
-      const nodes = this.$store.getters['page/nodes']
-      return nodes
-    },
-    expanded: {
-      get () {
-        const nodesExpanded = this.$store.getters['page/nodesExpanded']
-        return nodesExpanded
-      },
-      set (value) {
-        // console.log(value)
-      }
-    },
-    selected: {
-      get () {
-        let anchor = this.$store.state.page.anchor
-
-        if (this.$store.state.page.relative !== '' && anchor === 0) {
-          anchor = anchor + 1
-        }
-
-        // console.log('Anchor: ', this.$store.state.page.relative, anchor)
-
-        return anchor
-      },
-      set (value) {
-        this.navigate(value)
-      }
-    },
-    stylize () {
-      if (this.$q.platform.is.mobile && !this.$q.screen.lt.lg) {
-        return 'fixed'
-      } else {
-        return 'q-ma-xs'
-      }
-    }
-  },
-
-  // @ Methods
-  methods: {
-    getNodeLabel () {}
-  },
-  // @ Events
-  mounted () {
-    this.$store.commit('layout/setMetaToggle', true)
-
-    setTimeout(() => {
-      this.$store.commit('page/setScrolling', true)
-    }, 1000)
-
-    const id = this.$route.hash.replace(/^#+/g, '')
-    if (id) {
-      setTimeout(() => {
-        this.anchor(id)
-      }, 500)
-    }
-  },
-
-  beforeUnmount () {
-    // console.log('DPageAnchor beforeUnmount!')
-
-    this.$store.commit('layout/setMetaToggle', false)
-
-    this.$store.commit('page/resetAnchor')
-    this.$store.commit('page/resetAnchors')
-    this.$store.commit('page/resetNodes')
-
-    this.$store.commit('page/setScrolling', false)
-  }
-}
-</script>
 
 <style lang="sass">
 #anchor

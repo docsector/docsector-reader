@@ -1,0 +1,17 @@
+# Development
+.quasar/
+dist/
+node_modules/
+
+# Config
+.editorconfig
+.eslintignore
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Build artifacts
+*.log

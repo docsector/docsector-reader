@@ -1,8 +1,17 @@
-/* --- Docstation --- */
+/* --- Docsector Reader --- */
+@font-face
+  font-family: "Fira Code Nerd Font"
+  src: url('/fonts/FiraCodeNerdFont-Regular.ttf') format('truetype')
+  font-weight: normal
+  font-style: normal
+// * General
+body
+  font-family: "Roboto", "Consolas"
+
 // * Coloring
 // Light mode
 body.body--light
-  --q-primary: #000 !important
+  --q-primary: #655529 !important
   --q-secondary: #000080 !important
 
   --q-primary-background: #FFF !important
@@ -15,13 +24,12 @@ body.body--light
         color: #595959
       &:hover:after
         color: #69562b
-    p
-      // token
-      & > code
-        color: var(--q-primary) !important
-        background: var(--q-primary-background) !important
-        border: 1px solid #e6e6e6 !important
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
+    // token
+    code:not(pre > code)
+      color: var(--q-primary) !important
+      background: var(--q-primary-background) !important
+      border: 1px solid #e6e6e6 !important
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
 
     a
       color: #34495e
@@ -34,7 +42,7 @@ body.body--light
         border-bottom: 1px dotted #1b4a6c
 // Dark mode
 body.body--dark
-  --q-primary: #000 !important
+  --q-primary: #69562b !important
   --q-primary-in-dark-bg: #C1A667 !important
   --q-secondary: #FFA07A !important
   --q-negative: #fc001b !important
@@ -56,13 +64,12 @@ body.body--dark
         color: #B19248
     section
       color: var(--q-light-in-dark-2)
-    p
-      // token
-      & > code
-        color: var(--q-primary-in-dark-bg) !important
-        background: var(--q-dark) !important
-        border: 1px solid #e6e6e6
-        box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5)
+    // token
+    code:not(pre > code)
+      color: var(--q-primary-in-dark-bg) !important
+      background: var(--q-dark) !important
+      border: 1px solid #e6e6e6
+      box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5)
 
     a
       color: #34495e
@@ -120,14 +127,13 @@ body.body--dark
     line-height: 1.06rem
     margin: 0.3em 0 0.1em
 
-  p
-    & > code
-      padding: 3px 5px
-      margin: 0 2px
-      border-radius: 2px
-      white-space: pre-wrap
-      display: inline-block
-      line-height: 1em
+  code:not(pre > code)
+    padding: 3px 5px
+    margin: 0 2px
+    border-radius: 2px
+    white-space: pre-wrap
+    display: inline-block
+    line-height: 0.85em
 
   a
     text-decoration: none
@@ -221,16 +227,21 @@ body.body--dark
 
 /* --- Quasar --- */
 // * General
+.q-item__section--avatar
+  min-width: 45px
 // ! Layouts
 // QDrawer
 .q-drawer__opener
-  top: 50px
+  top: 86px
 
 // ! Components
 // QDialog
 .q-dialog__inner > div
   border-radius: 0 !important
 // QList
+// QList -> Item
+.q-item__section--main + .q-item__section--main
+  margin-left: 0
 // QList -> Item -> Label
 .q-item__label--header
   font-weight: 500

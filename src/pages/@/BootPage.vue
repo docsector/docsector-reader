@@ -1,72 +1,106 @@
-<template lang="pug">
-q-page-container
-  q-page.content
-    .text-center.q-pa-xs.q-pt-md
-      h1 Docsphere Documentation System
+<template>
+<q-page-container>
+  <q-page class="content">
+    <div class="text-center q-pa-xs q-pt-md">
+      <h1>Docsector Reader</h1>
 
-      p.caption
-        | {{ $t('_.home.texts[0]') }}
-        a(href="https://github.com/docsphere/docsphere-reader/" target="_blank") Docsphere Reader
-        | !
-      p.caption
-        | {{ $t('_.home.texts[1]') }}
-        a(href="https://github.com/rodrigoslayertech/" target="_blank") Rodrigo Vieira
-      hr
+      <p class="caption">
+        {{ $t('_.home.texts[0]') }}
+        <a :href="projectUrl" target="_blank">{{ projectName }}</a>!
+      </p>
+      <hr />
+    </div>
 
-    div.row.no-wrap.justify-center.items-center.content-center(
-      style="max-width: 735px; margin: auto; height: calc(100vh + 45px)"
-    )
-      q-carousel.content.col-12.text-center(
-        v-model="slide", v-model:fullscreen="fullscreen"
-        animated,
-        swipeable,
-        navigation, navigation-position="top"
-        infinite,
-        :autoplay="autoplay",
-        control-type="push", control-color="primary"
-        transition-prev="slide-right", transition-next="slide-left"
-        :height="fullscreen ? '100vh' : '100%'"
-      )
-        template(v-slot:navigation-icon="{ active, btnProps, onClick }")
-          q-btn(v-if="active" size="md" icon="radio_button_checked" color="primary" flat round dense @click="onClick")
-          q-btn(v-else size="sm" icon="radio_button_unchecked" flat round dense @click="onClick")
+    <div class="q-pa-md" style="max-width: 700px; margin: 0 auto;">
+      <h3 class="text-center q-mb-md">Quick Links</h3>
 
-        template(v-slot:control)
-          q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")
-            q-btn(
-              push, round, dense,
-              color="white", text-color="primary", :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'",
-              @click="fullscreen = !fullscreen"
-            )
+      <q-list bordered separator class="rounded-borders">
+        <q-item clickable to="/guide/getting-started/overview">
+          <q-item-section avatar>
+            <q-icon name="flag" color="primary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Getting Started</q-item-label>
+            <q-item-label caption>Installation, setup, and project structure</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/guide/configuration/overview">
+          <q-item-section avatar>
+            <q-icon name="tune" color="primary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Configuration</q-item-label>
+            <q-item-label caption>docsector.config.js reference</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/guide/pages-and-routing/overview">
+          <q-item-section avatar>
+            <q-icon name="route" color="primary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Pages &amp; Routing</q-item-label>
+            <q-item-label caption>Page registry and route generation</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/manual/components/d-page/overview">
+          <q-item-section avatar>
+            <q-icon name="widgets" color="secondary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Components</q-item-label>
+            <q-item-label caption>DPage, DPageSection, DH1–DH6, DMenu, and more</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/manual/composables/use-navigator/overview">
+          <q-item-section avatar>
+            <q-icon name="navigation" color="accent" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Composables</q-item-label>
+            <q-item-label caption>useNavigator — anchor navigation and ToC</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/manual/store/modules/overview">
+          <q-item-section avatar>
+            <q-icon name="storage" color="deep-orange" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Vuex Store</q-item-label>
+            <q-item-label caption>App, I18n, Page, Layout, Settings modules</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="chevron_right" />
+          </q-item-section>
+        </q-item>
+      </q-list>
+    </div>
+  </q-page>
+</q-page-container>
 </template>
 
-<script>
-import { useQuasar } from 'quasar'
+<script setup>
+import docsectorConfig from 'docsector.config.js'
 
-import { ref } from 'vue'
-
-export default {
-  setup () {
-    const $q = useQuasar()
-
-    // TODO make the Carrousel a custom component?
-
-    return {
-      $q,
-
-      slide: ref(1),
-      autoplay: ref(8000),
-      fullscreen: ref(false),
-
-      links: [],
-      videos: []
-    }
-  }
-}
+const projectName = docsectorConfig.branding?.name || 'My Project'
+const projectUrl = docsectorConfig.links?.github || '#'
 </script>
-
-<style lang="sass">
-img.platform
-  padding-top: 30px
-  padding-bottom: 30px
-</style>
