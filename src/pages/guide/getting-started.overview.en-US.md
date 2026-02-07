@@ -10,50 +10,68 @@ Docsector Reader is a **documentation rendering engine** built with Vue 3, Quasa
 
 ## Installation
 
+Scaffold a new documentation project with the CLI:
+
 ```bash
-npx degit docsector/docsector-reader my-docs
+npx @docsector/docsector-reader init my-docs
 cd my-docs
 npm install
 ```
+
+This creates a ready-to-use project with all necessary configuration files, a sample page registry, and i18n setup.
 
 ## Development Server
 
 Start the dev server with hot-reload:
 
 ```bash
-npx quasar dev
+npx docsector dev
 ```
 
 The documentation site will be available at **http://localhost:8181**.
+
+You can also specify a custom port:
+
+```bash
+npx docsector dev --port 3000
+```
 
 ## Production Build
 
 Build an optimized SPA for deployment:
 
 ```bash
-npx quasar build
+npx docsector build
 ```
 
 The output is placed in `dist/spa/` — ready to deploy to any static hosting.
 
+To preview the production build locally:
+
+```bash
+npx docsector serve
+```
+
 ## Project Structure
 
-The project follows a standard Quasar v2 layout with documentation-specific conventions:
+After `init`, your project will have this structure:
 
-- `docsector.config.js` — Branding, links, languages
+- `docsector.config.js` — Branding, links, languages, GitHub config
+- `quasar.config.js` — Thin wrapper using `createQuasarConfig()` from the package
+- `index.html` — HTML entry point with title and meta tags
 - `src/pages/index.js` — Page registry (routes and metadata)
 - `src/pages/guide/` — Guide-type pages (Markdown files)
 - `src/pages/manual/` — Manual-type pages (Markdown files)
-- `src/components/` — Docsector Vue components
-- `src/composables/` — Vue composables (useNavigator)
-- `src/store/` — Vuex 4 modules
-- `src/i18n/` — Language files (.hjson) and loader
-- `src/layouts/` — DefaultLayout and SystemLayout
-- `src/boot/` — Boot files (store, i18n, QZoom, axios)
+- `src/i18n/index.js` — i18n loader using `buildMessages()` from the package
+- `src/i18n/tags.hjson` — Search keywords per route and locale
+- `public/` — Static assets (logo, favicon, images)
+
+The rendering engine (components, layouts, router, store, composables) lives inside the `@docsector/docsector-reader` package — you only maintain your content and configuration.
 
 ## Next Steps
 
 - Configure your project branding in **docsector.config.js**
 - Define your pages in **src/pages/index.js**
 - Write your documentation in **Markdown**
+- Add search keywords in **src/i18n/tags.hjson**
 - Customize themes and appearance
