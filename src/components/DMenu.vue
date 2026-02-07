@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
-import tags from 'src/i18n/tags.hjson'
+import tags from '@docsector/tags'
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
 
@@ -35,8 +35,8 @@ const searchTerm = (term) => {
     const locale = $q.localStorage.getItem('setting.language')
     founds.value = []
 
-    for (const [index, items] of items.value.entries()) {
-      searchTermIterate(items, term, locale)
+    for (const [index, group] of items.value.entries()) {
+      searchTermIterate(group, term, locale)
     }
   } else {
     founds.value = false
@@ -54,7 +54,7 @@ const searchTermIterate = (items, term, locale) => {
     founds.value[path] = false
 
     // @ search in i18n/tags.hjson
-    if (tags[locale] && tags[locale].length > 0) {
+    if (tags[locale] && Object.keys(tags[locale]).length > 0) {
       founds.value[path] = tags[locale][path]?.indexOf(term) !== -1
       if (founds.value[path] === false && locale !== 'en-US') {
         founds.value[path] = tags['en-US'][path]?.indexOf(term) !== -1

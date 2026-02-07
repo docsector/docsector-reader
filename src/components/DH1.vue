@@ -3,7 +3,7 @@ import { computed, onMounted, onUpdated } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n";
 
-import useNavigator from 'src/composables/useNavigator'
+import useNavigator from '../composables/useNavigator'
 
 const props = defineProps({
   id: {

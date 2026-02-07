@@ -4,10 +4,10 @@ import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 
-import useNavigator from 'src/composables/useNavigator'
+import useNavigator from '../composables/useNavigator'
 
-import DPageAnchor from 'components/DPageAnchor.vue'
-import DPageMeta from 'components/DPageMeta.vue'
+import DPageAnchor from './DPageAnchor.vue'
+import DPageMeta from './DPageMeta.vue'
 
 const store = useStore()
 const router = useRouter()

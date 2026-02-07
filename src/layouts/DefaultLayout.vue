@@ -33,7 +33,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
 
-import DMenu from 'components/DMenu.vue'
+import DMenu from '../components/DMenu.vue'
 import docsectorConfig from 'docsector.config.js'
 
 defineOptions({ name: 'LayoutDefault' })

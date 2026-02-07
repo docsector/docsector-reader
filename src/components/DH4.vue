@@ -1,7 +1,7 @@
 <script setup>
 import { watch } from 'vue'
 
-import useNavigator from 'src/composables/useNavigator'
+import useNavigator from '../composables/useNavigator'
 
 const props = defineProps({
   id: {

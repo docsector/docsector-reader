@@ -15,7 +15,7 @@ import { useColorize } from 'q-colorize-mixin'
 import { dom } from 'quasar'
 const { offset } = dom
 
-import './QZoom.styl'
+import './QZoom.sass'
 
 // @
 export default {

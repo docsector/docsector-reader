@@ -4,7 +4,7 @@ import { useStore } from 'vuex'
 import { useQuasar } from 'quasar'
 import { useRoute } from "vue-router";
 
-import useNavigator from 'src/composables/useNavigator'
+import useNavigator from '../composables/useNavigator'
 
 const store = useStore()
 const $q = useQuasar()
