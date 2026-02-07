@@ -1,31 +1,47 @@
-# Docsector Reader
-
-> A documentation rendering engine built with Vue 3, Quasar v2 and Vite.
+<p align="center">
+  <img src="https://github.com/docsector.png" alt="docsector-logo" width="120px" height="120px"/>
+</p>
+<h1 align="center">Docsector Reader 📖</h1>
+<p align="center">
+  <i>A documentation rendering engine built with Vue 3, Quasar v2 and Vite.</i>
+</p>
+<p align="center">
+  <a href="https://www.npmjs.com/package/@docsector/docsector-reader">
+    <img alt="npm version" src="https://img.shields.io/npm/v/@docsector/docsector-reader?color=blue&label=npm"/>
+  </a>
+  <a href="https://github.com/docsector/docsector-reader/blob/main/LICENSE.md">
+    <img alt="License" src="https://img.shields.io/github/license/docsector/docsector-reader"/>
+  </a>
+</p>
 
 Transform Markdown content into beautiful, navigable documentation sites — with i18n, syntax highlighting, dark/light mode, and anchor navigation.
 
-## Features
+---
 
-- **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
-- **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
-- **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
-- **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking
-- **Search** — Menu search across all documentation content and tags
-- **Responsive** — Mobile-friendly with collapsible sidebar and drawers
-- **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
-- **Edit on GitHub** — Direct links to edit pages on your repository
-- **Translation Progress** — Automatic translation percentage based on header coverage
-- **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
+## ✨ Features
 
-## Quick Start
+- 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
+- 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
+- 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking
+- 🔎 **Search** — Menu search across all documentation content and tags
+- 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
+- 🏷️ **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
+- ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
+- 📊 **Translation Progress** — Automatic translation percentage based on header coverage
+- ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 
-### Install from NPM
+---
+
+## 🚀 Quick Start
+
+### 📦 Install from NPM
 
 ```bash
 npm install @docsector/docsector-reader
 ```
 
-### Scaffold a new project
+### 🏗️ Scaffold a new project
 
 ```bash
 npx degit docsector/docsector-reader my-docs
@@ -33,7 +49,7 @@ cd my-docs
 npm install
 ```
 
-### Development
+### 💻 Development
 
 ```bash
 npx docsector dev
@@ -43,7 +59,7 @@ npx quasar dev
 
 The documentation site will be available at **http://localhost:8181**.
 
-### Production Build
+### 🏭 Production Build
 
 ```bash
 npx docsector build
@@ -53,7 +69,9 @@ npx quasar build
 
 Output is placed in `dist/spa/` — ready to deploy to any static hosting.
 
-## Configuration
+---
+
+## ⚙️ Configuration
 
 Edit `docsector.config.js` at the project root:
 
@@ -85,7 +103,9 @@ export default {
 }
 ```
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 ├── docsector.config.js      # Branding, links, languages
@@ -103,9 +123,11 @@ export default {
 └── public/                  # Static assets (logo, flags, icons)
 ```
 
-## Adding Pages
+---
 
-1. Register in `src/pages/index.js`:
+## 📄 Adding Pages
+
+1️⃣ Register in `src/pages/index.js`:
 
 ```javascript
 export default {
@@ -125,24 +147,28 @@ export default {
 }
 ```
 
-2. Create Markdown files:
+2️⃣ Create Markdown files:
 
 ```
 src/pages/guide/my-page.overview.en-US.md
 src/pages/guide/my-page.overview.pt-BR.md
 ```
 
-## CLI Commands
+---
+
+## 🖥️ CLI Commands
 
 ```bash
-docsector dev              # Start dev server (port 8181)
-docsector dev --port 3000  # Custom port
-docsector build            # Build for production
-docsector serve            # Serve production build
-docsector help             # Show help
+docsector dev              # 💻 Start dev server (port 8181)
+docsector dev --port 3000  # 🔧 Custom port
+docsector build            # 🏭 Build for production
+docsector serve            # 🌐 Serve production build
+docsector help             # ❓ Show help
 ```
 
-## Programmatic API
+---
+
+## 🔌 Programmatic API
 
 ```javascript
 import { createDocsector, definePage } from '@docsector/docsector-reader'
@@ -153,22 +179,30 @@ const config = createDocsector({
 })
 ```
 
-## Tech Stack
+---
 
-- **Vue 3** (Composition API + `<script setup>`)
-- **Quasar v2** (UI framework)
-- **Vite** (Build tool)
-- **Vuex 4** (State management)
-- **vue-i18n 9** (Internationalization)
-- **markdown-it** (Markdown parsing)
-- **Prism.js** (Syntax highlighting)
-- **HJSON** (Human-friendly JSON for locale files)
+## 🛠️ Tech Stack
 
-## Contributing
+| Technology | Purpose |
+|---|---|
+| **Vue 3** | Composition API + `<script setup>` |
+| **Quasar v2** | UI framework |
+| **Vite** | Build tool |
+| **Vuex 4** | State management |
+| **vue-i18n 9** | Internationalization |
+| **markdown-it** | Markdown parsing |
+| **Prism.js** | Syntax highlighting |
+| **HJSON** | Human-friendly JSON for locale files |
+
+---
+
+## 🤝 Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.
 
-## License
+---
+
+## 📃 License
 
 Copyright (c) 2018-Present — Rodrigo de Araujo Vieira
 
