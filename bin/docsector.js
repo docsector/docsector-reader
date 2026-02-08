@@ -12,7 +12,7 @@
  */
 
 import { execSync, spawn } from 'child_process'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync, copyFileSync } from 'fs'
 import { resolve, dirname, basename } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.3.0'
+const VERSION = '0.3.1'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.3.0',
+      '@docsector/docsector-reader': '^0.3.1',
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',
@@ -836,6 +836,12 @@ function initProject (name) {
     writeFileSync(resolve(projectDir, filePath), content, 'utf-8')
   }
 
+  // Copy logo from package
+  const packageLogo = resolve(packageRoot, 'public/images/logo.png')
+  if (existsSync(packageLogo)) {
+    copyFileSync(packageLogo, resolve(projectDir, 'public/images/logo.png'))
+  }
+
   console.log('  Project structure:')
   console.log(`    ${name}/`)
   console.log('    ├── docsector.config.js')
@@ -846,6 +852,7 @@ function initProject (name) {
   console.log('    ├── .gitignore')
   console.log('    ├── public/')
   console.log('    │   └── images/')
+  console.log('    │       └── logo.png')
   console.log('    └── src/')
   console.log('        ├── css/')
   console.log('        │   └── app.sass')
