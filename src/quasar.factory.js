@@ -180,6 +180,16 @@ export function createQuasarConfig (options = {}) {
           'hjson', 'q-colorize-mixin'
         ]
 
+        // Exclude boot files from pre-bundling.
+        // Boot files (especially boot/i18n) import the consumer's src/i18n/index.js
+        // which uses import.meta.glob — a compile-time Vite directive that only
+        // works in source files. If pre-bundled, the glob calls become dead code
+        // and no i18n messages are loaded.
+        viteConf.optimizeDeps.exclude = [
+          ...(viteConf.optimizeDeps.exclude || []),
+          'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios'
+        ]
+
         if (!isStandalone) {
           // --- Consumer project mode ---
           // Allow Vite to serve files from the package root (needed for symlinked/npm-linked packages)
