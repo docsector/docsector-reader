@@ -162,6 +162,24 @@ export function createQuasarConfig (options = {}) {
           'vue', 'vue-router', 'vuex', 'vue-i18n', 'quasar', '@quasar/extras'
         ]
 
+        // Force Vite to pre-bundle Vue ecosystem packages.
+        // Vite's dep scanner only discovers bare imports from source files,
+        // not from .vue files inside node_modules. Without this, vue-router,
+        // vuex and vue-i18n are served as raw ESM modules while the router
+        // entry (which IS pre-bundled) gets its OWN copy of these libraries
+        // baked into its chunk — creating two separate JS module instances
+        // with different Symbols. This breaks inject/provide: useRoute(),
+        // useStore(), useI18n() all return undefined.
+        // CJS packages (prismjs, markdown-it, etc.) also need explicit
+        // inclusion to be properly converted to ESM by Vite's optimizer.
+        viteConf.optimizeDeps = viteConf.optimizeDeps || {}
+        viteConf.optimizeDeps.include = [
+          ...(viteConf.optimizeDeps.include || []),
+          'vue', 'vue-router', 'vuex', 'vue-i18n',
+          'prismjs', 'markdown-it', 'markdown-it-attrs',
+          'hjson', 'q-colorize-mixin'
+        ]
+
         if (!isStandalone) {
           // --- Consumer project mode ---
           // Allow Vite to serve files from the package root (needed for symlinked/npm-linked packages)
