@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.3.1'
+const VERSION = '0.3.2'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.3.1',
+      '@docsector/docsector-reader': '^0.3.2',
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',
@@ -673,19 +673,19 @@ const TEMPLATE_GETTING_STARTED_MD = `\
 
 Create a new Docsector documentation project:
 
-\\\`\\\`\\\`bash
+\`\`\`bash
 npx @docsector/docsector-reader init my-docs
 cd my-docs
 npm install
-\\\`\\\`\\\`
+\`\`\`
 
 ## Development Server
 
 Start the development server with hot-reload:
 
-\\\`\\\`\\\`bash
+\`\`\`bash
 npm run dev
-\\\`\\\`\\\`
+\`\`\`
 
 Open **http://localhost:8181** in your browser.
 
@@ -695,25 +695,25 @@ Here's an overview of the project files:
 
 | File / Folder | Description |
 | --- | --- |
-| \\\`docsector.config.js\\\` | Branding, links, languages, and GitHub config |
-| \\\`quasar.config.js\\\` | Quasar/Vite build configuration (via factory) |
-| \\\`src/pages/index.js\\\` | Page registry — defines all documentation pages |
-| \\\`src/pages/boot.js\\\` | Boot metadata for the home page |
-| \\\`src/pages/@/\\\` | Special pages (Home, 404) |
-| \\\`src/pages/guide/\\\` | Guide pages (Markdown files) |
-| \\\`src/i18n/languages/\\\` | Translation files (HJSON format) |
-| \\\`src/css/app.sass\\\` | Custom styles |
-| \\\`public/images/\\\` | Static assets (logo, flags, icons) |
+| \`docsector.config.js\` | Branding, links, languages, and GitHub config |
+| \`quasar.config.js\` | Quasar/Vite build configuration (via factory) |
+| \`src/pages/index.js\` | Page registry — defines all documentation pages |
+| \`src/pages/boot.js\` | Boot metadata for the home page |
+| \`src/pages/@/\` | Special pages (Home, 404) |
+| \`src/pages/guide/\` | Guide pages (Markdown files) |
+| \`src/i18n/languages/\` | Translation files (HJSON format) |
+| \`src/css/app.sass\` | Custom styles |
+| \`public/images/\` | Static assets (logo, flags, icons) |
 
 ## Adding a Page
 
-1. Register the page in \\\`src/pages/index.js\\\`
-2. Create the Markdown file at \\\`src/pages/{type}/{path}.overview.{lang}.md\\\`
+1. Register the page in \`src/pages/index.js\`
+2. Create the Markdown file at \`src/pages/{type}/{path}.overview.{lang}.md\`
 3. The page will automatically appear in the sidebar navigation
 
 ## Customization
 
-Edit \\\`docsector.config.js\\\` to change:
+Edit \`docsector.config.js\` to change:
 
 - **Branding** — logo, name, version
 - **Links** — GitHub, changelog, sponsor
@@ -722,11 +722,11 @@ Edit \\\`docsector.config.js\\\` to change:
 
 ## Building for Production
 
-\\\`\\\`\\\`bash
+\`\`\`bash
 npm run build
-\\\`\\\`\\\`
+\`\`\`
 
-The optimized SPA output will be in \\\`dist/spa/\\\`.
+The optimized SPA output will be in \`dist/spa/\`.
 `
 
 // =============================================================================
