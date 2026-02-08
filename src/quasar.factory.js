@@ -152,6 +152,16 @@ export function createQuasarConfig (options = {}) {
         viteConf.resolve = viteConf.resolve || {}
         viteConf.resolve.alias = viteConf.resolve.alias || {}
 
+        // Deduplicate Vue ecosystem packages to prevent dual-instance issues.
+        // When the package is installed from NPM, Vue, vue-router, vuex, etc.
+        // can end up duplicated (one copy in consumer's node_modules, another
+        // nested inside the package). This causes useRoute(), useStore(), etc.
+        // to return undefined because they inject from a different Vue instance.
+        viteConf.resolve.dedupe = [
+          ...(viteConf.resolve.dedupe || []),
+          'vue', 'vue-router', 'vuex', 'vue-i18n', 'quasar', '@quasar/extras'
+        ]
+
         if (!isStandalone) {
           // --- Consumer project mode ---
           // Allow Vite to serve files from the package root (needed for symlinked/npm-linked packages)

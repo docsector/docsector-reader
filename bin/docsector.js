@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.2.0'
+const VERSION = '0.2.3'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,13 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.2.0'
+      '@docsector/docsector-reader': '^0.2.3',
+      '@quasar/extras': '^1.16.12',
+      'quasar': '^2.16.6',
+      'vue': '^3.5.13',
+      'vue-i18n': '^9.0.0',
+      'vue-router': '^4.0.0',
+      'vuex': '^4.0.1'
     }
   }, null, 2)
 }
