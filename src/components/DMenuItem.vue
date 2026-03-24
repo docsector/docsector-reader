@@ -29,7 +29,7 @@ const props = defineProps({
 
 const $q = useQuasar()
 const $route = useRoute()
-const { t, te } = useI18n()
+const { t } = useI18n()
 
 const getMenuItemHeaderBackground = () => {
   return $q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
@@ -37,22 +37,14 @@ const getMenuItemHeaderBackground = () => {
 
 const getMenuItemLabel = (item, index) => {
   const path = `_${item.path.replace(/_$/, '').replace(/\//g, '.')}._`
-  if (te(path)) {
-    return t(path)
-  } else {
-    return t(path, 'en-US')
-  }
+  return t(path)
 }
 
 const getMenuItemSubheader = (meta) => {
   const subheader = meta.menu.subheader
   const path = `_.${meta.type}${subheader}._`
 
-  if (te(path)) {
-    return t(path)
-  } else {
-    return t(path, 'en-US')
-  }
+  return t(path)
 }
 
 const getPageStatusText = (status) => {

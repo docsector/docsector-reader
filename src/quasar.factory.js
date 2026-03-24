@@ -23,7 +23,8 @@
  * @param {Function} [options.extendViteConf] - Additional Vite config extension
  */
 
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, rmSync } from 'fs'
+import { createHash } from 'crypto'
 import { resolve } from 'path'
 import HJSON from 'hjson'
 
@@ -55,6 +56,46 @@ function getPackageRoot (projectRoot) {
 
   // Standalone mode: we ARE the project
   return projectRoot
+}
+
+/**
+ * Create a Vite plugin that watches consumer content files (pages/index.js,
+ * i18n languages, etc.) and forces the Vite dep optimizer to re-run when
+ * they change.
+ *
+ * Why: The router module (`routes.js`) imports consumer content via the
+ * `pages` alias. Vite's dep optimizer pre-bundles the router with the
+ * consumer content inlined, but the optimizer cache hash is based on config
+ * and lockfile only — NOT on consumer source files. So when pages/index.js
+ * changes during development, the optimizer serves stale pre-bundled code
+ * until the cache is manually cleared.
+ *
+ * Fix: When pages/index.js changes, the watcher plugin clears the dep cache,
+ * sets an env flag, and restarts the server. On restart, the config reads the
+ * flag and sets `optimizeDeps.force = true`, which makes Vite generate a new
+ * browserHash — effectively busting the browser module cache.
+ */
+function createPagesWatchPlugin (projectRoot) {
+  const pagesIndex = resolve(projectRoot, 'src', 'pages', 'index.js')
+  return {
+    name: 'docsector-pages-watch',
+    configureServer (server) {
+      server.watcher.on('change', (changedPath) => {
+        if (changedPath === pagesIndex) {
+          server.config.logger.info(
+            '\\x1b[36m[docsector]\\x1b[0m pages/index.js changed — clearing dep cache and restarting...',
+            { timestamp: true }
+          )
+          // Signal the restarted config to force a new optimizer hash
+          process.env.__DOCSECTOR_FORCE_OPTIMIZE = '1'
+          // Delete the stale optimizer cache
+          const cacheDir = resolve(projectRoot, 'node_modules', '.q-cache')
+          rmSync(cacheDir, { recursive: true, force: true })
+          server.restart()
+        }
+      })
+    }
+  }
 }
 
 /**
@@ -145,12 +186,39 @@ export function createQuasarConfig (options = {}) {
 
       vitePlugins: [
         createHjsonPlugin(),
+        createPagesWatchPlugin(projectRoot),
         ...vitePlugins
       ],
 
       extendViteConf (viteConf) {
         viteConf.resolve = viteConf.resolve || {}
         viteConf.resolve.alias = viteConf.resolve.alias || {}
+
+        // When the pages watcher plugin triggers a restart, it sets this env
+        // flag so we force Vite to generate a fresh browserHash. This busts
+        // the browser's module cache for pre-bundled deps whose content changed.
+        viteConf.optimizeDeps = viteConf.optimizeDeps || {}
+        if (process.env.__DOCSECTOR_FORCE_OPTIMIZE) {
+          delete process.env.__DOCSECTOR_FORCE_OPTIMIZE
+          viteConf.optimizeDeps.force = true
+        }
+
+        // Include a hash of pages/index.js in the optimizer config so that
+        // Vite's configHash (and thus browserHash) changes whenever page
+        // definitions change. This prevents the browser from serving stale
+        // pre-bundled router modules from its module cache.
+        const pagesFile = resolve(projectRoot, 'src', 'pages', 'index.js')
+        if (existsSync(pagesFile)) {
+          const pagesHash = createHash('sha256')
+            .update(readFileSync(pagesFile))
+            .digest('hex')
+            .slice(0, 8)
+          viteConf.optimizeDeps.esbuildOptions = viteConf.optimizeDeps.esbuildOptions || {}
+          viteConf.optimizeDeps.esbuildOptions.define = {
+            ...(viteConf.optimizeDeps.esbuildOptions.define || {}),
+            __DOCSECTOR_PAGES_HASH__: JSON.stringify(pagesHash)
+          }
+        }
 
         // Deduplicate Vue ecosystem packages to prevent dual-instance issues.
         // When the package is installed from NPM, Vue, vue-router, vuex, etc.
@@ -180,11 +248,15 @@ export function createQuasarConfig (options = {}) {
           'hjson', 'q-colorize-mixin'
         ]
 
-        // Exclude boot files from pre-bundling.
+        // Exclude boot files and the router from pre-bundling.
         // Boot files (especially boot/i18n) import the consumer's src/i18n/index.js
         // which uses import.meta.glob — a compile-time Vite directive that only
         // works in source files. If pre-bundled, the glob calls become dead code
         // and no i18n messages are loaded.
+        // The router is excluded because routes.js imports consumer content via
+        // the `pages` alias. If pre-bundled, consumer content gets embedded in
+        // the optimizer cache whose hash doesn't track source file changes,
+        // causing stale routes after editing pages/index.js.
         viteConf.optimizeDeps.exclude = [
           ...(viteConf.optimizeDeps.exclude || []),
           'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios'

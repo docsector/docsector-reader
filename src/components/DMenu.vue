@@ -100,10 +100,7 @@ const getMenuItemHeaderLabel = (meta) => {
   const label = meta.menu.header.label
   if (label[0] === '.') { // Node path
     const path = `_.${meta.type}${label}._`
-    if (te(path)) {
-      return t(path)
-    }
-    return t(path, 'en-US')
+    return t(path)
   }
   return label // String raw
 }
