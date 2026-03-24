@@ -54,6 +54,17 @@ Fenced code blocks support syntax highlighting via Prism.js:
 - `html` — HTML markup
 - `javascript` — JavaScript code
 
+### Mermaid Diagrams
+
+You can render Mermaid diagrams using fenced blocks with the `mermaid` language indicator. The diagrams automatically adapt to light and dark modes.
+
+```
+&#96;&#96;&#96;mermaid
+flowchart TD
+  A[Start] --> B[End]
+&#96;&#96;&#96;
+```
+
 ### Custom Attributes
 
 The `markdown-it-attrs` plugin enables custom attributes using `:attr;` syntax:

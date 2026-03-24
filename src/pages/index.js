@@ -239,6 +239,22 @@ export default {
     }
   },
 
+  '/components/d-mermaid-diagram': {
+    config: {
+      icon: 'account_tree',
+      status: 'done',
+      type: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'DMermaidDiagram' },
+      'pt-BR': { title: 'DMermaidDiagram' }
+    }
+  },
+
   '/components/d-page-blockquote': {
     config: {
       icon: 'format_quote',

@@ -21,6 +21,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking

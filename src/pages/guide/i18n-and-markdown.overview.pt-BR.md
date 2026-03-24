@@ -54,6 +54,17 @@ Blocos de código cercados suportam syntax highlighting via Prism.js:
 - `html` — Markup HTML
 - `javascript` — Código JavaScript
 
+### Diagramas Mermaid
+
+Você pode renderizar diagramas Mermaid usando blocos de código com o indicador de linguagem `mermaid`. Os diagramas se adaptam automaticamente aos modos claro e escuro.
+
+```
+&#96;&#96;&#96;mermaid
+flowchart TD
+  A[Início] --> B[Fim]
+&#96;&#96;&#96;
+```
+
 ### Atributos Customizados
 
 O plugin `markdown-it-attrs` permite atributos customizados usando sintaxe `:attr;`:
