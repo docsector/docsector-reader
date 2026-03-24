@@ -11,6 +11,7 @@ import DH4 from './DH4.vue'
 import DH5 from './DH5.vue'
 import DH6 from './DH6.vue'
 import DPageSourceCode from './DPageSourceCode.vue'
+import DMermaidDiagram from './DMermaidDiagram.vue'
 
 const props = defineProps({
   id: {
@@ -82,6 +83,15 @@ const tokenized = computed(() => {
         case 'fence': {
           const info = element.info.split(' ')
           const language = info[0]
+
+          if (language === 'mermaid') {
+            tokens.push({
+              tag: 'mermaid',
+              content: element.content
+            })
+            break
+          }
+
           const filename = info[1] ? info[1].replace('filename=', '').replace(/"/g, '') : ''
 
           tokens.push({
@@ -228,6 +238,11 @@ const tokenized = computed(() => {
       :text="token.content"
       :language="token.info"
       :filename="token.filename"
+    />
+
+    <d-mermaid-diagram
+      v-else-if="token.tag === 'mermaid'"
+      :content="token.content"
     />
   </template>
 </section>

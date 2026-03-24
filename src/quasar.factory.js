@@ -245,7 +245,7 @@ export function createQuasarConfig (options = {}) {
           ...(viteConf.optimizeDeps.include || []),
           'vue', 'vue-router', 'vuex', 'vue-i18n',
           'prismjs', 'markdown-it', 'markdown-it-attrs',
-          'hjson', 'q-colorize-mixin'
+          'hjson', 'q-colorize-mixin', 'mermaid'
         ]
 
         // Exclude boot files and the router from pre-bundling.
