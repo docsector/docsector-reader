@@ -18,13 +18,17 @@ export default {
       const base = firstRoutePath.substr(1)
       let relative = secondRoutePath.substr(firstRoutePath.length)
 
-      commit('page/setBase', base, { root: true })
-      commit('page/setRelative', relative, { root: true })
-      commit('page/setAbsolute', base + relative, { root: true })
+      if (relative !== '/') {
+        relative = relative.replace(/\/+$/, '')
+      }
 
       if (relative === '/' || relative === '') {
         relative = '/overview'
       }
+
+      commit('page/setBase', base, { root: true })
+      commit('page/setRelative', relative, { root: true })
+      commit('page/setAbsolute', base + relative, { root: true })
 
       if (firstRoutePath) {
         const i18nBase = base.replace(/_$/, '').replace(/\//g, '.')

@@ -78,6 +78,19 @@ const getPageStatusTooltip = (status) => {
     return t('menu.status.empty.tooltip')
   }
 }
+
+const normalizePath = (path) => {
+  if (!path) {
+    return '/'
+  }
+
+  const normalized = String(path).replace(/\/+$/, '')
+  return normalized === '' ? '/' : normalized
+}
+
+const isMenuItemActive = (path) => {
+  return normalizePath(path) === normalizePath($route.path)
+}
 </script>
 
 <template>
@@ -90,7 +103,7 @@ const getPageStatusTooltip = (status) => {
 
 <q-item
   :to="subitem.path + '/overview'"
-  :active="subitem.path + subpage === $route.path"
+  :active="isMenuItemActive(subitem.path + subpage)"
   v-show="founds[subitem.path] || !founds"
 >
   <q-item-section side>
