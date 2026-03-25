@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
   node-key="id"
 >
   <template v-slot:default-header="props">
-    <b v-if="props.node.label">{{ props.node.label }}</b>
+    <b v-if="props.node.label" v-html="props.node.label"></b>
     <b v-else>{{ $t(`_.${$store.state.i18n.base}._`) }}</b>
   </template>
 </q-tree>

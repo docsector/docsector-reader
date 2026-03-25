@@ -31,6 +31,10 @@ const tokenized = computed(() => {
   }
 
   const source = t(`_.${absolute}.source`)
+  const normalizedSource = String(source)
+    .replace(/&#123;/g, '{')
+    .replace(/&#125;/g, '}')
+    .replace(/&amp;/g, '&')
 
   const Markdown = new MarkdownIt()
   Markdown.use(attrs, {
@@ -39,7 +43,7 @@ const tokenized = computed(() => {
     allowedAttributes: ['filename']
   })
 
-  const parsed = Markdown.parse(source)
+  const parsed = Markdown.parse(normalizedSource)
 
   // @ map
   const tokens = []
