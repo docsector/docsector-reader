@@ -32,6 +32,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
+import { useMeta } from 'quasar'
 
 import DMenu from '../components/DMenu.vue'
 import docsectorConfig from 'docsector.config.js'
@@ -43,7 +44,7 @@ const branding = docsectorConfig.branding || {}
 const route = useRoute()
 const router = useRouter()
 const store = useStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const layout = ref({
   menu: false
@@ -58,6 +59,34 @@ const headerTitleText = computed(() => {
     return t(`_.${store.state.i18n.base}._`)
   } else {
     return t(`menu.${route.matched[1].meta.menu}`)
+  }
+})
+
+// @ Dynamic page title & meta tags
+const pageTitle = computed(() => {
+  const data = route.matched[0]?.meta?.data
+  if (data) {
+    const langData = data[locale.value] || data['en-US'] || Object.values(data)[0]
+    return langData?.title || ''
+  }
+  return ''
+})
+
+useMeta(() => {
+  const title = pageTitle.value
+    ? `${pageTitle.value} — ${branding.name || ''}`
+    : branding.name || ''
+
+  const image = branding.logo || ''
+
+  return {
+    title,
+    meta: {
+      ogTitle: { property: 'og:title', content: title },
+      ogType: { property: 'og:type', content: 'article' },
+      ogImage: { property: 'og:image', content: image },
+      twitterImage: { name: 'twitter:image', content: image }
+    }
   }
 })
 

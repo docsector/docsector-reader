@@ -23,9 +23,10 @@
  * @param {Function} [options.extendViteConf] - Additional Vite config extension
  */
 
-import { readFileSync, existsSync, rmSync } from 'fs'
+import { readFileSync, existsSync, rmSync, mkdirSync, writeFileSync } from 'fs'
 import { createHash } from 'crypto'
 import { resolve } from 'path'
+import { pathToFileURL } from 'url'
 import HJSON from 'hjson'
 
 /**
@@ -117,6 +118,95 @@ function createHjsonPlugin () {
 }
 
 /**
+ * Create a Vite plugin that pre-renders route-specific index.html files at build
+ * time with correct <title> and Open Graph / Twitter Card meta tags.
+ *
+ * Why: SPA builds produce a single index.html with a generic title. Search engine
+ * crawlers and social media link previews read the static HTML without executing
+ * JavaScript, so they always see the same generic meta tags regardless of the URL.
+ *
+ * How: After Vite writes the bundle (closeBundle hook), the plugin dynamically
+ * imports the consumer's pages registry and docsector config, then for each route
+ * creates a directory with an index.html copy whose <title> and meta tags reflect
+ * the page's actual title. Cloudflare Pages (and any static host) serves these
+ * route-specific files automatically.
+ *
+ * Zero external dependencies — no Puppeteer or headless browser required.
+ */
+function createPrerenderMetaPlugin (projectRoot) {
+  return {
+    name: 'docsector-prerender-meta',
+    apply: 'build',
+    async closeBundle () {
+      const distDir = resolve(projectRoot, 'dist', 'spa')
+      const baseHtmlPath = resolve(distDir, 'index.html')
+
+      if (!existsSync(baseHtmlPath)) return
+
+      const baseHtml = readFileSync(baseHtmlPath, 'utf-8')
+
+      // Dynamic import pages registry and docsector config
+      const pagesUrl = pathToFileURL(resolve(projectRoot, 'src', 'pages', 'index.js')).href
+      const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
+
+      const { default: pages } = await import(pagesUrl)
+      const { default: config } = await import(configUrl)
+
+      const brandingName = config.branding?.name || ''
+      const brandingLogo = config.branding?.logo || ''
+      const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+
+      let count = 0
+
+      for (const [pagePath, page] of Object.entries(pages)) {
+        if (page.config === null) continue
+
+        const type = page.config.type ?? 'manual'
+        const title = page.data?.[defaultLang]?.title || ''
+        const fullTitle = title
+          ? `${title} — ${brandingName}`
+          : brandingName
+
+        // Each page can have sub-routes: overview, showcase, vs
+        const subpages = ['overview']
+        if (page.config.subpages?.showcase) subpages.push('showcase')
+        if (page.config.subpages?.vs) subpages.push('vs')
+
+        for (const subpage of subpages) {
+          const routePath = `${type}${pagePath}/${subpage}`
+
+          const html = baseHtml
+            .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
+            .replace(
+              /(<meta\s+property="?og:title"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${fullTitle}"`
+            )
+            .replace(
+              /(<meta\s+property="?og:image"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${brandingLogo}"`
+            )
+            .replace(
+              /(<meta\s+name="?twitter:title"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${fullTitle}"`
+            )
+            .replace(
+              /(<meta\s+name="?twitter:image"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${brandingLogo}"`
+            )
+
+          const dir = resolve(distDir, routePath)
+          mkdirSync(dir, { recursive: true })
+          writeFileSync(resolve(dir, 'index.html'), html)
+          count++
+        }
+      }
+
+      console.log(`\x1b[36m[docsector]\x1b[0m Pre-rendered meta tags for ${count} routes`)
+    }
+  }
+}
+
+/**
  * Create a complete Quasar configuration for a docsector-reader consumer project.
  *
  * In **standalone** mode (docsector-reader running itself), all paths resolve
@@ -187,6 +277,7 @@ export function createQuasarConfig (options = {}) {
       vitePlugins: [
         createHjsonPlugin(),
         createPagesWatchPlugin(projectRoot),
+        createPrerenderMetaPlugin(projectRoot),
         ...vitePlugins
       ],
 
@@ -327,7 +418,7 @@ export function createQuasarConfig (options = {}) {
       config: {},
       lang: 'en-US',
       plugins: [
-        'LocalStorage', 'SessionStorage'
+        'Meta', 'LocalStorage', 'SessionStorage'
       ]
     },
 

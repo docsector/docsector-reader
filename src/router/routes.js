@@ -48,6 +48,7 @@ for (const [path, page] of Object.entries(pages)) {
     component: () => import('layouts/DefaultLayout.vue'),
     meta: {
       ...config,
+      data: page.data,
       type: topPage
     },
     children
