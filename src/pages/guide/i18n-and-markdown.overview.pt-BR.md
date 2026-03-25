@@ -65,6 +65,20 @@ flowchart TD
 &#96;&#96;&#96;
 ```
 
+### Alertas do GitHub
+
+O Docsector tambem suporta blockquotes de alerta no estilo do GitHub:
+
+```markdown
+> [!IMPORTANT]
+> O repositorio original foi arquivado.
+>
+> Continue o desenvolvimento no repositorio mantido.
+```
+
+Os tipos suportados sao `NOTE`, `TIP`, `IMPORTANT`, `WARNING` e `CAUTION`.
+Blockquotes comuns (sem `[!TYPE]`) continuam funcionando normalmente.
+
 ### Atributos Customizados
 
 O plugin `markdown-it-attrs` permite atributos customizados usando sintaxe `:attr;`:

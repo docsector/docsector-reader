@@ -61,6 +61,20 @@ You can render Mermaid diagrams using fenced blocks with the `mermaid` language 
 ```
 &#96;&#96;&#96;mermaid
 flowchart TD
+
+### GitHub Alerts
+
+Docsector also supports GitHub-style alert blockquotes:
+
+```markdown
+> [!IMPORTANT]
+> The original repository was archived.
+>
+> Continue development in the maintained repository.
+```
+
+Supported types are `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`.
+Regular blockquotes (without `[!TYPE]`) continue to work as normal.
   A[Start] --> B[End]
 &#96;&#96;&#96;
 ```

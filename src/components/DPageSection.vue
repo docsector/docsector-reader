@@ -12,6 +12,7 @@ import DH5 from './DH5.vue'
 import DH6 from './DH6.vue'
 import DPageSourceCode from './DPageSourceCode.vue'
 import DMermaidDiagram from './DMermaidDiagram.vue'
+import DPageBlockquote from './DPageBlockquote.vue'
 
 const props = defineProps({
   id: {
@@ -22,6 +23,31 @@ const props = defineProps({
 
 const store = useStore()
 const { t } = useI18n()
+
+const ALERT_MESSAGE_TYPES = new Set([
+  'note',
+  'tip',
+  'important',
+  'warning',
+  'caution'
+])
+
+const parseAlertMarker = (rawContent = '') => {
+  const match = String(rawContent).trim().match(/^\[!\s*([A-Za-z]+)\s*\]\s*(.*)$/s)
+  if (!match) {
+    return null
+  }
+
+  const type = match[1].toLowerCase()
+  if (!ALERT_MESSAGE_TYPES.has(type)) {
+    return null
+  }
+
+  return {
+    type,
+    content: (match[2] || '').trim()
+  }
+}
 
 const tokenized = computed(() => {
   const absolute = store.state.i18n.absolute
@@ -43,14 +69,126 @@ const tokenized = computed(() => {
     allowedAttributes: ['filename']
   })
 
-  const parsed = Markdown.parse(normalizedSource)
+  // Use a plain inline renderer to avoid markdown-it-attrs edge cases
+  // when rendering isolated inline fragments.
+  const MarkdownInline = new MarkdownIt()
+
+  const markdownEnv = {}
+
+  const parsed = Markdown.parse(normalizedSource, markdownEnv)
 
   // @ map
   const tokens = []
   let level = 0
   let tag = ''
   const children = []
+
+  const blockquote = {
+    depth: 0,
+    content: '',
+    alertType: '',
+    firstInline: true
+  }
+
+  const resetBlockquote = () => {
+    blockquote.content = ''
+    blockquote.alertType = ''
+    blockquote.firstInline = true
+  }
+
+  const flushBlockquote = () => {
+    const content = blockquote.content
+      .replace(/<p>\s*<\/p>/g, '')
+      .trim()
+
+    tokens.push({
+      tag: 'blockquote',
+      content,
+      alertType: blockquote.alertType
+    })
+
+    resetBlockquote()
+  }
+
+  const appendBlockquoteTag = (element, open) => {
+    if (!element.tag || element.tag === 'blockquote') {
+      return
+    }
+
+    blockquote.content += open
+      ? `<${element.tag}>`
+      : `</${element.tag}>`
+  }
+
   parsed.forEach((element) => {
+    if (element.type === 'blockquote_open') {
+      if (blockquote.depth === 0) {
+        resetBlockquote()
+      }
+
+      blockquote.depth++
+      return
+    }
+
+    if (element.type === 'blockquote_close' && blockquote.depth > 0) {
+      blockquote.depth--
+
+      if (blockquote.depth === 0) {
+        flushBlockquote()
+      }
+
+      return
+    }
+
+    if (blockquote.depth > 0) {
+      if (element.type === 'inline') {
+        const rawInline = element.content
+
+        if (blockquote.firstInline) {
+          blockquote.firstInline = false
+
+          const alert = parseAlertMarker(rawInline)
+          if (alert !== null) {
+            blockquote.alertType = alert.type
+
+            if (alert.content !== '') {
+              blockquote.content += MarkdownInline.renderInline(alert.content, markdownEnv)
+            }
+
+            return
+          }
+        }
+
+        blockquote.content += MarkdownInline.renderInline(rawInline, markdownEnv)
+        return
+      }
+
+      if (element.type === 'fence') {
+        const info = String(element.info || '').split(' ')
+        const language = info[0] || ''
+        const escaped = String(element.content)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+
+        const languageClass = language ? ` class="language-${language}"` : ''
+        blockquote.content += `<pre><code${languageClass}>${escaped}</code></pre>`
+        return
+      }
+
+      if (element.type.endsWith('_open')) {
+        appendBlockquoteTag(element, true)
+        return
+      }
+
+      if (element.type.endsWith('_close')) {
+        appendBlockquoteTag(element, false)
+        return
+      }
+
+      return
+    }
+
     switch (element.type) {
       case 'bullet_list_open':
       case 'ordered_list_open':
@@ -60,7 +198,7 @@ const tokenized = computed(() => {
 
     // Render
     if (element.type === 'inline') {
-      element.content = Markdown.renderInline(element.content)
+      element.content = MarkdownInline.renderInline(element.content, markdownEnv)
     }
 
     if (level === 0) {
@@ -235,6 +373,13 @@ const tokenized = computed(() => {
       v-else-if="token.tag === 'p'"
       v-html="token.content"
     ></p>
+
+    <d-page-blockquote
+      v-else-if="token.tag === 'blockquote'"
+      :message="token.alertType"
+    >
+      <div v-html="token.content"></div>
+    </d-page-blockquote>
 
     <d-page-source-code
       v-else-if="token.tag === 'code'"

@@ -1,27 +1,34 @@
 ## Demonstração
 
-Aqui estão os três tipos de blockquote renderizados:
-
-## Important
-
-Usado para informações críticas:
-
-> **Important**: Esta configuração não pode ser revertida uma vez aplicada. Certifique-se de ter um backup antes de prosseguir.
-
-## Warning
-
-Usado para problemas potenciais:
-
-> **Warning**: Esta API está depreciada e será removida na próxima versão major. Migre para o novo endpoint o mais rápido possível.
+Exemplos usando sintaxe de alerta do GitHub:
 
 ## Note
 
-Usado para dicas e contexto adicional:
+> [!NOTE]
+> Voce pode adicionar contexto adicional e referencias neste bloco.
 
-> **Note**: Você pode sobrescrever a configuração padrão criando um arquivo `docsector.config.js` na raiz do seu projeto. Isso é opcional — valores padrão sensatos são fornecidos.
+## Tip
+
+> [!TIP]
+> Mantenha exemplos curtos e focados para facilitar a execucao.
+
+## Important
+
+> [!IMPORTANT]
+> Esta migracao altera defaults e deve ser validada antes do deploy.
+
+## Warning
+
+> [!WARNING]
+> Esta acao pode interromper workers em execucao.
+
+## Caution
+
+> [!CAUTION]
+> Faça backup do ambiente antes de alterar configuracoes de baixo nivel do servidor.
 
 ## Genérico
 
-Um blockquote sem tipo de mensagem:
+Blockquote comum sem marcador de alerta:
 
-> Este é um blockquote padrão sem label ou estilização especial. Ele renderiza como um elemento blockquote HTML simples.
+> Este e um blockquote padrao sem marcador de alerta.

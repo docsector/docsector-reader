@@ -22,6 +22,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
+- 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking
@@ -283,6 +284,20 @@ export default {
 src/pages/manual/my-section/my-page.overview.en-US.md
 src/pages/manual/my-section/my-page.overview.pt-BR.md
 ```
+
+### GitHub-Style Alert Example
+
+```markdown
+> [!CAUTION]
+> NOTICE OF BREAKING CHANGE.
+>
+> As of 7.0.0, multiple breaking changes were introduced into the library.
+>
+> Please review the migration guide before updating.
+```
+
+Supported alert types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`.
+Regular blockquotes without `[!TYPE]` continue to work normally.
 
 ---
 
