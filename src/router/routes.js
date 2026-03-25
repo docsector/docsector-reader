@@ -12,6 +12,10 @@ for (const [path, page] of Object.entries(pages)) {
   // @ Construct children
   const children = [
     {
+      path: '',
+      redirect: (to) => `${to.path.replace(/\/$/, '')}/overview`
+    },
+    {
       path: 'overview',
       component: () => import('components/DSubpage.vue'),
       meta: {
