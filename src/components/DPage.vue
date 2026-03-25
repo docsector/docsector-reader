@@ -106,7 +106,7 @@ const isEditableTarget = (target) => {
 }
 
 const handleMainScrollKeys = (event) => {
-  const handledKeys = ['Home', 'End', 'PageUp', 'PageDown']
+  const handledKeys = ['Home', 'End', 'PageUp', 'PageDown', 'ArrowUp', 'ArrowDown']
 
   if (!handledKeys.includes(event.key)) {
     return
@@ -127,6 +127,7 @@ const handleMainScrollKeys = (event) => {
 
   const currentTop = container.scrollTop
   const maxTop = Math.max(0, container.scrollHeight - container.clientHeight)
+  const lineStep = Math.max(40, Math.floor(container.clientHeight * 0.08))
   const pageStep = Math.max(120, Math.floor(container.clientHeight * 0.9))
 
   let nextTop = currentTop
@@ -142,6 +143,12 @@ const handleMainScrollKeys = (event) => {
       break
     case 'PageDown':
       nextTop = Math.min(maxTop, currentTop + pageStep)
+      break
+    case 'ArrowUp':
+      nextTop = Math.max(0, currentTop - lineStep)
+      break
+    case 'ArrowDown':
+      nextTop = Math.min(maxTop, currentTop + lineStep)
       break
   }
 
