@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.3.2'
+const VERSION = '0.5.1'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.3.2',
+      '@docsector/docsector-reader': '^0.5.1',
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',
@@ -639,6 +639,18 @@ const TEMPLATE_INDEX_HTML = `\
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <meta name="viewport" content="user-scalable=yes, initial-scale=1, maximum-scale=5, minimum-scale=1, width=device-width">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="<%= productName %>">
+    <meta property="og:description" content="<%= productDescription %>">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/images/logo.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= productName %>">
+    <meta name="twitter:description" content="<%= productDescription %>">
+    <meta name="twitter:image" content="/images/logo.png">
 
     <link rel="icon" type="image/png" sizes="128x128" href="images/icons/favicon-128.png">
     <link rel="icon" type="image/png" sizes="32x32" href="images/icons/favicon-32.png">
