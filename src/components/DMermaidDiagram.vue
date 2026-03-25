@@ -26,7 +26,8 @@ async function render () {
 
     mermaid.initialize({
       startOnLoad: false,
-      theme: $q.dark.isActive ? 'dark' : 'default'
+      theme: $q.dark.isActive ? 'dark' : 'default',
+      fontSize: 20
     })
 
     const decoded = props.content
