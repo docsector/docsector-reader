@@ -156,16 +156,29 @@ function createPrerenderMetaPlugin (projectRoot) {
       const brandingLogo = config.branding?.logo || ''
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
 
+      const resolveLocalizedValue = (source) => {
+        if (!source) return ''
+        if (typeof source === 'string') return source
+        if (typeof source === 'object') {
+          return source[defaultLang] || source['*'] || source['en-US'] || Object.values(source)[0] || ''
+        }
+        return ''
+      }
+
       let count = 0
 
       for (const [pagePath, page] of Object.entries(pages)) {
         if (page.config === null) continue
 
         const type = page.config.type ?? 'manual'
-        const title = page.data?.[defaultLang]?.title || ''
+        const titleData = page.data?.[defaultLang] || page.data?.['*'] || page.data?.['en-US'] || Object.values(page.data || {})[0]
+        const title = titleData?.title || ''
         const fullTitle = title
           ? `${title} — ${brandingName}`
           : brandingName
+        const pageDescription = resolveLocalizedValue(page.config?.meta?.description)
+        const fullDescription = pageDescription
+          || (title && brandingName ? `${title} — Documentation of ${brandingName}` : `Documentation of ${brandingName}`)
 
         // Each page can have sub-routes: overview, showcase, vs
         const subpages = ['overview']
@@ -178,8 +191,16 @@ function createPrerenderMetaPlugin (projectRoot) {
           const html = baseHtml
             .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
             .replace(
+              /(<meta\s+name="?description"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${fullDescription}"`
+            )
+            .replace(
               /(<meta\s+property="?og:title"?\s+content=")[^"]*"/,
               (_, p1) => `${p1}${fullTitle}"`
+            )
+            .replace(
+              /(<meta\s+property="?og:description"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${fullDescription}"`
             )
             .replace(
               /(<meta\s+property="?og:image"?\s+content=")[^"]*"/,
@@ -188,6 +209,10 @@ function createPrerenderMetaPlugin (projectRoot) {
             .replace(
               /(<meta\s+name="?twitter:title"?\s+content=")[^"]*"/,
               (_, p1) => `${p1}${fullTitle}"`
+            )
+            .replace(
+              /(<meta\s+name="?twitter:description"?\s+content=")[^"]*"/,
+              (_, p1) => `${p1}${fullDescription}"`
             )
             .replace(
               /(<meta\s+name="?twitter:image"?\s+content=")[^"]*"/,

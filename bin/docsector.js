@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.5.1'
+const VERSION = '0.5.2'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.5.1',
+      '@docsector/docsector-reader': '^0.5.2',
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',
@@ -276,6 +276,7 @@ const TEMPLATE_PAGES_INDEX = `\
  *
  * config.type: top-level route prefix — 'manual', 'guide', etc.
  * config.status: 'done' | 'draft' | 'empty'
+ * config.meta.description: string or localized object for SEO/social description
  * config.icon: Material Design icon name
  * config.menu: menu display options (header, subheader, separator)
  * config.subpages: { showcase: bool, vs: bool }
@@ -288,6 +289,11 @@ export default {
     config: {
       icon: 'flag',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Get started quickly with setup and project structure.'
+        }
+      },
       type: 'guide',
       menu: {
         header: {

@@ -6,6 +6,7 @@
  *
  * config.type: determines the top-level route prefix (e.g., 'manual', 'guide', 'API')
  * config.status: 'done' | 'draft' | 'empty'
+ * config.meta.description: string or localized object for SEO/social description
  * config.icon: Material Design icon name
  * config.menu: menu display options (header, subheader, separator)
  * config.subpages: { showcase: bool, vs: bool }
@@ -22,6 +23,12 @@ export default {
     config: {
       icon: 'flag',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Getting Started — Documentation of Docsector Reader',
+          'pt-BR': 'Começando — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {
         header: {
@@ -43,6 +50,12 @@ export default {
     config: {
       icon: 'tune',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Configuration — Documentation of Docsector Reader',
+          'pt-BR': 'Configuração — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {
         separator: ' page'
@@ -61,6 +74,12 @@ export default {
     config: {
       icon: 'route',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Pages & Routing — Documentation of Docsector Reader',
+          'pt-BR': 'Páginas & Rotas — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -77,6 +96,12 @@ export default {
     config: {
       icon: 'translate',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'i18n & Markdown — Documentation of Docsector Reader',
+          'pt-BR': 'i18n & Markdown — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -93,6 +118,12 @@ export default {
     config: {
       icon: 'palette',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Theming — Documentation of Docsector Reader',
+          'pt-BR': 'Temas — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -109,6 +140,12 @@ export default {
     config: {
       icon: 'cloud_upload',
       status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Deployment — Documentation of Docsector Reader',
+          'pt-BR': 'Deploy — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -125,6 +162,12 @@ export default {
     config: {
       icon: 'extension',
       status: 'empty',
+      meta: {
+        description: {
+          'en-US': 'Plugins — Documentation of Docsector Reader',
+          'pt-BR': 'Plugins — Documentacao do Docsector Reader'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -152,6 +195,12 @@ export default {
     config: {
       icon: 'web',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPage — Documentation of Docsector Reader',
+          'pt-BR': 'DPage — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {
         header: {
@@ -174,6 +223,12 @@ export default {
     config: {
       icon: 'layers',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DSubpage — Documentation of Docsector Reader',
+          'pt-BR': 'DSubpage — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -190,6 +245,12 @@ export default {
     config: {
       icon: 'article',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageSection — Documentation of Docsector Reader',
+          'pt-BR': 'DPageSection — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {
         separator: ' page'
@@ -211,6 +272,12 @@ export default {
     config: {
       icon: 'title',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DH1 – DH6 (Headings) — Documentation of Docsector Reader',
+          'pt-BR': 'DH1 – DH6 (Títulos) — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -227,6 +294,12 @@ export default {
     config: {
       icon: 'code',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageSourceCode — Documentation of Docsector Reader',
+          'pt-BR': 'DPageSourceCode — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -243,6 +316,12 @@ export default {
     config: {
       icon: 'account_tree',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DMermaidDiagram — Documentation of Docsector Reader',
+          'pt-BR': 'DMermaidDiagram — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -259,6 +338,12 @@ export default {
     config: {
       icon: 'format_quote',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageBlockquote — Documentation of Docsector Reader',
+          'pt-BR': 'DPageBlockquote — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {
         separator: ' page'
@@ -280,6 +365,12 @@ export default {
     config: {
       icon: 'menu_open',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DMenu — Documentation of Docsector Reader',
+          'pt-BR': 'DMenu — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -296,6 +387,12 @@ export default {
     config: {
       icon: 'account_tree',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageAnchor — Documentation of Docsector Reader',
+          'pt-BR': 'DPageAnchor — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -312,6 +409,12 @@ export default {
     config: {
       icon: 'info',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageMeta — Documentation of Docsector Reader',
+          'pt-BR': 'DPageMeta — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -331,6 +434,12 @@ export default {
     config: {
       icon: 'zoom_in',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'QZoom — Documentation of Docsector Reader',
+          'pt-BR': 'QZoom — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {
         separator: ' page'
@@ -360,6 +469,12 @@ export default {
     config: {
       icon: 'navigation',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'useNavigator — Documentation of Docsector Reader',
+          'pt-BR': 'useNavigator — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {
@@ -387,6 +502,12 @@ export default {
     config: {
       icon: 'storage',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Vuex Modules — Documentation of Docsector Reader',
+          'pt-BR': 'Módulos Vuex — Documentacao do Docsector Reader'
+        }
+      },
       type: 'manual',
       menu: {},
       subpages: {

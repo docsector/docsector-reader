@@ -62,13 +62,34 @@ const headerTitleText = computed(() => {
   }
 })
 
+const resolveLocalizedValue = (source) => {
+  if (!source) return ''
+  if (typeof source === 'string') return source
+  if (typeof source === 'object') {
+    return source[locale.value] || source['*'] || source['en-US'] || Object.values(source)[0] || ''
+  }
+  return ''
+}
+
 // @ Dynamic page title & meta tags
 const pageTitle = computed(() => {
   const data = route.matched[0]?.meta?.data
-  if (data) {
-    const langData = data[locale.value] || data['en-US'] || Object.values(data)[0]
-    return langData?.title || ''
+  const langData = data?.[locale.value] || data?.['*'] || data?.['en-US'] || Object.values(data || {})[0]
+  return langData?.title || ''
+})
+
+const pageDescription = computed(() => {
+  const description = resolveLocalizedValue(route.matched[0]?.meta?.meta?.description)
+  if (description) return description
+
+  if (pageTitle.value && branding.name) {
+    return `${pageTitle.value} — Documentation of ${branding.name}`
   }
+
+  if (branding.name) {
+    return `Documentation of ${branding.name}`
+  }
+
   return ''
 })
 
@@ -77,14 +98,20 @@ useMeta(() => {
     ? `${pageTitle.value} — ${branding.name || ''}`
     : branding.name || ''
 
+  const description = pageDescription.value
   const image = branding.logo || ''
 
   return {
     title,
     meta: {
+      description: { name: 'description', content: description },
       ogTitle: { property: 'og:title', content: title },
+      ogDescription: { property: 'og:description', content: description },
       ogType: { property: 'og:type', content: 'article' },
       ogImage: { property: 'og:image', content: image },
+      twitterCard: { name: 'twitter:card', content: 'summary_large_image' },
+      twitterTitle: { name: 'twitter:title', content: title },
+      twitterDescription: { name: 'twitter:description', content: description },
       twitterImage: { name: 'twitter:image', content: image }
     }
   }
