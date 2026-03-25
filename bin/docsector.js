@@ -11,9 +11,9 @@
  *   docsector help         — Show help information
  */
 
-import { execSync, spawn } from 'child_process'
+import { spawn } from 'child_process'
 import { existsSync, mkdirSync, writeFileSync, copyFileSync } from 'fs'
-import { resolve, dirname, basename } from 'path'
+import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.5.4'
+const VERSION = '0.5.8'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.5.4',
+      '@docsector/docsector-reader': '^0.5.8',
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',

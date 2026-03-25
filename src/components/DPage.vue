@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -89,7 +89,75 @@ const resetPageScroll = () => {
   }
 }
 
+const getPageScrollContainer = () => {
+  return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
+}
+
+const isEditableTarget = (target) => {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  if (target.isContentEditable) {
+    return true
+  }
+
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
+
+const handleMainScrollKeys = (event) => {
+  const handledKeys = ['Home', 'End', 'PageUp', 'PageDown']
+
+  if (!handledKeys.includes(event.key)) {
+    return
+  }
+
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+    return
+  }
+
+  if (isEditableTarget(event.target)) {
+    return
+  }
+
+  const container = getPageScrollContainer()
+  if (!container) {
+    return
+  }
+
+  const currentTop = container.scrollTop
+  const maxTop = Math.max(0, container.scrollHeight - container.clientHeight)
+  const pageStep = Math.max(120, Math.floor(container.clientHeight * 0.9))
+
+  let nextTop = currentTop
+  switch (event.key) {
+    case 'Home':
+      nextTop = 0
+      break
+    case 'End':
+      nextTop = maxTop
+      break
+    case 'PageUp':
+      nextTop = Math.max(0, currentTop - pageStep)
+      break
+    case 'PageDown':
+      nextTop = Math.min(maxTop, currentTop + pageStep)
+      break
+  }
+
+  event.preventDefault()
+
+  if (pageScrollArea.value?.setScrollPosition) {
+    pageScrollArea.value.setScrollPosition('vertical', nextTop, 0)
+    return
+  }
+
+  container.scrollTop = nextTop
+}
+
 onMounted(() => {
+  window.addEventListener('keydown', handleMainScrollKeys)
+
   router.beforeEach((to, from, next) => {
     resetPageScroll()
 
@@ -101,6 +169,10 @@ onMounted(() => {
 
     next()
   })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleMainScrollKeys)
 })
 </script>
 
