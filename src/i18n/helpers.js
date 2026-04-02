@@ -35,7 +35,13 @@ const engineDefaults = {
       openInClaude: 'Open in Claude',
       openInClaudeCaption: 'Ask Claude about this page',
       mcpServer: 'MCP Server',
-      mcpServerCaption: 'Connect AI assistants via MCP'
+      mcpServerCaption: 'Connect AI assistants via MCP',
+      connectVSCode: 'Connect to VSCode',
+      connectVSCodeCaption: 'Use this MCP in VSCode',
+      connectClaudeCode: 'Connect to Claude Code',
+      connectClaudeCodeCaption: 'Use this MCP in Claude Code',
+      connectCodex: 'Connect to Codex',
+      connectCodexCaption: 'Use this MCP in Codex'
     }
   },
   'pt-BR': {
@@ -51,7 +57,13 @@ const engineDefaults = {
       openInClaude: 'Abrir no Claude',
       openInClaudeCaption: 'Pergunte ao Claude sobre esta página',
       mcpServer: 'Servidor MCP',
-      mcpServerCaption: 'Conecte assistentes de IA via MCP'
+      mcpServerCaption: 'Conecte assistentes de IA via MCP',
+      connectVSCode: 'Conectar ao VSCode',
+      connectVSCodeCaption: 'Use este MCP no VSCode',
+      connectClaudeCode: 'Conectar ao Claude Code',
+      connectClaudeCodeCaption: 'Use este MCP no Claude Code',
+      connectCodex: 'Conectar ao Codex',
+      connectCodexCaption: 'Use este MCP no Codex'
     }
   }
 }
