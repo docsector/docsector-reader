@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.8.2'
+const VERSION = '0.8.3'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -686,6 +686,96 @@ npm-debug.log*
 .thumbs.db
 `
 
+const TEMPLATE_ROBOTS_TXT = `\
+User-agent: *
+Allow: /
+
+# Explicitly allow AI crawlers
+# OpenAI
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# Anthropic
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Google
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Gemini-Deep-Research
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# ByteDance
+User-agent: Bytespider
+Allow: /
+
+# Common Crawl
+User-agent: CCBot
+Allow: /
+
+# Meta
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# Amazon
+User-agent: Amazonbot
+Allow: /
+
+# Apple
+User-agent: Applebot-Extended
+Allow: /
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+
+# DuckDuckGo
+User-agent: DuckAssistBot
+Allow: /
+
+# xAI
+User-agent: GrokBot
+Allow: /
+
+# Allen AI
+User-agent: AI2Bot
+Allow: /
+
+# You.com
+User-agent: YouBot
+Allow: /
+
+# Huawei
+User-agent: PetalBot
+Allow: /
+`
+
 const TEMPLATE_GETTING_STARTED_MD = `\
 ## Installation
 
@@ -840,6 +930,7 @@ function initProject (name) {
     ['index.html', TEMPLATE_INDEX_HTML],
     ['postcss.config.cjs', TEMPLATE_POSTCSS],
     ['.gitignore', TEMPLATE_GITIGNORE],
+    ['public/robots.txt', TEMPLATE_ROBOTS_TXT],
     ['src/css/app.sass', TEMPLATE_CSS_STUB],
     ['src/i18n/index.js', TEMPLATE_I18N_INDEX],
     ['src/i18n/languages/en-US.hjson', TEMPLATE_I18N_HJSON],
@@ -869,6 +960,7 @@ function initProject (name) {
   console.log('    ├── postcss.config.cjs')
   console.log('    ├── .gitignore')
   console.log('    ├── public/')
+  console.log('    │   ├── robots.txt')
   console.log('    │   └── images/')
   console.log('    │       └── logo.png')
   console.log('    └── src/')
