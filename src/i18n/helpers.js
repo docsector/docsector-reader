@@ -17,6 +17,51 @@
  */
 
 /**
+ * Engine default i18n keys, keyed by locale.
+ * These are deep-merged into consumer messages so engine components
+ * always have their required translations available.
+ */
+const engineDefaults = {
+  'en-US': {
+    page: {
+      lastUpdated: 'Last updated',
+      copyPage: 'Copy page',
+      copyPageCaption: 'Copy page as Markdown for LLMs',
+      copied: 'Copied!',
+      viewAsMarkdown: 'View as Markdown',
+      viewAsMarkdownCaption: 'View this page as plain text'
+    }
+  },
+  'pt-BR': {
+    page: {
+      lastUpdated: 'Última atualização',
+      copyPage: 'Copiar página',
+      copyPageCaption: 'Copiar página como Markdown para LLMs',
+      copied: 'Copiado!',
+      viewAsMarkdown: 'Ver como Markdown',
+      viewAsMarkdownCaption: 'Ver esta página como texto simples'
+    }
+  }
+}
+
+/**
+ * Deep-merge source into target (target values take precedence).
+ */
+function deepMerge (target, source) {
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) &&
+      target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])
+    ) {
+      deepMerge(target[key], source[key])
+    } else if (!(key in target)) {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+/**
  * Escape characters that conflict with vue-i18n message syntax.
  *
  * @param {string} source - Raw markdown string
@@ -76,6 +121,11 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
     // Load HJSON language file
     const langKey = `./languages/${lang}.hjson`
     i18n[lang] = langModules[langKey]?.default || langModules[langKey] || {}
+
+    // Merge engine defaults (consumer values take precedence)
+    if (engineDefaults[lang]) {
+      deepMerge(i18n[lang], engineDefaults[lang])
+    }
 
     // @ Iterate pages
     for (const [key, page] of Object.entries(pages)) {
