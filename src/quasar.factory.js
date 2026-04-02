@@ -360,7 +360,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
           if (!file) return next()
 
           const content = readFileSync(file, 'utf-8')
-          res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
           res.end(content)
           return
         }
@@ -374,7 +374,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
           const file = resolveMarkdownFile(mdPath, lang)
           if (file) {
             const content = readFileSync(file, 'utf-8')
-            res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+            res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.end(content)
             return
           }
@@ -438,6 +438,19 @@ function createMarkdownBuildPlugin (projectRoot) {
       }
 
       console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
+
+      // Generate _headers file for Cloudflare Pages (append if exists)
+      const headersPath = resolve(distDir, '_headers')
+      const headersRule = '/*.md\n  Content-Type: text/markdown; charset=utf-8\n'
+      if (existsSync(headersPath)) {
+        const existing = readFileSync(headersPath, 'utf-8')
+        if (!existing.includes('*.md')) {
+          writeFileSync(headersPath, existing.trimEnd() + '\n\n' + headersRule)
+        }
+      } else {
+        writeFileSync(headersPath, headersRule)
+      }
+      console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
     }
   }
 }
