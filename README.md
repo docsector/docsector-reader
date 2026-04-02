@@ -22,7 +22,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 
 - 📋 **Copy Page** — One-click button copies the current page as raw Markdown, ready to paste into LLMs
 - 📄 **View as Markdown** — Open any page as plain text by appending `.md` to the URL, with locale support (`?lang=`)
-- 🕷️ **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
+- 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
+- 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 
 ---
 

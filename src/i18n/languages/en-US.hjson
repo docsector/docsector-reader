@@ -36,7 +36,11 @@
     copyPageCaption: 'Copy page as Markdown for LLMs',
     copied: 'Copied!',
     viewAsMarkdown: 'View as Markdown',
-    viewAsMarkdownCaption: 'View this page as plain text'
+    viewAsMarkdownCaption: 'View this page as plain text',
+    openInChatGPT: 'Open in ChatGPT',
+    openInChatGPTCaption: 'Ask ChatGPT about this page',
+    openInClaude: 'Open in Claude',
+    openInClaudeCaption: 'Ask Claude about this page'
   },
 
   menu: {

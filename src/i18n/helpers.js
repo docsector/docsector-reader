@@ -29,7 +29,11 @@ const engineDefaults = {
       copyPageCaption: 'Copy page as Markdown for LLMs',
       copied: 'Copied!',
       viewAsMarkdown: 'View as Markdown',
-      viewAsMarkdownCaption: 'View this page as plain text'
+      viewAsMarkdownCaption: 'View this page as plain text',
+      openInChatGPT: 'Open in ChatGPT',
+      openInChatGPTCaption: 'Ask ChatGPT about this page',
+      openInClaude: 'Open in Claude',
+      openInClaudeCaption: 'Ask Claude about this page'
     }
   },
   'pt-BR': {
@@ -39,7 +43,11 @@ const engineDefaults = {
       copyPageCaption: 'Copiar página como Markdown para LLMs',
       copied: 'Copiado!',
       viewAsMarkdown: 'Ver como Markdown',
-      viewAsMarkdownCaption: 'Ver esta página como texto simples'
+      viewAsMarkdownCaption: 'Ver esta página como texto simples',
+      openInChatGPT: 'Abrir no ChatGPT',
+      openInChatGPTCaption: 'Pergunte ao ChatGPT sobre esta página',
+      openInClaude: 'Abrir no Claude',
+      openInClaudeCaption: 'Pergunte ao Claude sobre esta página'
     }
   }
 }
