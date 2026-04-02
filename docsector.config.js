@@ -1,3 +1,5 @@
+import pkg from './package.json'
+
 /**
  * Docsector Reader Configuration
  *
@@ -13,7 +15,7 @@ export default {
     // Project name displayed in the sidebar
     name: 'Docsector Reader',
     // Version label displayed next to the name
-    version: 'v0.0.1'
+    version: 'v' + pkg.version
   },
 
   // @ Links
