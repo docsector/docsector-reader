@@ -93,16 +93,15 @@ const MCP_PATHS = [
   'M14.485 4.703a.823.823 0 000-1.18.863.863 0 00-1.204 0l-7.119 6.982a4.115 4.115 0 000 5.9 4.314 4.314 0 006.016 0l7.12-6.982a.823.823 0 000-1.18.863.863 0 00-1.204 0l-7.119 6.982a2.588 2.588 0 01-3.61 0 2.47 2.47 0 010-3.54l7.12-6.982z'
 ]
 const VSCODE_PATH = 'M70.9119 99.3171C72.4869 99.9307 74.2828 99.8914 75.8725 99.1264L96.4608 89.2197C98.6242 88.1787 100 85.9892 100 83.5872V16.4133C100 14.0113 98.6243 11.8218 96.4609 10.7808L75.8725 0.873756C73.7862 -0.130129 71.3446 0.11576 69.5135 1.44695C69.252 1.63711 69.0028 1.84943 68.769 2.08341L29.3551 38.0415L12.1872 25.0096C10.589 23.7965 8.35363 23.8959 6.86933 25.2461L1.36303 30.2549C-0.452552 31.9064 -0.454633 34.7627 1.35853 36.417L16.2471 50.0001L1.35853 63.5832C-0.454633 65.2374 -0.452552 68.0938 1.36303 69.7453L6.86933 74.7541C8.35363 76.1043 10.589 76.2037 12.1872 74.9905L29.3551 61.9587L68.769 97.9167C69.3925 98.5406 70.1246 99.0104 70.9119 99.3171ZM75.0152 27.2989L45.1091 50.0001L75.0152 72.7012V27.2989Z'
-const CODEX_PATH = 'M15.672 11.249a.75.75 0 00-.006-1.5 3.504 3.504 0 01-3.26-2.26.75.75 0 00-1.392 0 3.504 3.504 0 01-3.26 2.26.75.75 0 000 1.5 3.504 3.504 0 013.258 2.252.75.75 0 001.396-.004A3.504 3.504 0 0115.672 11.249zM21.665 7.317a.75.75 0 000-1.5 5.253 5.253 0 01-4.887-3.386.75.75 0 00-1.392 0A5.253 5.253 0 0110.5 5.817a.75.75 0 000 1.5 5.253 5.253 0 014.886 3.386.75.75 0 001.392 0 5.253 5.253 0 014.887-3.386z'
-
 const mcpIcon = computed(() => buildIconURI(MCP_PATHS, 'evenodd'))
 
-function buildVSCodeIconURI () {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill-rule="evenodd" clip-rule="evenodd" d="${VSCODE_PATH}" fill="%23007ACC"/></svg>`
+function buildVSCodeIconURI (color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill-rule="evenodd" clip-rule="evenodd" d="${VSCODE_PATH}" fill="%23${color}"/></svg>`
   return `img:data:image/svg+xml,${svg}`
 }
-const vscodeIcon = computed(() => buildVSCodeIconURI())
-const codexIcon = computed(() => buildIconURI(CODEX_PATH))
+const vscodeIcon = computed(() => buildVSCodeIconURI('007ACC'))
+const vscodeInsidersIcon = computed(() => buildVSCodeIconURI('24bfa5'))
+const codexIcon = computed(() => buildIconURI(OPENAI_PATH))
 
 const mcpURL = computed(() => {
   if (!docsectorConfig.mcp) return null
@@ -114,6 +113,13 @@ const vscodeMcpURL = computed(() => {
   const name = docsectorConfig.mcp.serverName
   const url = `${window.location.origin}/mcp`
   return `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name, url }))}`
+})
+
+const vscodeInsidersMcpURL = computed(() => {
+  if (!docsectorConfig.mcp) return null
+  const name = docsectorConfig.mcp.serverName
+  const url = `${window.location.origin}/mcp`
+  return `vscode-insiders:mcp/install?${encodeURIComponent(JSON.stringify({ name, url }))}`
 })
 
 const claudeCodeCommand = computed(() => {
@@ -240,6 +246,19 @@ const copyPage = () => {
           <q-item-section>
             <q-item-label>{{ t('page.connectVSCode') }}</q-item-label>
             <q-item-label caption>{{ t('page.connectVSCodeCaption') }}</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="open_in_new" size="xs" />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable v-close-popup :href="vscodeInsidersMcpURL" class="q-py-sm">
+          <q-item-section avatar>
+            <q-icon :name="vscodeInsidersIcon" size="xs" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>{{ t('page.connectVSCodeInsiders') }}</q-item-label>
+            <q-item-label caption>{{ t('page.connectVSCodeInsidersCaption') }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="open_in_new" size="xs" />
