@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.8.4'
+const VERSION = '0.9.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -124,6 +124,14 @@ export default {
   github: {
     editBaseUrl: 'https://github.com/your-org/your-repo/edit/main/src/pages'
   },
+
+  // @ MCP (Model Context Protocol)
+  // Uncomment to enable an MCP server at /mcp for AI assistant integration.
+  // Requires Cloudflare Pages Functions (or compatible serverless platform).
+  // mcp: {
+  //   serverName: 'my-docs',
+  //   toolSuffix: 'my_docs'
+  // },
 
   // @ Languages
   languages: [
@@ -681,6 +689,7 @@ const TEMPLATE_GITIGNORE = `\
 node_modules
 .quasar
 dist
+functions
 npm-debug.log*
 .DS_Store
 .thumbs.db

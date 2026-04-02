@@ -481,6 +481,92 @@ function createMarkdownBuildPlugin (projectRoot) {
         writeFileSync(headersPath, headersRule)
       }
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
+
+      // Generate MCP server if configured
+      if (config.mcp) {
+        const mcpConfig = config.mcp
+        const mcpServerName = mcpConfig.serverName || 'docs'
+        const mcpToolSuffix = mcpConfig.toolSuffix || 'docs'
+        const mcpVersion = config.branding?.version || '1.0.0'
+
+        // Collect page index for MCP
+        const mcpPages = []
+        for (const [pagePath, page] of Object.entries(pages)) {
+          if (page.config === null) continue
+          if (page.config.status === 'empty') continue
+
+          const type = page.config.type ?? 'manual'
+          const defaultTitle = page.data?.['*']?.title
+            || page.data?.[defaultLang]?.title
+            || page.data?.['en-US']?.title
+            || pagePath.split('/').pop()
+            || pagePath
+
+          const subpageList = ['overview']
+          if (page.config.subpages?.showcase) subpageList.push('showcase')
+          if (page.config.subpages?.vs) subpageList.push('vs')
+
+          for (const subpage of subpageList) {
+            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            if (!existsSync(srcFile)) continue
+
+            mcpPages.push({
+              path: `${type}${pagePath}/${subpage}`,
+              title: defaultTitle,
+              type,
+              subpage
+            })
+          }
+        }
+
+        // Write mcp-pages.json
+        writeFileSync(
+          resolve(distDir, 'mcp-pages.json'),
+          JSON.stringify(mcpPages, null, 2)
+        )
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated mcp-pages.json (${mcpPages.length} pages)`)
+
+        // Read server template from package, replace placeholders, write to project root functions/
+        // Cloudflare Pages expects functions/ in the project root, not inside dist/spa/
+        const packageRoot = getPackageRoot(projectRoot)
+        const templatePath = resolve(packageRoot, 'src', 'mcp', 'server.js')
+        if (existsSync(templatePath)) {
+          let serverCode = readFileSync(templatePath, 'utf-8')
+          serverCode = serverCode
+            .replaceAll('__MCP_SERVER_NAME__', mcpServerName)
+            .replaceAll('__MCP_SERVER_VERSION__', mcpVersion)
+            .replaceAll('__MCP_TOOL_SUFFIX__', mcpToolSuffix)
+            .replaceAll('__MCP_SITE_URL__', siteUrl || '')
+
+          const functionsDir = resolve(projectRoot, 'functions')
+          mkdirSync(functionsDir, { recursive: true })
+          writeFileSync(resolve(functionsDir, 'mcp.js'), serverCode)
+          console.log(`\x1b[36m[docsector]\x1b[0m Generated MCP server at functions/mcp.js`)
+        }
+
+        // Add CORS headers for /mcp to _headers
+        const mcpHeaders = '/mcp\n  Access-Control-Allow-Origin: *\n  Access-Control-Allow-Methods: GET, POST, OPTIONS\n  Access-Control-Allow-Headers: Content-Type, Accept, Mcp-Session-Id\n  Access-Control-Expose-Headers: Mcp-Session-Id\n'
+        const currentHeaders = readFileSync(headersPath, 'utf-8')
+        if (!currentHeaders.includes('/mcp')) {
+          writeFileSync(headersPath, currentHeaders.trimEnd() + '\n\n' + mcpHeaders)
+        }
+
+        // Generate or merge _routes.json for Cloudflare Pages
+        const routesPath = resolve(distDir, '_routes.json')
+        let routes = { version: 1, include: [], exclude: [] }
+        if (existsSync(routesPath)) {
+          try {
+            routes = JSON.parse(readFileSync(routesPath, 'utf-8'))
+          } catch {
+            // empty
+          }
+        }
+        if (!routes.include.includes('/mcp')) {
+          routes.include.push('/mcp')
+        }
+        writeFileSync(routesPath, JSON.stringify(routes, null, 2))
+        console.log(`\x1b[36m[docsector]\x1b[0m Added /mcp to _routes.json`)
+      }
     }
   }
 }

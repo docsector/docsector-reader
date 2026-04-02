@@ -40,6 +40,9 @@
  * @param {string} config.github.editBaseUrl - Base URL for "Edit on GitHub" links
  * @param {Array} config.languages - Available languages [{image, label, value}]
  * @param {string} [config.defaultLanguage='en-US'] - Default language code
+ * @param {Object} [config.mcp] - MCP (Model Context Protocol) server settings
+ * @param {string} config.mcp.serverName - Server name for MCP identification (e.g. 'my-docs')
+ * @param {string} config.mcp.toolSuffix - Suffix for tool names (e.g. 'my_docs' → search_my_docs)
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -77,7 +80,9 @@ export function createDocsector (config = {}) {
       }
     ],
 
-    defaultLanguage: config.defaultLanguage || 'en-US'
+    defaultLanguage: config.defaultLanguage || 'en-US',
+
+    mcp: config.mcp || null
   }
 }
 

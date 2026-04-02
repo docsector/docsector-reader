@@ -33,7 +33,9 @@ const engineDefaults = {
       openInChatGPT: 'Open in ChatGPT',
       openInChatGPTCaption: 'Ask ChatGPT about this page',
       openInClaude: 'Open in Claude',
-      openInClaudeCaption: 'Ask Claude about this page'
+      openInClaudeCaption: 'Ask Claude about this page',
+      mcpServer: 'MCP Server',
+      mcpServerCaption: 'Connect AI assistants via MCP'
     }
   },
   'pt-BR': {
@@ -47,7 +49,9 @@ const engineDefaults = {
       openInChatGPT: 'Abrir no ChatGPT',
       openInChatGPTCaption: 'Pergunte ao ChatGPT sobre esta página',
       openInClaude: 'Abrir no Claude',
-      openInClaudeCaption: 'Pergunte ao Claude sobre esta página'
+      openInClaudeCaption: 'Pergunte ao Claude sobre esta página',
+      mcpServer: 'Servidor MCP',
+      mcpServerCaption: 'Conecte assistentes de IA via MCP'
     }
   }
 }

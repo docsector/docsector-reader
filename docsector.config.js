@@ -35,6 +35,12 @@ export default {
     editBaseUrl: 'https://github.com/docsector/docsector-reader/edit/main/src/pages'
   },
 
+  // @ MCP
+  mcp: {
+    serverName: 'docsector-docs',
+    toolSuffix: 'docsector'
+  },
+
   // @ Languages
   languages: [
     {

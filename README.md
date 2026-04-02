@@ -26,6 +26,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
+- 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 
 ---
 
@@ -44,6 +45,86 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
+
+---
+
+## 🔌 MCP Server (Model Context Protocol)
+
+Docsector Reader can automatically generate an [MCP](https://modelcontextprotocol.io) server at `/mcp` during build, allowing AI assistants like Claude to search and read your documentation in real time.
+
+### Enable MCP
+
+Add `mcp` to your `docsector.config.js`:
+
+```javascript
+export default {
+  // ... other config ...
+
+  mcp: {
+    serverName: 'my-docs',       // MCP server identifier
+    toolSuffix: 'my_docs'        // Tool name suffix (e.g. search_my_docs)
+  },
+
+  siteUrl: 'https://my-docs.example.com'  // Required for MCP URLs
+}
+```
+
+### What the build generates
+
+When `mcp` is configured, `docsector build` generates:
+
+| File | Purpose |
+|---|---|
+| `dist/spa/mcp-pages.json` | Page index (title, path, type) for search |
+| `functions/mcp.js` | Cloudflare Pages Function implementing MCP |
+| `dist/spa/_routes.json` | Routes `/mcp` to the function |
+| `dist/spa/_headers` | CORS headers for MCP endpoint |
+
+### Exposed tools
+
+| Tool | Description |
+|---|---|
+| `search_{suffix}` | Search documentation by keyword, returns matching pages |
+| `get_page_{suffix}` | Get full Markdown content of a specific page |
+
+### Test locally
+
+```bash
+npx docsector build
+npx wrangler pages dev dist/spa
+
+# In another terminal:
+curl http://localhost:8788/mcp
+curl -X POST http://localhost:8788/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+### Configure in AI assistants
+
+**VS Code** (`mcp.json`):
+```json
+{
+  "servers": {
+    "my-docs": {
+      "type": "http",
+      "url": "https://my-docs.example.com/mcp"
+    }
+  }
+}
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "my-docs": {
+      "type": "url",
+      "url": "https://my-docs.example.com/mcp"
+    }
+  }
+}
+```
 
 ---
 
@@ -189,6 +270,16 @@ export default {
 
   defaultLanguage: 'en-US'
 }
+```
+
+### MCP (optional)
+
+```javascript
+  // Enable MCP server at /mcp
+  mcp: {
+    serverName: 'my-project',   // Server identifier
+    toolSuffix: 'my_project'    // Tool name suffix
+  }
 ```
 
 ---
