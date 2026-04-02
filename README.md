@@ -18,13 +18,19 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 
 ---
 
+## 🤖 AI-Friendly Features
+
+- 📋 **Copy Page** — One-click button copies the current page as raw Markdown, ready to paste into LLMs
+- 📄 **View as Markdown** — Open any page as plain text by appending `.md` to the URL, with locale support (`?lang=`)
+- 🕷️ **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
+
+---
+
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
-- 🤖 **AI-Friendly** — "Copy page" button copies raw Markdown for LLMs; "View as Markdown" opens any page as plain text via `.md` URL suffix
-- 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking
@@ -32,6 +38,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
+- 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 

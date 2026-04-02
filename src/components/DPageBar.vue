@@ -73,7 +73,7 @@ const viewAsMarkdown = () => {
 <template>
 <div class="d-page-bar">
   <span v-if="formattedDate" class="d-page-bar__date">
-    {{ t('page.lastUpdated') }}: {{ formattedDate }}
+    {{ t('page.lastUpdated') }}: <br class="d-page-bar__date-break"> {{ formattedDate }}
   </span>
   <span v-else class="d-page-bar__date"></span>
 
@@ -126,10 +126,17 @@ const viewAsMarkdown = () => {
     font-size: 0.8rem
     opacity: 0.6
 
+  &__date-break
+    display: none
+
   &__actions
     font-size: 0.75rem
 
 body.body--dark
   .d-page-bar__date
     color: rgba(255, 255, 255, 0.7)
+
+@media (max-width: 376px)
+  .d-page-bar__date-break
+    display: block
 </style>

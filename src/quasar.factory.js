@@ -331,6 +331,9 @@ function createMarkdownEndpointPlugin (projectRoot) {
     return null
   }
 
+  // LLM bot user-agent patterns
+  const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
+
   return {
     name: 'docsector-markdown-endpoint',
 
@@ -349,15 +352,35 @@ function createMarkdownEndpointPlugin (projectRoot) {
 
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url, 'http://localhost')
-        if (!url.pathname.endsWith('.md')) return next()
 
-        const lang = url.searchParams.get('lang') || defaultLang
-        const file = resolveMarkdownFile(url.pathname, lang)
-        if (!file) return next()
+        // Explicit .md request
+        if (url.pathname.endsWith('.md')) {
+          const lang = url.searchParams.get('lang') || defaultLang
+          const file = resolveMarkdownFile(url.pathname, lang)
+          if (!file) return next()
 
-        const content = readFileSync(file, 'utf-8')
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-        res.end(content)
+          const content = readFileSync(file, 'utf-8')
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+          res.end(content)
+          return
+        }
+
+        // Auto-serve markdown to LLM bot crawlers
+        const ua = req.headers['user-agent'] || ''
+        if (LLM_BOT_PATTERN.test(ua)) {
+          const lang = url.searchParams.get('lang') || defaultLang
+          // Try appending /overview as the default subpage
+          const mdPath = url.pathname.replace(/\/$/, '') + '/overview.md'
+          const file = resolveMarkdownFile(mdPath, lang)
+          if (file) {
+            const content = readFileSync(file, 'utf-8')
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+            res.end(content)
+            return
+          }
+        }
+
+        next()
       })
     },
 
