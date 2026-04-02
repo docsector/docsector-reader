@@ -23,6 +23,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
+- 🤖 **AI-Friendly** — "Copy page" button copies raw Markdown for LLMs; "View as Markdown" opens any page as plain text via `.md` URL suffix
+- 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking

@@ -29,7 +29,13 @@
     nav: {
       prev: 'Página anterior',
       next: 'Próxima página'
-    }
+    },
+    lastUpdated: 'Última atualização',
+    copyPage: 'Copiar página',
+    copyPageCaption: 'Copiar página como Markdown para LLMs',
+    copied: 'Copiado!',
+    viewAsMarkdown: 'Ver como Markdown',
+    viewAsMarkdownCaption: 'Ver esta página como texto simples'
   },
 
   menu: {

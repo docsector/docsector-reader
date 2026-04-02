@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 // components
 import DPage from "./DPage.vue";
+import DPageBar from "./DPageBar.vue";
 import DH1 from "./DH1.vue";
 import DPageSection from "./DPageSection.vue";
 
@@ -23,6 +24,8 @@ const id = computed(() => {
 <template>
 <d-page>
   <header>
+    <d-page-bar />
+    <hr />
     <d-h1 :id="0" />
   </header>
 

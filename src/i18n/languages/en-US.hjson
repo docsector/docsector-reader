@@ -30,7 +30,13 @@
     nav: {
       prev: 'Previous page',
       next: 'Next page'
-    }
+    },
+    lastUpdated: 'Last updated',
+    copyPage: 'Copy page',
+    copyPageCaption: 'Copy page as Markdown for LLMs',
+    copied: 'Copied!',
+    viewAsMarkdown: 'View as Markdown',
+    viewAsMarkdownCaption: 'View this page as plain text'
   },
 
   menu: {

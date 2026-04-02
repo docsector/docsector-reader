@@ -23,7 +23,8 @@
  * @param {Function} [options.extendViteConf] - Additional Vite config extension
  */
 
-import { readFileSync, existsSync, rmSync, mkdirSync, writeFileSync } from 'fs'
+import { readFileSync, existsSync, rmSync, mkdirSync, writeFileSync, readdirSync } from 'fs'
+import { execSync } from 'child_process'
 import { createHash } from 'crypto'
 import { resolve } from 'path'
 import { pathToFileURL } from 'url'
@@ -232,6 +233,193 @@ function createPrerenderMetaPlugin (projectRoot) {
 }
 
 /**
+ * Create a Vite plugin that collects git last-commit dates for all Markdown
+ * files under src/pages/ and exposes them as a virtual module.
+ *
+ * Consuming components can `import gitDates from 'virtual:docsector-git-dates'`
+ * to get an object mapping relative page keys to ISO date strings.
+ *
+ * Keys use the pattern: `<type>/<path>.<subpage>.<locale>.md`
+ * e.g. `manual/Bootgly/about/what.overview.en-US.md`
+ */
+function createGitDatesPlugin (projectRoot) {
+  const virtualId = 'virtual:docsector-git-dates'
+  const resolvedId = '\0' + virtualId
+  let dates = {}
+
+  function collectDates () {
+    dates = {}
+    const pagesDir = resolve(projectRoot, 'src', 'pages')
+    if (!existsSync(pagesDir)) return
+
+    const walkDir = (dir) => {
+      const entries = readdirSync(dir, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = resolve(dir, entry.name)
+        if (entry.isDirectory()) {
+          walkDir(fullPath)
+        } else if (entry.name.endsWith('.md')) {
+          try {
+            const date = execSync(
+              `git log -1 --format=%cI -- "${fullPath}"`,
+              { cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+            ).trim()
+            if (date) {
+              // Key relative to src/pages/, e.g. "manual/Bootgly/about/what.overview.en-US.md"
+              const relKey = fullPath.slice(pagesDir.length + 1)
+              dates[relKey] = date
+            }
+          } catch {
+            // git not available or file untracked — skip
+          }
+        }
+      }
+    }
+
+    walkDir(pagesDir)
+  }
+
+  return {
+    name: 'docsector-git-dates',
+    buildStart () {
+      collectDates()
+    },
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    load (id) {
+      if (id === resolvedId) {
+        return `export default ${JSON.stringify(dates)}`
+      }
+    }
+  }
+}
+
+/**
+ * Create a Vite plugin that serves raw Markdown content for `.md` suffixed URLs.
+ *
+ * In **dev mode**, intercepts requests like `/manual/Bootgly/about/what/overview.md`
+ * and serves the corresponding `src/pages/manual/Bootgly/about/what.overview.<lang>.md`
+ * file as `text/plain; charset=utf-8`.
+ *
+ * In **production build** (`closeBundle`), generates static `.md` files in `dist/spa/`
+ * for each page/subpage so that the `.md` URLs resolve to actual files on any static host.
+ *
+ * The language served is determined by the `?lang=` query parameter, falling back to the
+ * `defaultLanguage` from `docsector.config.js`.
+ */
+function createMarkdownEndpointPlugin (projectRoot) {
+  const pagesDir = resolve(projectRoot, 'src', 'pages')
+
+  function resolveMarkdownFile (urlPath, lang) {
+    // URL: /manual/Bootgly/about/what/overview.md
+    // Strip leading slash and trailing .md
+    const clean = urlPath.replace(/^\//, '').replace(/\.md$/, '')
+    // Split into segments: ['manual', 'Bootgly', 'about', 'what', 'overview']
+    const segments = clean.split('/')
+    if (segments.length < 2) return null
+
+    // Last segment is the subpage (overview, showcase, vs)
+    const subpage = segments.pop()
+    // Remaining segments form the type + path: 'manual/Bootgly/about/what'
+    const basePath = segments.join('/')
+
+    // File: src/pages/manual/Bootgly/about/what.overview.en-US.md
+    const filePath = resolve(pagesDir, `${basePath}.${subpage}.${lang}.md`)
+    if (existsSync(filePath)) return filePath
+
+    return null
+  }
+
+  return {
+    name: 'docsector-markdown-endpoint',
+
+    configureServer (server) {
+      // Read default language from config
+      let defaultLang = 'en-US'
+      try {
+        const configPath = resolve(projectRoot, 'docsector.config.js')
+        if (existsSync(configPath)) {
+          // Dynamic import in dev — we read it synchronously via a simple approach
+          const configContent = readFileSync(configPath, 'utf-8')
+          const match = configContent.match(/defaultLanguage\s*:\s*['"]([^'"]+)['"]/)
+          if (match) defaultLang = match[1]
+        }
+      } catch { /* use fallback */ }
+
+      server.middlewares.use((req, res, next) => {
+        const url = new URL(req.url, 'http://localhost')
+        if (!url.pathname.endsWith('.md')) return next()
+
+        const lang = url.searchParams.get('lang') || defaultLang
+        const file = resolveMarkdownFile(url.pathname, lang)
+        if (!file) return next()
+
+        const content = readFileSync(file, 'utf-8')
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end(content)
+      })
+    },
+
+    apply: 'serve'
+  }
+}
+
+/**
+ * Create a Vite plugin that generates static `.md` files at build time.
+ *
+ * Runs in the `closeBundle` hook alongside the prerender-meta plugin.
+ * For each page/subpage, copies the raw Markdown source into
+ * `dist/spa/<routePath>.md` so that `.md` URLs work on static hosts.
+ */
+function createMarkdownBuildPlugin (projectRoot) {
+  return {
+    name: 'docsector-markdown-build',
+    apply: 'build',
+    async closeBundle () {
+      const distDir = resolve(projectRoot, 'dist', 'spa')
+      if (!existsSync(distDir)) return
+
+      const pagesDir = resolve(projectRoot, 'src', 'pages')
+      const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
+      const pagesUrl = pathToFileURL(resolve(projectRoot, 'src', 'pages', 'index.js')).href
+
+      const { default: config } = await import(configUrl)
+      const { default: pages } = await import(pagesUrl)
+
+      const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+      let count = 0
+
+      for (const [pagePath, page] of Object.entries(pages)) {
+        if (page.config === null) continue
+        if (page.config.status === 'empty') continue
+
+        const type = page.config.type ?? 'manual'
+
+        const subpages = ['overview']
+        if (page.config.subpages?.showcase) subpages.push('showcase')
+        if (page.config.subpages?.vs) subpages.push('vs')
+
+        for (const subpage of subpages) {
+          const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+          if (!existsSync(srcFile)) continue
+
+          const routePath = `${type}${pagePath}/${subpage}`
+          const destFile = resolve(distDir, `${routePath}.md`)
+          const destDir = resolve(destFile, '..')
+
+          mkdirSync(destDir, { recursive: true })
+          writeFileSync(destFile, readFileSync(srcFile, 'utf-8'))
+          count++
+        }
+      }
+
+      console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
+    }
+  }
+}
+
+/**
  * Create a complete Quasar configuration for a docsector-reader consumer project.
  *
  * In **standalone** mode (docsector-reader running itself), all paths resolve
@@ -301,6 +489,9 @@ export function createQuasarConfig (options = {}) {
 
       vitePlugins: [
         createHjsonPlugin(),
+        createGitDatesPlugin(projectRoot),
+        createMarkdownEndpointPlugin(projectRoot),
+        createMarkdownBuildPlugin(projectRoot),
         createPagesWatchPlugin(projectRoot),
         createPrerenderMetaPlugin(projectRoot),
         ...vitePlugins
