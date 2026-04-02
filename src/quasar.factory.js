@@ -439,6 +439,36 @@ function createMarkdownBuildPlugin (projectRoot) {
 
       console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
 
+      // Generate sitemap.xml if siteUrl is configured
+      const siteUrl = (config.siteUrl || '').replace(/\/+$/, '')
+      if (siteUrl) {
+        const today = new Date().toISOString().split('T')[0]
+        let urls = ''
+
+        for (const [pagePath, page] of Object.entries(pages)) {
+          if (page.config === null) continue
+          if (page.config.status === 'empty') continue
+
+          const type = page.config.type ?? 'manual'
+
+          const subpages = ['overview']
+          if (page.config.subpages?.showcase) subpages.push('showcase')
+          if (page.config.subpages?.vs) subpages.push('vs')
+
+          for (const subpage of subpages) {
+            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            if (!existsSync(srcFile)) continue
+
+            const routePath = `/${type}${pagePath}/${subpage}`
+            urls += `  <url>\n    <loc>${siteUrl}${routePath}</loc>\n    <lastmod>${today}</lastmod>\n  </url>\n`
+          }
+        }
+
+        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}</urlset>\n`
+        writeFileSync(resolve(distDir, 'sitemap.xml'), sitemap)
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated sitemap.xml`)
+      }
+
       // Generate _headers file for Cloudflare Pages (append if exists)
       const headersPath = resolve(distDir, '_headers')
       const headersRule = '/*.md\n  Content-Type: text/markdown; charset=utf-8\n'
