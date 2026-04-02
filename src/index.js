@@ -26,6 +26,7 @@
  * @param {string} config.branding.logo - Logo image path (relative to public/)
  * @param {string} config.branding.name - Project name displayed in sidebar
  * @param {string} config.branding.version - Version label
+ * @param {string} [config.branding.description] - Project description (used in llms.txt)
  * @param {string[]} [config.branding.versions] - Available versions for dropdown
  * @param {Object} config.links - External links
  * @param {string} [config.links.github] - GitHub repository URL

@@ -467,6 +467,63 @@ function createMarkdownBuildPlugin (projectRoot) {
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}</urlset>\n`
         writeFileSync(resolve(distDir, 'sitemap.xml'), sitemap)
         console.log(`\x1b[36m[docsector]\x1b[0m Generated sitemap.xml`)
+
+        // Generate llms.txt and llms-full.txt (LLM-friendly page index and full content)
+        const brandingName = config.branding?.name || 'Documentation'
+        const brandingVersion = config.branding?.version || ''
+        const brandingDesc = config.branding?.description || `${brandingName} documentation`
+
+        let llmsIndex = `# ${brandingName}${brandingVersion ? ' ' + brandingVersion : ''}\n\n> ${brandingDesc}\n\n`
+        let llmsFull = `# ${brandingName}${brandingVersion ? ' ' + brandingVersion : ''}\n\n> ${brandingDesc}\n\n---\n\n`
+
+        const llmsSections = {}
+
+        for (const [pagePath, page] of Object.entries(pages)) {
+          if (page.config === null) continue
+          if (page.config.status === 'empty') continue
+
+          const type = page.config.type ?? 'manual'
+          const title = page.data?.['*']?.title
+            || page.data?.[defaultLang]?.title
+            || page.data?.['en-US']?.title
+            || pagePath.split('/').pop()
+            || pagePath
+
+          const subpages = ['overview']
+          if (page.config.subpages?.showcase) subpages.push('showcase')
+          if (page.config.subpages?.vs) subpages.push('vs')
+
+          for (const subpage of subpages) {
+            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            if (!existsSync(srcFile)) continue
+
+            const routePath = `${type}${pagePath}/${subpage}`
+            const mdUrl = `${siteUrl}/${routePath}.md`
+            const pageUrl = `${siteUrl}/${routePath}`
+
+            const desc = page.config.meta?.description
+            const descText = typeof desc === 'object' ? (desc[defaultLang] || desc['en-US'] || '') : (desc || '')
+
+            if (!llmsSections[type]) llmsSections[type] = []
+            llmsSections[type].push(
+              descText
+                ? `- [${title}](${mdUrl}): ${descText}`
+                : `- [${title}](${mdUrl})`
+            )
+
+            const content = readFileSync(srcFile, 'utf-8')
+            llmsFull += `## ${title}\n\nSource: ${pageUrl}\n\n${content}\n\n---\n\n`
+          }
+        }
+
+        for (const [section, entries] of Object.entries(llmsSections)) {
+          const sectionName = section.charAt(0).toUpperCase() + section.slice(1)
+          llmsIndex += `## ${sectionName}\n\n${entries.join('\n')}\n\n`
+        }
+
+        writeFileSync(resolve(distDir, 'llms.txt'), llmsIndex.trimEnd() + '\n')
+        writeFileSync(resolve(distDir, 'llms-full.txt'), llmsFull.trimEnd() + '\n')
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated llms.txt and llms-full.txt`)
       }
 
       // Generate _headers file for Cloudflare Pages (append if exists)

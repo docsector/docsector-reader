@@ -27,6 +27,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
+- 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
 
 ---
 
@@ -128,7 +129,31 @@ curl -X POST http://localhost:8788/mcp \
 
 ---
 
-## 🚀 Quick Start
+## � llms.txt (LLM Discovery)
+
+Docsector Reader automatically generates [llms.txt](https://llmstxt.org) files at build time when `siteUrl` is configured (same requirement as sitemap.xml).
+
+| File | Purpose |
+|---|---|
+| `/llms.txt` | Markdown index of all pages with links to `.md` versions, grouped by type |
+| `/llms-full.txt` | Full documentation content concatenated in a single file for LLM context |
+
+Optionally add a `description` to your branding for a richer `llms.txt` blockquote:
+
+```javascript
+export default {
+  branding: {
+    name: 'My Project',
+    version: 'v1.0.0',
+    description: 'A framework for building awesome things'
+  },
+  siteUrl: 'https://my-docs.example.com'
+}
+```
+
+---
+
+## �🚀 Quick Start
 
 ### 📦 Install
 
