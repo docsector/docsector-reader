@@ -238,6 +238,10 @@ onBeforeUnmount(() => {
 .content > div.scroll
   min-height: calc(100vh - 86px)
 
+.content > div.scroll > div.q-scrollarea__content
+  max-width: 100%
+  box-sizing: border-box
+
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 15px
 
@@ -245,6 +249,7 @@ onBeforeUnmount(() => {
   min-height: calc(100vh - 86px) !important
 
 #scroll-container
+  width: 100%
   max-width: 1200px
   margin: auto
 
