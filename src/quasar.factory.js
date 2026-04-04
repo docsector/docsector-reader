@@ -247,11 +247,115 @@ function createGitDatesPlugin (projectRoot) {
   const resolvedId = '\0' + virtualId
   let dates = {}
 
-  function collectDates () {
-    dates = {}
-    const pagesDir = resolve(projectRoot, 'src', 'pages')
-    if (!existsSync(pagesDir)) return
+  /**
+   * Try to unshallow the repository so `git log` returns real commit dates
+   * instead of the single clone-time date that shallow CI clones produce.
+   */
+  function tryUnshallow () {
+    try {
+      const isShallow = execSync(
+        'git rev-parse --is-shallow-repository',
+        { cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      ).trim()
 
+      if (isShallow === 'true') {
+        console.log('[docsector] Shallow repository detected — fetching full history…')
+        execSync('git fetch --unshallow', {
+          cwd: projectRoot,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: 60_000
+        })
+        console.log('[docsector] Repository unshallowed successfully.')
+        return true
+      }
+    } catch {
+      console.warn('[docsector] Could not unshallow repository — will try GitHub API fallback.')
+      return false
+    }
+    return true // not shallow, full history available
+  }
+
+  /**
+   * Extract the GitHub `owner/repo` slug from the consumer's docsector.config.js.
+   * Looks for `github.editBaseUrl` (e.g. "https://github.com/bootgly/bootgly_docs/edit/…")
+   * or an explicit `github.repo` field (e.g. "bootgly/bootgly_docs").
+   */
+  function getGitHubRepo () {
+    try {
+      const configPath = resolve(projectRoot, 'docsector.config.js')
+      if (!existsSync(configPath)) return null
+
+      const src = readFileSync(configPath, 'utf-8')
+
+      // Explicit repo field: repo: 'owner/repo'
+      const repoMatch = src.match(/repo\s*:\s*['"]([^'"]+)['"]/)
+      if (repoMatch) return repoMatch[1]
+
+      // Derive from editBaseUrl: https://github.com/<owner>/<repo>/edit/…
+      const urlMatch = src.match(/editBaseUrl\s*:\s*['"]https:\/\/github\.com\/([^/]+\/[^/]+)\//)
+      if (urlMatch) return urlMatch[1]
+    } catch { /* ignore */ }
+    return null
+  }
+
+  /**
+   * Fetch last-commit dates from the GitHub API for all .md files under src/pages/.
+   * Uses the unauthenticated commits endpoint (60 req/hr) or authenticated if
+   * GITHUB_TOKEN is set (5 000 req/hr).
+   */
+  async function collectDatesFromGitHub (pagesDir, repo) {
+    console.log(`[docsector] Fetching file dates from GitHub API (${repo})…`)
+
+    const headers = { 'User-Agent': 'docsector-reader', Accept: 'application/vnd.github+json' }
+    const token = process.env.GITHUB_TOKEN
+    if (token) headers.Authorization = `Bearer ${token}`
+
+    const walkDir = (dir) => {
+      const entries = readdirSync(dir, { withFileTypes: true })
+      let files = []
+      for (const entry of entries) {
+        const fullPath = resolve(dir, entry.name)
+        if (entry.isDirectory()) {
+          files = files.concat(walkDir(fullPath))
+        } else if (entry.name.endsWith('.md')) {
+          files.push(fullPath)
+        }
+      }
+      return files
+    }
+
+    const files = walkDir(pagesDir)
+    let fetched = 0
+
+    for (const fullPath of files) {
+      const relKey = fullPath.slice(pagesDir.length + 1)
+      const apiPath = `src/pages/${relKey}`
+      const url = `https://api.github.com/repos/${repo}/commits?path=${encodeURIComponent(apiPath)}&per_page=1`
+
+      try {
+        const res = await fetch(url, { headers })
+        if (!res.ok) {
+          if (res.status === 403 || res.status === 429) {
+            console.warn('[docsector] GitHub API rate limit reached — stopping.')
+            break
+          }
+          continue
+        }
+        const commits = await res.json()
+        if (commits.length > 0 && commits[0].commit) {
+          dates[relKey] = commits[0].commit.committer.date
+          fetched++
+        }
+      } catch {
+        // Network error — skip this file
+      }
+    }
+
+    console.log(`[docsector] Fetched dates for ${fetched}/${files.length} files from GitHub API.`)
+  }
+
+  function collectDatesFromGit (pagesDir) {
     const walkDir = (dir) => {
       const entries = readdirSync(dir, { withFileTypes: true })
       for (const entry of entries) {
@@ -265,7 +369,6 @@ function createGitDatesPlugin (projectRoot) {
               { cwd: projectRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
             ).trim()
             if (date) {
-              // Key relative to src/pages/, e.g. "manual/Bootgly/about/what.overview.en-US.md"
               const relKey = fullPath.slice(pagesDir.length + 1)
               dates[relKey] = date
             }
@@ -279,10 +382,33 @@ function createGitDatesPlugin (projectRoot) {
     walkDir(pagesDir)
   }
 
+  async function collectDates () {
+    dates = {}
+    const pagesDir = resolve(projectRoot, 'src', 'pages')
+    if (!existsSync(pagesDir)) return
+
+    // 1. Try to unshallow so git log returns real dates
+    const hasFullHistory = tryUnshallow()
+
+    // 2. Collect dates from local git
+    collectDatesFromGit(pagesDir)
+
+    // 3. Check if all dates are the same (sign of shallow clone with no unshallow)
+    const uniqueDates = new Set(Object.values(dates))
+    if (uniqueDates.size <= 1 && Object.keys(dates).length > 1 && !hasFullHistory) {
+      // All files share the same date — likely shallow clone fallback
+      const repo = getGitHubRepo()
+      if (repo) {
+        dates = {}
+        await collectDatesFromGitHub(pagesDir, repo)
+      }
+    }
+  }
+
   return {
     name: 'docsector-git-dates',
-    buildStart () {
-      collectDates()
+    async buildStart () {
+      await collectDates()
     },
     resolveId (id) {
       if (id === virtualId) return resolvedId
