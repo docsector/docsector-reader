@@ -364,10 +364,12 @@ const tokenized = computed(() => {
       v-html="token.content"
     ></ol>
 
-    <table
+    <div
       v-else-if="token.tag === 'table'"
-      v-html="token.content"
-    ></table>
+      class="d-table-wrapper"
+    >
+      <table v-html="token.content"></table>
+    </div>
 
     <p
       v-else-if="token.tag === 'p'"

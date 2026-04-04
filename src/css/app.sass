@@ -182,8 +182,9 @@ body.body--dark
     padding: 3px 5px
     margin: 0 2px
     border-radius: 2px
-    white-space: pre-wrap
-    display: inline-block
+    white-space: normal
+    word-break: break-word
+    display: inline
     line-height: 0.85em
 
   a
@@ -283,8 +284,12 @@ body.body--dark
         vertical-align: middle
         width: 280px
         margin-left: 20px
-    table
+    .d-table-wrapper
+      overflow-x: auto
+      -webkit-overflow-scrolling: touch
       max-width: 100%
+    table
+      width: max-content
       border: 1px solid #eee
       border-radius: 4px
       border-spacing: 0
@@ -293,6 +298,9 @@ body.body--dark
         font-weight: bold
         border-bottom: 2px solid #eee
         text-align: left
+        white-space: nowrap
+      td code
+        white-space: nowrap
       tr
         vertical-align: top
       &:not(.js-file-line-container)
