@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useStore } from 'vuex'
-import { useQuasar, scroll as quasarScroll } from 'quasar'
+import { useQuasar } from 'quasar'
 import { useRoute } from "vue-router";
 
 import useNavigator from '../composables/useNavigator'
@@ -56,15 +56,8 @@ const scrollToActiveAnchor = () => {
     const anchorEl = document.getElementById('anchor')
     if (anchorEl) {
       const activeNode = anchorEl.querySelector('.q-tree__node--selected')
-      if (activeNode && typeof activeNode === 'object') {
-        const target = quasarScroll.getScrollTarget(activeNode)
-        const offsetTop = activeNode.offsetTop
-        const innerHeightBy2 = window.innerHeight / 2
-        const offset = offsetTop - innerHeightBy2
-
-        if (offset > 0) {
-          quasarScroll.setVerticalScrollPosition(target, offset, 300)
-        }
+      if (activeNode) {
+        activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }
     scrolling.value = null
