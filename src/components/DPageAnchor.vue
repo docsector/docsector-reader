@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useStore } from 'vuex'
-import { useQuasar } from 'quasar'
+import { useQuasar, scroll as quasarScroll } from 'quasar'
 import { useRoute } from "vue-router";
 
 import useNavigator from '../composables/useNavigator'
@@ -10,6 +10,8 @@ const store = useStore()
 const $q = useQuasar()
 const route = useRoute()
 const { navigate, anchor, selected: navigatorSelected } = useNavigator()
+
+const scrolling = ref(null)
 
 const nodes = computed(() => store.getters['page/nodes'])
 const expanded = computed({
@@ -45,6 +47,34 @@ const stylize = computed(() => {
   }
 })
 
+const scrollToActiveAnchor = () => {
+  if (scrolling.value) {
+    clearTimeout(scrolling.value)
+  }
+
+  scrolling.value = setTimeout(() => {
+    const anchorEl = document.getElementById('anchor')
+    if (anchorEl) {
+      const activeNode = anchorEl.querySelector('.q-tree__node--selected')
+      if (activeNode && typeof activeNode === 'object') {
+        const target = quasarScroll.getScrollTarget(activeNode)
+        const offsetTop = activeNode.offsetTop
+        const innerHeightBy2 = window.innerHeight / 2
+        const offset = offsetTop - innerHeightBy2
+
+        if (offset > 0) {
+          quasarScroll.setVerticalScrollPosition(target, offset, 300)
+        }
+      }
+    }
+    scrolling.value = null
+  }, 300)
+}
+
+watch(selected, () => {
+  scrollToActiveAnchor()
+})
+
 onMounted(() => {
   store.commit('layout/setMetaToggle', true)
 
@@ -61,6 +91,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (scrolling.value) {
+    clearTimeout(scrolling.value)
+  }
+
   store.commit('layout/setMetaToggle', false)
 
   store.commit('page/resetAnchor')
