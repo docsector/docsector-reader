@@ -15,7 +15,7 @@
       <h3 class="text-center q-mb-md">Quick Links</h3>
 
       <q-list bordered separator class="rounded-borders">
-        <q-item clickable to="/guide/getting-started/overview">
+        <q-item clickable to="/guide/getting-started/overview/">
           <q-item-section avatar>
             <q-icon name="flag" color="primary" />
           </q-item-section>
@@ -28,7 +28,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/guide/configuration/overview">
+        <q-item clickable to="/guide/configuration/overview/">
           <q-item-section avatar>
             <q-icon name="tune" color="primary" />
           </q-item-section>
@@ -41,7 +41,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/guide/pages-and-routing/overview">
+        <q-item clickable to="/guide/pages-and-routing/overview/">
           <q-item-section avatar>
             <q-icon name="route" color="primary" />
           </q-item-section>
@@ -54,7 +54,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/manual/components/d-page/overview">
+        <q-item clickable to="/manual/components/d-page/overview/">
           <q-item-section avatar>
             <q-icon name="widgets" color="secondary" />
           </q-item-section>
@@ -67,7 +67,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/manual/composables/use-navigator/overview">
+        <q-item clickable to="/manual/composables/use-navigator/overview/">
           <q-item-section avatar>
             <q-icon name="navigation" color="accent" />
           </q-item-section>
@@ -80,7 +80,7 @@
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/manual/store/modules/overview">
+        <q-item clickable to="/manual/store/modules/overview/">
           <q-item-section avatar>
             <q-icon name="storage" color="deep-orange" />
           </q-item-section>

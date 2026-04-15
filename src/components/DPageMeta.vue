@@ -163,12 +163,12 @@ const next = computed(() => {
   </div>
 
   <nav id="d-page-nav" class="row">
-    <router-link class="link col" v-if="prev" :to="`${prev}/overview`">
+    <router-link class="link col" v-if="prev" :to="`${prev}/overview/`">
       <div class="text-caption">{{ $t('page.nav.prev') }}</div>
       <q-icon name="navigate_before" />
       <span>{{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}</span>
     </router-link>
-    <router-link class="link col" v-if="next" :to="`${next}/overview`">
+    <router-link class="link col" v-if="next" :to="`${next}/overview/`">
       <div class="text-caption">{{ $t('page.nav.next') }}</div>
       <span>{{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}</span>
       <q-icon name="navigate_next" />

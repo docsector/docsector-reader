@@ -13,7 +13,7 @@ for (const [path, page] of Object.entries(pages)) {
   const children = [
     {
       path: '',
-      redirect: (to) => `${to.path.replace(/\/$/, '')}/overview`
+      redirect: (to) => `${to.path.replace(/\/$/, '')}/overview/`
     },
     {
       path: 'overview',

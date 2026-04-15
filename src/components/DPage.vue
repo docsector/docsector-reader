@@ -68,7 +68,7 @@ const subroute = (to) => {
   let path = base
 
   if (to !== '/') {
-    path += to
+    path += to + '/'
   }
 
   if (relative === to) {

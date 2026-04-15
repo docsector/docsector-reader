@@ -102,7 +102,7 @@ const isMenuItemActive = (path) => {
 </q-item-section>
 
 <q-item
-  :to="subitem.path + '/overview'"
+  :to="subitem.path + '/overview/'"
   :active="isMenuItemActive(subitem.path + subpage)"
   v-show="founds[subitem.path] || !founds"
 >
