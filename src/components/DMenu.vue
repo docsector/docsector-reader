@@ -372,7 +372,7 @@ body.body--light
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12)
 
       .separator
-        margin: 0 auto
+        margin: 5px auto 10px
 
     .q-item
       padding: 8px 12px
