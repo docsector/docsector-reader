@@ -114,20 +114,24 @@
 </template>
 
 <script setup>
-import { reactive, computed, onMounted } from 'vue'
+import { reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 import docsectorConfig from 'docsector.config.js'
+import { setupWebMcp } from './composables/useWebMcp'
 
 defineOptions({ name: 'App' })
 
 const $q = useQuasar()
 const store = useStore()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
+const route = useRoute()
+
+let cleanupWebMcp = null
 
 const settings = reactive({
   general: {
@@ -213,6 +217,21 @@ onMounted(() => {
     settings.appearance.background.default = dark
   }
   $q.dark.set(dark)
+
+  cleanupWebMcp = setupWebMcp({
+    router,
+    route,
+    store,
+    translate: t,
+    locale
+  })
+})
+
+onBeforeUnmount(() => {
+  if (typeof cleanupWebMcp === 'function') {
+    cleanupWebMcp()
+    cleanupWebMcp = null
+  }
 })
 </script>
 

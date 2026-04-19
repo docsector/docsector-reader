@@ -31,6 +31,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
 - 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
+- 🌐 **WebMCP Browser Tools** — Optional registration of in-page tools via `navigator.modelContext` for browser agents
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -46,6 +47,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking and auto-scroll to active section
 - 🔎 **Search** — Menu search across all documentation content and tags
+- 🌐 **WebMCP Browser Tools** — Registers in-page tools for browser agents with `registerTool` and optional `provideContext` fallback
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
@@ -202,6 +204,63 @@ curl -X POST https://isitagentready.com/api/scan \
 ```
 
 Check `checks.discovery.mcpServerCard.status` equals `"pass"`.
+
+---
+
+## 🌐 WebMCP Browser Tools
+
+Docsector Reader can register browser-side tools for agents when
+`navigator.modelContext` is available (secure context required).
+
+Default tools:
+
+- `docs.search_docs` (bridges to MCP `search_{toolSuffix}`)
+- `docs.get_page` (bridges to MCP `get_page_{toolSuffix}`)
+- `docs.navigate_to` (SPA navigation)
+- `docs.copy_current_page` (current page markdown URL/content)
+
+### WebMCP Configure
+
+```javascript
+export default {
+  // ...other config
+
+  mcp: {
+    serverName: 'my-docs',
+    toolSuffix: 'my_docs'
+  },
+
+  webMcp: {
+    enabled: true,
+    apiMode: 'dual', // 'registerTool' | 'dual'
+    toolPrefix: 'docs',
+    bridgeEndpoint: '/mcp',
+    bridgeToMcp: true,
+    tools: {
+      searchDocs: true,
+      getPage: true,
+      navigateTo: true,
+      copyCurrentPage: true
+    }
+  }
+}
+```
+
+Notes:
+
+- `apiMode: 'registerTool'` uses only `navigator.modelContext.registerTool()`.
+- `apiMode: 'dual'` also attempts `provideContext` fallback when available.
+- Registration happens on page load and is automatically cleaned up on unmount.
+
+### WebMCP Validate
+
+```bash
+curl -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://YOUR-SITE.com"}'
+```
+
+Check `checks.discovery.webMcp.status` equals `"pass"`.
 
 ---
 

@@ -87,6 +87,17 @@
  * @param {Object} [config.mcpServerCard.capabilities] - Optional capability overrides for tools/resources/prompts
  * @param {Array<Object>} [config.mcpServerCard.remotes=[]] - Optional additional remotes to include in the server card
  * @param {Object} [config.mcpServerCard.metadata] - Optional additional metadata merged into the server card payload
+ * @param {Object} [config.webMcp] - WebMCP browser tools settings
+ * @param {boolean} [config.webMcp.enabled=false] - Enables browser-side WebMCP tool registration on page load
+ * @param {'registerTool'|'dual'} [config.webMcp.apiMode='dual'] - Registration mode: registerTool only or registerTool + provideContext fallback
+ * @param {string} [config.webMcp.toolPrefix='docs'] - Prefix used to build WebMCP tool names (e.g. docs.search_docs)
+ * @param {string} [config.webMcp.bridgeEndpoint='/mcp'] - Relative endpoint used to bridge search/get_page to the MCP HTTP server
+ * @param {boolean} [config.webMcp.bridgeToMcp=true] - Uses MCP endpoint bridge for search/get_page tools when true
+ * @param {Object} [config.webMcp.tools] - Per-tool enable flags
+ * @param {boolean} [config.webMcp.tools.searchDocs=true] - Enables tool search_docs
+ * @param {boolean} [config.webMcp.tools.getPage=true] - Enables tool get_page
+ * @param {boolean} [config.webMcp.tools.navigateTo=true] - Enables tool navigate_to
+ * @param {boolean} [config.webMcp.tools.copyCurrentPage=true] - Enables tool copy_current_page
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -190,6 +201,22 @@ export function createDocsector (config = {}) {
       remotes: [],
       metadata: null,
       ...config.mcpServerCard
+    },
+
+    webMcp: {
+      enabled: false,
+      apiMode: 'dual',
+      toolPrefix: 'docs',
+      bridgeEndpoint: '/mcp',
+      bridgeToMcp: true,
+      ...config.webMcp,
+      tools: {
+        searchDocs: true,
+        getPage: true,
+        navigateTo: true,
+        copyCurrentPage: true,
+        ...(config.webMcp?.tools || {})
+      }
     }
   }
 }

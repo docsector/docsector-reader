@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.5.0'
+const VERSION = '1.6.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -145,6 +145,23 @@ export default {
   //     tools: { supported: true },
   //     resources: { supported: false },
   //     prompts: { supported: false }
+  //   }
+  // },
+
+  // @ WebMCP browser tools (optional)
+  // Registers tools in browser contexts that expose navigator.modelContext.
+  // Uses registerTool when available, with optional provideContext fallback.
+  // webMcp: {
+  //   enabled: true,
+  //   apiMode: 'dual', // 'registerTool' | 'dual'
+  //   toolPrefix: 'docs',
+  //   bridgeEndpoint: '/mcp',
+  //   bridgeToMcp: true,
+  //   tools: {
+  //     searchDocs: true,
+  //     getPage: true,
+  //     navigateTo: true,
+  //     copyCurrentPage: true
   //   }
   // },
 
