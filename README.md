@@ -59,9 +59,6 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
-- 🧩 **HTML-Preserving Remote Home** — Preserves raw HTML blocks from fetched Home README sources and resolves Home title from HTML `<h1>` or Markdown heading
-- 🧭 **Remote Home Action Routing** — Home action links adapt to remote mode (`/` for AI handoff prompts and `remoteReadmeUrl` for “View as Markdown”)
-- 🧼 **Clean Remote Home Footer** — Hides edit and translation footer metadata on remote Home pages for a cleaner landing experience
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
