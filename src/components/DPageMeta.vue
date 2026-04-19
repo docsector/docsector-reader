@@ -12,7 +12,12 @@ const route = useRoute()
 const router = useRouter()
 const { t, locale, availableLocales, te, tm } = useI18n()
 
-const base = docsectorConfig.github?.editBaseUrl || ''
+function normalizeEditBaseUrl (url = '') {
+  const normalized = String(url).trim().replace(/\/+$/, '')
+  return normalized.replace(/(github\.com\/[^/]+\/[^/]+)\/(blob|tree)\//, '$1/edit/')
+}
+
+const base = normalizeEditBaseUrl(docsectorConfig.github?.editBaseUrl || '')
 
 const status = computed(() => route.meta.status)
 const URL = computed(() => {
