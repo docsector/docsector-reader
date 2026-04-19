@@ -894,7 +894,7 @@ async function handleWebBotAuthDirectory (request, env, pathname) {
     privateKey
   })
 
-  const body = JSON.stringify(jwks, null, 2) + '\n'
+  const body = JSON.stringify(jwks, null, 2) + '\\n'
   const headers = new Headers({
     'Content-Type': 'application/http-message-signatures-directory+json',
     'Cache-Control': 'public, max-age=60',
