@@ -755,6 +755,21 @@ function createMarkdownBuildPlugin (projectRoot) {
       const webBotAuthSignatureLabel = webBotAuthConfig.signatureLabel || 'sig1'
       const contentSignalsConfig = config.contentSignals || {}
       const contentSignalsEnabled = contentSignalsConfig.enabled === true
+      const agentSkillsConfig = config.agentSkills || {}
+      const agentSkillsEnabled = agentSkillsConfig.enabled === true
+
+      const toUrl = (href) => {
+        if (!href) return null
+        if (/^https?:\/\//i.test(href)) return href
+        const normalizedHref = href.startsWith('/') ? href : `/${href}`
+        return siteUrl ? `${siteUrl}${normalizedHref}` : normalizedHref
+      }
+
+      const normalizeLocalPath = (href) => {
+        if (!href || /^https?:\/\//i.test(href)) return null
+        const path = href.startsWith('/') ? href.slice(1) : href
+        return path || null
+      }
 
       if (markdownNegotiationEnabled || webBotAuthEnabled) {
         const functionsDir = resolve(projectRoot, 'functions')
@@ -1022,6 +1037,81 @@ export async function onRequest (context) {
         }
       }
 
+      if (agentSkillsEnabled) {
+        const agentSkillsPath = agentSkillsConfig.path || '/.well-known/agent-skills/index.json'
+        const agentSkillsSchema = agentSkillsConfig.schema || 'https://schemas.agentskills.io/discovery/0.2.0/schema.json'
+        const indexDistPath = normalizeLocalPath(agentSkillsPath)
+
+        if (!indexDistPath) {
+          console.warn(`\x1b[33m[docsector]\x1b[0m Skipped Agent Skills index generation: path must be a local URI path, got "${agentSkillsPath}"`)
+        } else {
+          const indexHref = agentSkillsPath.startsWith('/') ? agentSkillsPath : `/${agentSkillsPath}`
+          const configuredSkills = Array.isArray(agentSkillsConfig.skills)
+            ? agentSkillsConfig.skills
+            : []
+
+          const normalizedSkills = configuredSkills.map((skill, index) => {
+            if (!skill || typeof skill !== 'object') {
+              throw new Error(`[docsector] agentSkills.skills[${index}] must be an object`)
+            }
+
+            const name = String(skill.name || '').trim().toLowerCase()
+            if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
+              throw new Error(`[docsector] agentSkills.skills[${index}].name must be lowercase alphanumeric and hyphen-separated`)
+            }
+
+            const type = normalizeAgentSkillType(skill.type, index)
+            const description = String(skill.description || '').trim()
+            if (!description) {
+              throw new Error(`[docsector] agentSkills.skills[${index}].description is required`)
+            }
+
+            const url = toUrl(skill.url)
+            if (!url) {
+              throw new Error(`[docsector] agentSkills.skills[${index}].url is required`)
+            }
+
+            let digest = normalizeAgentSkillDigest(skill.digest)
+            if (!digest) {
+              const artifactPath = resolveAgentSkillArtifactPath(url, { siteUrl, distDir })
+              if (!artifactPath || !existsSync(artifactPath)) {
+                throw new Error(`[docsector] Unable to compute digest for agentSkills.skills[${index}] (${name}). Artifact not found at ${url}`)
+              }
+              const artifactContents = readFileSync(artifactPath)
+              digest = `sha256:${createHash('sha256').update(artifactContents).digest('hex')}`
+            }
+
+            return {
+              name,
+              type,
+              description,
+              url,
+              digest
+            }
+          })
+
+          const agentSkillsIndex = {
+            $schema: agentSkillsSchema,
+            skills: normalizedSkills
+          }
+
+          const indexDir = resolve(distDir, indexDistPath, '..')
+          mkdirSync(indexDir, { recursive: true })
+          writeFileSync(
+            resolve(distDir, indexDistPath),
+            JSON.stringify(agentSkillsIndex, null, 2) + '\n'
+          )
+          console.log(`\x1b[36m[docsector]\x1b[0m Generated ${indexHref}`)
+
+          const headersWithSkills = readFileSync(headersPath, 'utf-8')
+          if (!headersWithSkills.includes(indexHref)) {
+            const skillsHeaders = `${indexHref}\n  Content-Type: application/json; charset=utf-8\n`
+            writeFileSync(headersPath, headersWithSkills.trimEnd() + '\n\n' + skillsHeaders)
+            console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for ${indexHref}`)
+          }
+        }
+      }
+
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
 
       // Add homepage Link headers for agent discovery (RFC 8288 / RFC 9727)
@@ -1080,19 +1170,6 @@ export async function onRequest (context) {
         const apiCatalogConfig = config.apiCatalog || {}
         const apiCatalogEnabled = apiCatalogConfig.enabled !== false
         const apiCatalogPath = (apiCatalogConfig.path || apiCatalogHref || '/.well-known/api-catalog')
-
-        const toUrl = (href) => {
-          if (!href) return null
-          if (/^https?:\/\//i.test(href)) return href
-          const normalizedHref = href.startsWith('/') ? href : `/${href}`
-          return siteUrl ? `${siteUrl}${normalizedHref}` : normalizedHref
-        }
-
-        const normalizeLocalPath = (href) => {
-          if (!href || /^https?:\/\//i.test(href)) return null
-          const path = href.startsWith('/') ? href.slice(1) : href
-          return path || null
-        }
 
         if (apiCatalogEnabled && apiCatalogPath) {
           const catalogDistPath = normalizeLocalPath(apiCatalogPath)
@@ -1374,6 +1451,57 @@ function applyContentSignalsToRobots (robotsContent, { contentSignalLine, userAg
 
   updated = updated.concat(lines.slice(cursor))
   return updated.join('\n').replace(/\n+$/g, '') + '\n'
+}
+
+function normalizeAgentSkillType (type, index) {
+  const normalizedType = String(type || '').trim()
+  if (normalizedType !== 'skill-md' && normalizedType !== 'archive') {
+    throw new Error(`[docsector] agentSkills.skills[${index}].type must be "skill-md" or "archive"`)
+  }
+  return normalizedType
+}
+
+function normalizeAgentSkillDigest (digest) {
+  if (digest === null || digest === undefined || digest === '') return null
+  const normalizedDigest = String(digest).trim().toLowerCase()
+  if (!/^sha256:[a-f0-9]{64}$/.test(normalizedDigest)) {
+    throw new Error('[docsector] agentSkills.skills[*].digest must follow "sha256:{hex}"')
+  }
+  return normalizedDigest
+}
+
+function resolveAgentSkillArtifactPath (artifactUrl, { siteUrl, distDir }) {
+  if (!artifactUrl || typeof artifactUrl !== 'string') {
+    return null
+  }
+
+  let pathname = null
+
+  if (/^https?:\/\//i.test(artifactUrl)) {
+    if (!siteUrl) return null
+
+    let artifact
+    let base
+    try {
+      artifact = new URL(artifactUrl)
+      base = new URL(siteUrl)
+    } catch {
+      return null
+    }
+
+    if (artifact.origin !== base.origin) {
+      return null
+    }
+
+    pathname = artifact.pathname
+  } else {
+    pathname = artifactUrl.startsWith('/') ? artifactUrl : `/${artifactUrl}`
+  }
+
+  const relativePath = pathname.replace(/^\/+/, '')
+  if (!relativePath) return null
+
+  return resolve(distDir, relativePath)
 }
 
 /**

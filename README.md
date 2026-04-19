@@ -29,6 +29,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
+- 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -333,6 +334,68 @@ Check `checks.botAccessControl.contentSignals.status` equals `"pass"`.
 
 ---
 
+## 🧩 Agent Skills Discovery Index
+
+Docsector Reader can publish a discovery index at:
+
+- `/.well-known/agent-skills/index.json`
+
+The generated payload follows Agent Skills Discovery RFC v0.2.0 and includes:
+
+- `$schema`
+- `skills[]` entries with `name`, `type`, `description`, `url`, `digest`
+
+When `digest` is omitted in config, Docsector computes it automatically from the referenced local artifact and writes it as:
+
+- `sha256:{hex}`
+
+### Configure
+
+```javascript
+export default {
+  // ...other config
+
+  agentSkills: {
+    enabled: true,
+    path: '/.well-known/agent-skills/index.json',
+    schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+    skills: [
+      {
+        name: 'my-docs-mcp',
+        type: 'skill-md',
+        description: 'Search and fetch docs pages via MCP.',
+        url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- `name` must be lowercase alphanumeric plus hyphens.
+- `type` must be `skill-md` or `archive`.
+- `url` should point to a locally published artifact when auto-digest is used.
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/.well-known/agent-skills/index.json
+```
+
+External validation:
+
+```bash
+curl -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://YOUR-SITE.com"}'
+```
+
+Check `checks.discovery.agentSkills.status` equals `"pass"`.
+
+---
+
 ## �🚀 Quick Start
 
 ### 📦 Install
@@ -494,6 +557,20 @@ export default {
     aiInput: 'yes',
     userAgent: '*',
     applyToAllBlocks: false
+  },
+
+  agentSkills: {
+    enabled: true,
+    path: '/.well-known/agent-skills/index.json',
+    schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+    skills: [
+      {
+        name: 'my-docs-mcp',
+        type: 'skill-md',
+        description: 'Search and fetch docs pages via MCP.',
+        url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+      }
+    ]
   },
 
   languages: [

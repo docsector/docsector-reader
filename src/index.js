@@ -73,6 +73,11 @@
  * @param {'yes'|'no'|boolean} [config.contentSignals.aiInput='yes'] - Permission for AI input/inference-time consumption
  * @param {string} [config.contentSignals.userAgent='*'] - Target User-agent block for directive injection
  * @param {boolean} [config.contentSignals.applyToAllBlocks=false] - When true, applies directive to every User-agent block
+ * @param {Object} [config.agentSkills] - Agent Skills discovery index settings
+ * @param {boolean} [config.agentSkills.enabled=false] - Enables generation of Agent Skills discovery index
+ * @param {string} [config.agentSkills.path='/.well-known/agent-skills/index.json'] - Output URI path for Agent Skills index
+ * @param {string} [config.agentSkills.schema='https://schemas.agentskills.io/discovery/0.2.0/schema.json'] - JSON Schema identifier for index payload
+ * @param {Array<{name:string,type:'skill-md'|'archive',description:string,url:string,digest?:string}>} [config.agentSkills.skills=[]] - Skills to publish in discovery index
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -156,6 +161,14 @@ export function createDocsector (config = {}) {
       userAgent: '*',
       applyToAllBlocks: false,
       ...config.contentSignals
+    },
+
+    agentSkills: {
+      enabled: false,
+      path: '/.well-known/agent-skills/index.json',
+      schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+      skills: [],
+      ...config.agentSkills
     }
   }
 }

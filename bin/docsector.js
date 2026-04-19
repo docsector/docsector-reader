@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.3.1'
+const VERSION = '1.4.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -179,6 +179,23 @@ export default {
   //   aiInput: 'yes',
   //   userAgent: '*',
   //   applyToAllBlocks: false
+  // },
+
+  // @ Agent Skills discovery index (optional)
+  // Publishes /.well-known/agent-skills/index.json (RFC v0.2.0)
+  // and computes sha256 digests from local artifacts.
+  // agentSkills: {
+  //   enabled: true,
+  //   path: '/.well-known/agent-skills/index.json',
+  //   schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+  //   skills: [
+  //     {
+  //       name: 'my-docs-mcp',
+  //       type: 'skill-md',
+  //       description: 'Search and read docs pages through MCP.',
+  //       url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+  //     }
+  //   ]
   // },
 
   // @ Languages
