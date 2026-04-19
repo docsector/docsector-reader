@@ -140,9 +140,11 @@ const tokenized = computed(() => {
     allowedAttributes: ['filename']
   })
 
-  // Use a plain inline renderer to avoid markdown-it-attrs edge cases
-  // when rendering isolated inline fragments.
-  const MarkdownInline = new MarkdownIt()
+  // Keep inline rendering aligned with block parsing so raw HTML inline
+  // fragments (e.g. <b>, <a>) are rendered instead of escaped.
+  const MarkdownInline = new MarkdownIt({
+    html: true
+  })
 
   const markdownEnv = {}
 
@@ -326,6 +328,12 @@ const tokenized = computed(() => {
           })
           break
         }
+        case 'html_block':
+          tokens.push({
+            tag: 'html',
+            content: element.content
+          })
+          break
       }
     } else if (level === 1) {
       const parent = tokens[tokens.length - 1]
@@ -371,6 +379,10 @@ const tokenized = computed(() => {
           break
 
         case 'inline':
+          parent.content += element.content
+          break
+        case 'html_inline':
+        case 'html_block':
           parent.content += element.content
           break
 
@@ -452,6 +464,11 @@ const tokenized = computed(() => {
     >
       <table v-html="token.content"></table>
     </div>
+
+    <div
+      v-else-if="token.tag === 'html'"
+      v-html="token.content"
+    ></div>
 
     <p
       v-else-if="token.tag === 'p'"
