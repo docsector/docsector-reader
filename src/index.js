@@ -44,6 +44,11 @@
  * @param {Object} [config.mcp] - MCP (Model Context Protocol) server settings
  * @param {string} config.mcp.serverName - Server name for MCP identification (e.g. 'my-docs')
  * @param {string} config.mcp.toolSuffix - Suffix for tool names (e.g. 'my_docs' → search_my_docs)
+ * @param {Object} [config.linkHeaders] - Homepage Link headers for agent discovery
+ * @param {boolean} [config.linkHeaders.enabled=true] - Enables homepage Link headers generation
+ * @param {string|null|false} [config.linkHeaders.serviceDoc='/'] - Target URI for rel="service-doc"
+ * @param {string|null|false} [config.linkHeaders.serviceDesc='/mcp'] - Target URI for rel="service-desc" (only emitted when MCP is enabled)
+ * @param {string|null|false} [config.linkHeaders.describedBy='/llms.txt'] - Target URI for rel="describedby" (only emitted when llms.txt is generated)
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -83,7 +88,15 @@ export function createDocsector (config = {}) {
 
     defaultLanguage: config.defaultLanguage || 'en-US',
 
-    mcp: config.mcp || null
+    mcp: config.mcp || null,
+
+    linkHeaders: {
+      enabled: true,
+      serviceDoc: '/',
+      serviceDesc: '/mcp',
+      describedBy: '/llms.txt',
+      ...config.linkHeaders
+    }
   }
 }
 

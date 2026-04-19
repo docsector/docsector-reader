@@ -26,6 +26,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
+- 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
 
@@ -150,6 +151,56 @@ export default {
   siteUrl: 'https://my-docs.example.com'
 }
 ```
+
+---
+
+## 🔗 Link Headers (Agent Discovery)
+
+Docsector Reader adds homepage `Link` response headers at build time for agent discovery, following [RFC 8288](https://www.rfc-editor.org/rfc/rfc8288) and [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727#section-3).
+
+Default relations emitted on homepage (`/` and `/index.html`):
+
+- `rel="service-doc"` → `</>`
+- `rel="service-desc"` → `</mcp>` (only when `mcp` is enabled)
+- `rel="describedby"` → `</llms.txt>` (only when `siteUrl` is configured, i.e. `llms.txt` is generated)
+
+Generated in:
+
+- `dist/spa/_headers`
+
+### Optional configuration
+
+```javascript
+export default {
+  // ...other config
+
+  linkHeaders: {
+    enabled: true,
+    serviceDoc: '/',
+    serviceDesc: '/mcp',
+    describedBy: '/llms.txt'
+  }
+}
+```
+
+Set any target to `null` or `false` to disable that relation.
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/_headers
+```
+
+Or scan discoverability:
+
+```bash
+curl -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://YOUR-SITE.com"}'
+```
+
+Check `checks.discoverability.linkHeaders.status` equals `"pass"`.
 
 ---
 
@@ -286,6 +337,13 @@ export default {
 
   github: {
     editBaseUrl: 'https://github.com/org/repo/edit/main/src/pages'
+  },
+
+  linkHeaders: {
+    enabled: true,
+    serviceDoc: '/',
+    serviceDesc: '/mcp',
+    describedBy: '/llms.txt'
   },
 
   languages: [

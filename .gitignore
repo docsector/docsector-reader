@@ -35,3 +35,6 @@ yarn-error.log*
 
 # Lock files
 yarn.lock
+
+# Other
+/functions/mcp.js

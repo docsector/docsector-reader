@@ -665,6 +665,52 @@ function createMarkdownBuildPlugin (projectRoot) {
       }
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
 
+      // Add homepage Link headers for agent discovery (RFC 8288 / RFC 9727)
+      const linkHeadersConfig = config.linkHeaders || {}
+      const linkHeadersEnabled = linkHeadersConfig.enabled !== false
+
+      if (linkHeadersEnabled) {
+        const homepageLinks = []
+
+        const serviceDocHref = linkHeadersConfig.serviceDoc === undefined
+          ? '/'
+          : linkHeadersConfig.serviceDoc
+        if (serviceDocHref) {
+          homepageLinks.push({ rel: 'service-doc', href: serviceDocHref })
+        }
+
+        const serviceDescHref = linkHeadersConfig.serviceDesc === undefined
+          ? '/mcp'
+          : linkHeadersConfig.serviceDesc
+        if (config.mcp && serviceDescHref) {
+          homepageLinks.push({ rel: 'service-desc', href: serviceDescHref })
+        }
+
+        const describedByHref = linkHeadersConfig.describedBy === undefined
+          ? '/llms.txt'
+          : linkHeadersConfig.describedBy
+        if (siteUrl && describedByHref) {
+          homepageLinks.push({ rel: 'describedby', href: describedByHref })
+        }
+
+        if (homepageLinks.length > 0) {
+          const linkLines = homepageLinks.map(({ rel, href }) => `  Link: <${href}>; rel="${rel}"`).join('\n')
+          const homepageRule = ['/','/index.html']
+            .map(path => `${path}\n${linkLines}`)
+            .join('\n\n') + '\n'
+
+          const currentHeaders = readFileSync(headersPath, 'utf-8')
+          const hasAgentLinks = currentHeaders.includes('rel="service-doc"')
+            || currentHeaders.includes('rel="service-desc"')
+            || currentHeaders.includes('rel="describedby"')
+
+          if (!hasAgentLinks) {
+            writeFileSync(headersPath, currentHeaders.trimEnd() + '\n\n' + homepageRule)
+            console.log(`\x1b[36m[docsector]\x1b[0m Added homepage Link headers for agent discovery`)
+          }
+        }
+      }
+
       // Generate MCP server if configured
       if (config.mcp) {
         const mcpConfig = config.mcp

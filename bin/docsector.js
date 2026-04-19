@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.12.3'
+const VERSION = '0.13.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -131,6 +131,14 @@ export default {
   // mcp: {
   //   serverName: 'my-docs',
   //   toolSuffix: 'my_docs'
+  // },
+
+  // @ Homepage Link headers for agent discovery (optional)
+  // linkHeaders: {
+  //   enabled: true,
+  //   serviceDoc: '/',
+  //   serviceDesc: '/mcp',
+  //   describedBy: '/llms.txt'
   // },
 
   // @ Languages
