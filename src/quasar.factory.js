@@ -1060,12 +1060,18 @@ export async function onRequest (context) {
           }
         }
 
-        if (config.mcp && !routes.include.includes('/mcp')) {
+        if (markdownNegotiationEnabled && !routes.include.includes('/*')) {
+          routes.include.push('/*')
+        }
+
+        if (config.mcp && !markdownNegotiationEnabled && !routes.include.includes('/mcp')) {
           routes.include.push('/mcp')
         }
 
-        if (markdownNegotiationEnabled && !routes.include.includes('/*')) {
-          routes.include.push('/*')
+        // Cloudflare Pages rejects overlapping include rules (e.g. "/mcp" with "/*").
+        // Keep only the catch-all when markdown negotiation is enabled.
+        if (routes.include.includes('/*')) {
+          routes.include = routes.include.filter((route) => route !== '/mcp')
         }
 
         const markdownExcludes = [
