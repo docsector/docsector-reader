@@ -23,6 +23,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📋 **Copy Page** — One-click button copies the current page as raw Markdown, ready to paste into LLMs
 - 📄 **View as Markdown** — Open any page as plain text by appending `.md` to the URL, with locale support (`?lang=`)
 - 🧠 **Markdown Negotiation** — Requests with `Accept: text/markdown` receive markdown responses, while browsers keep HTML by default
+- 🔐 **Web Bot Auth Directory** — Optional signed JWKS directory at `/.well-known/http-message-signatures-directory` for bot identity verification
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
@@ -48,6 +49,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - 🧠 **Markdown Negotiation** — Responds with Markdown when clients send `Accept: text/markdown`, while keeping HTML as browser default
+- 🔐 **Web Bot Auth** — Can publish a signed HTTP message signatures directory and includes helpers to sign outbound bot requests
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
@@ -201,6 +203,62 @@ export default {
 ```
 
 Set any target to `null` or `false` to disable that relation.
+
+---
+
+## 🔐 Web Bot Auth
+
+Docsector Reader can publish a signed Web Bot Auth directory at:
+
+- `/.well-known/http-message-signatures-directory`
+
+This response is served by Cloudflare Pages runtime middleware and includes:
+
+- `Content-Type: application/http-message-signatures-directory+json`
+- `Signature`
+- `Signature-Input`
+
+### Configure directory publishing
+
+```javascript
+export default {
+  // ...other config
+
+  webBotAuth: {
+    enabled: true,
+    directoryPath: '/.well-known/http-message-signatures-directory',
+    jwksEnv: 'WEB_BOT_AUTH_JWKS',
+    privateJwkEnv: 'WEB_BOT_AUTH_PRIVATE_JWK',
+    keyIdEnv: 'WEB_BOT_AUTH_KEY_ID',
+    keyId: null,
+    signatureMaxAge: 300,
+    signatureLabel: 'sig1'
+  }
+}
+```
+
+Required runtime variables (Cloudflare Pages / Workers environment):
+
+- `WEB_BOT_AUTH_JWKS`: JSON string with a valid JWKS payload (`{ "keys": [...] }`)
+- `WEB_BOT_AUTH_PRIVATE_JWK`: JSON string for an Ed25519 private JWK used to sign directory responses
+- `WEB_BOT_AUTH_KEY_ID`: optional key id override (thumbprint or `kid`)
+
+### Sign outbound bot requests
+
+Use the helper export:
+
+```javascript
+import { createWebBotAuthHeaders } from '@docsector/docsector-reader/web-bot-auth'
+
+const signed = await createWebBotAuthHeaders({
+  url: 'https://crawltest.com/cdn-cgi/web-bot-auth',
+  privateJwk,
+  keyId: 'your-jwk-thumbprint',
+  signatureAgent: 'https://docs.example.com/.well-known/http-message-signatures-directory'
+})
+```
+
+Attach returned headers to your outbound request (`Signature-Agent`, `Signature-Input`, `Signature`).
 
 ### Validate
 

@@ -57,6 +57,15 @@
  * @param {Object} [config.markdownNegotiation] - Markdown content negotiation settings for agents
  * @param {boolean} [config.markdownNegotiation.enabled=true] - Enables markdown negotiation by Accept header in production runtime
  * @param {boolean} [config.markdownNegotiation.agentFallback=true] - Enables markdown fallback for known AI bot user agents when Accept is absent
+ * @param {Object} [config.webBotAuth] - Web Bot Auth settings for signed bot identity
+ * @param {boolean} [config.webBotAuth.enabled=false] - Enables Web Bot Auth directory publishing and response signature headers
+ * @param {string} [config.webBotAuth.directoryPath='/.well-known/http-message-signatures-directory'] - Well-known URI where JWKS directory is exposed
+ * @param {string} [config.webBotAuth.jwksEnv='WEB_BOT_AUTH_JWKS'] - Environment variable containing JWKS JSON
+ * @param {string} [config.webBotAuth.privateJwkEnv='WEB_BOT_AUTH_PRIVATE_JWK'] - Environment variable containing private Ed25519 JWK JSON used to sign the directory response
+ * @param {string} [config.webBotAuth.keyIdEnv='WEB_BOT_AUTH_KEY_ID'] - Environment variable containing signature key identifier (thumbprint or kid)
+ * @param {string|null} [config.webBotAuth.keyId=null] - Optional static fallback key identifier when env var is absent
+ * @param {number} [config.webBotAuth.signatureMaxAge=300] - Signature validity window in seconds for directory responses
+ * @param {string} [config.webBotAuth.signatureLabel='sig1'] - Signature label used in Signature and Signature-Input headers
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -118,6 +127,18 @@ export function createDocsector (config = {}) {
       enabled: true,
       agentFallback: true,
       ...config.markdownNegotiation
+    },
+
+    webBotAuth: {
+      enabled: false,
+      directoryPath: '/.well-known/http-message-signatures-directory',
+      jwksEnv: 'WEB_BOT_AUTH_JWKS',
+      privateJwkEnv: 'WEB_BOT_AUTH_PRIVATE_JWK',
+      keyIdEnv: 'WEB_BOT_AUTH_KEY_ID',
+      keyId: null,
+      signatureMaxAge: 300,
+      signatureLabel: 'sig1',
+      ...config.webBotAuth
     }
   }
 }

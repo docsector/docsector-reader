@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.2.1'
+const VERSION = '1.2.2'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -153,6 +153,21 @@ export default {
   // markdownNegotiation: {
   //   enabled: true,
   //   agentFallback: true
+  // },
+
+  // @ Web Bot Auth (optional)
+  // Publishes a signed JWKS directory at
+  // /.well-known/http-message-signatures-directory
+  // using runtime environment variables.
+  // webBotAuth: {
+  //   enabled: true,
+  //   directoryPath: '/.well-known/http-message-signatures-directory',
+  //   jwksEnv: 'WEB_BOT_AUTH_JWKS',
+  //   privateJwkEnv: 'WEB_BOT_AUTH_PRIVATE_JWK',
+  //   keyIdEnv: 'WEB_BOT_AUTH_KEY_ID',
+  //   keyId: null,
+  //   signatureMaxAge: 300,
+  //   signatureLabel: 'sig1'
   // },
 
   // @ Languages

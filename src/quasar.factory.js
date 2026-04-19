@@ -742,15 +742,172 @@ function createMarkdownBuildPlugin (projectRoot) {
       const markdownNegotiationConfig = config.markdownNegotiation || {}
       const markdownNegotiationEnabled = markdownNegotiationConfig.enabled !== false
       const markdownAgentFallback = markdownNegotiationConfig.agentFallback !== false
+      const webBotAuthConfig = config.webBotAuth || {}
+      const webBotAuthEnabled = webBotAuthConfig.enabled === true
+      const webBotAuthDirectoryPath = webBotAuthConfig.directoryPath || '/.well-known/http-message-signatures-directory'
+      const webBotAuthJwksEnv = webBotAuthConfig.jwksEnv || 'WEB_BOT_AUTH_JWKS'
+      const webBotAuthPrivateJwkEnv = webBotAuthConfig.privateJwkEnv || 'WEB_BOT_AUTH_PRIVATE_JWK'
+      const webBotAuthKeyIdEnv = webBotAuthConfig.keyIdEnv || 'WEB_BOT_AUTH_KEY_ID'
+      const webBotAuthStaticKeyId = webBotAuthConfig.keyId || null
+      const webBotAuthSignatureMaxAge = Number.isFinite(webBotAuthConfig.signatureMaxAge)
+        ? Math.max(30, Number(webBotAuthConfig.signatureMaxAge))
+        : 300
+      const webBotAuthSignatureLabel = webBotAuthConfig.signatureLabel || 'sig1'
 
-      if (markdownNegotiationEnabled) {
+      if (markdownNegotiationEnabled || webBotAuthEnabled) {
         const functionsDir = resolve(projectRoot, 'functions')
         mkdirSync(functionsDir, { recursive: true })
 
         const middlewareCode = `const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
 
 const DEFAULT_LANG = ${JSON.stringify(defaultLang)}
+const MARKDOWN_ENABLED = ${markdownNegotiationEnabled ? 'true' : 'false'}
 const AGENT_FALLBACK = ${markdownAgentFallback ? 'true' : 'false'}
+const WEB_BOT_AUTH_ENABLED = ${webBotAuthEnabled ? 'true' : 'false'}
+const WEB_BOT_AUTH_DIRECTORY_PATH = ${JSON.stringify(webBotAuthDirectoryPath)}
+const WEB_BOT_AUTH_JWKS_ENV = ${JSON.stringify(webBotAuthJwksEnv)}
+const WEB_BOT_AUTH_PRIVATE_JWK_ENV = ${JSON.stringify(webBotAuthPrivateJwkEnv)}
+const WEB_BOT_AUTH_KEY_ID_ENV = ${JSON.stringify(webBotAuthKeyIdEnv)}
+const WEB_BOT_AUTH_STATIC_KEY_ID = ${JSON.stringify(webBotAuthStaticKeyId)}
+const WEB_BOT_AUTH_SIGNATURE_MAX_AGE = ${webBotAuthSignatureMaxAge}
+const WEB_BOT_AUTH_SIGNATURE_LABEL = ${JSON.stringify(webBotAuthSignatureLabel)}
+
+const textEncoder = new TextEncoder()
+
+function bytesToBase64 (bytes) {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
+
+function bytesToBase64Url (bytes) {
+  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+async function sha256 (input) {
+  const digest = await crypto.subtle.digest('SHA-256', textEncoder.encode(input))
+  return new Uint8Array(digest)
+}
+
+async function computeJwkThumbprint (jwk) {
+  if (!jwk || jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519' || !jwk.x) {
+    return null
+  }
+
+  const canonical = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x })
+  const digest = await sha256(canonical)
+  return bytesToBase64Url(digest)
+}
+
+function parseJsonEnv (env, key) {
+  const raw = env?.[key]
+  if (!raw || typeof raw !== 'string') {
+    return null
+  }
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+function badWebBotAuthResponse (message, status = 500) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
+  })
+}
+
+async function importEd25519PrivateKey (privateJwk) {
+  if (!privateJwk || privateJwk.kty !== 'OKP' || privateJwk.crv !== 'Ed25519' || !privateJwk.d || !privateJwk.x) {
+    return null
+  }
+
+  return crypto.subtle.importKey(
+    'jwk',
+    privateJwk,
+    { name: 'Ed25519' },
+    false,
+    ['sign']
+  )
+}
+
+async function signDirectoryResponse ({ authority, keyId, created, expires, privateKey }) {
+  const params = '("@authority";req);created=' + created + ';expires=' + expires + ';keyid="' + keyId + '";alg="ed25519";tag="http-message-signatures-directory"'
+  const signatureInput = WEB_BOT_AUTH_SIGNATURE_LABEL + '=' + params
+  const base = '"@authority";req: ' + authority + '\n"@signature-params": ' + params
+  const signature = await crypto.subtle.sign('Ed25519', privateKey, textEncoder.encode(base))
+
+  return {
+    signatureInput,
+    signature: WEB_BOT_AUTH_SIGNATURE_LABEL + '=:' + bytesToBase64(new Uint8Array(signature)) + ':'
+  }
+}
+
+async function handleWebBotAuthDirectory (request, env, pathname) {
+  if (!WEB_BOT_AUTH_ENABLED || pathname !== WEB_BOT_AUTH_DIRECTORY_PATH) {
+    return null
+  }
+
+  const jwks = parseJsonEnv(env, WEB_BOT_AUTH_JWKS_ENV)
+  if (!jwks || !Array.isArray(jwks.keys) || jwks.keys.length === 0) {
+    return badWebBotAuthResponse('Missing or invalid JWKS in env var ' + WEB_BOT_AUTH_JWKS_ENV)
+  }
+
+  const privateJwk = parseJsonEnv(env, WEB_BOT_AUTH_PRIVATE_JWK_ENV)
+  if (!privateJwk) {
+    return badWebBotAuthResponse('Missing or invalid private JWK in env var ' + WEB_BOT_AUTH_PRIVATE_JWK_ENV)
+  }
+
+  const privateKey = await importEd25519PrivateKey(privateJwk)
+  if (!privateKey) {
+    return badWebBotAuthResponse('Private JWK must be an Ed25519 OKP key with d and x')
+  }
+
+  const selectedPublicJwk = jwks.keys.find((key) => key && key.kty === 'OKP' && key.crv === 'Ed25519' && typeof key.x === 'string')
+  if (!selectedPublicJwk) {
+    return badWebBotAuthResponse('JWKS must include at least one Ed25519 public JWK')
+  }
+
+  const envKeyId = env?.[WEB_BOT_AUTH_KEY_ID_ENV]
+  const computedKeyId = await computeJwkThumbprint(selectedPublicJwk)
+  const keyId = envKeyId || WEB_BOT_AUTH_STATIC_KEY_ID || selectedPublicJwk.kid || computedKeyId
+  if (!keyId) {
+    return badWebBotAuthResponse('Unable to resolve keyid for directory signature')
+  }
+
+  const created = Math.floor(Date.now() / 1000)
+  const expires = created + WEB_BOT_AUTH_SIGNATURE_MAX_AGE
+  const authority = new URL(request.url).host
+
+  const signedHeaders = await signDirectoryResponse({
+    authority,
+    keyId,
+    created,
+    expires,
+    privateKey
+  })
+
+  const body = JSON.stringify(jwks, null, 2) + '\n'
+  const headers = new Headers({
+    'Content-Type': 'application/http-message-signatures-directory+json',
+    'Cache-Control': 'public, max-age=60',
+    Signature: signedHeaders.signature,
+    'Signature-Input': signedHeaders.signatureInput
+  })
+
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers })
+  }
+
+  return new Response(body, { status: 200, headers })
+}
 
 function wantsMarkdown (request) {
   const accept = (request.headers.get('accept') || '').toLowerCase()
@@ -792,6 +949,15 @@ export async function onRequest (context) {
   }
 
   const url = new URL(request.url)
+  const webBotAuthResponse = await handleWebBotAuthDirectory(request, env, url.pathname)
+  if (webBotAuthResponse) {
+    return webBotAuthResponse
+  }
+
+  if (!MARKDOWN_ENABLED) {
+    return next()
+  }
+
   if (shouldBypass(url.pathname)) {
     return next()
   }
@@ -833,7 +999,7 @@ export async function onRequest (context) {
 `
 
         writeFileSync(resolve(functionsDir, '_middleware.js'), middlewareCode)
-        console.log(`\x1b[36m[docsector]\x1b[0m Generated markdown negotiation middleware at functions/_middleware.js`)
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated runtime middleware at functions/_middleware.js`)
       }
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
 
@@ -1049,7 +1215,7 @@ export async function onRequest (context) {
       }
 
       // Generate or merge _routes.json for Cloudflare Pages functions
-      if (config.mcp || markdownNegotiationEnabled) {
+      if (config.mcp || markdownNegotiationEnabled || webBotAuthEnabled) {
         const routesPath = resolve(distDir, '_routes.json')
         let routes = { version: 1, include: [], exclude: [] }
         if (existsSync(routesPath)) {
@@ -1068,10 +1234,14 @@ export async function onRequest (context) {
           routes.include.push('/mcp')
         }
 
+        if (webBotAuthEnabled && !markdownNegotiationEnabled && !routes.include.includes(webBotAuthDirectoryPath)) {
+          routes.include.push(webBotAuthDirectoryPath)
+        }
+
         // Cloudflare Pages rejects overlapping include rules (e.g. "/mcp" with "/*").
         // Keep only the catch-all when markdown negotiation is enabled.
         if (routes.include.includes('/*')) {
-          routes.include = routes.include.filter((route) => route !== '/mcp')
+          routes.include = ['/*']
         }
 
         const markdownExcludes = [

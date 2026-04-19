@@ -1,6 +1,6 @@
 {
   "name": "@docsector/docsector-reader",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A documentation rendering engine built with Vue 3, Quasar v2 and Vite. Transform Markdown into beautiful, navigable documentation sites.",
   "productName": "Docsector Reader",
   "author": "Rodrigo de Araujo Vieira",
@@ -13,6 +13,7 @@
     ".": "./src/index.js",
     "./config": "./docsector.config.js",
     "./quasar-factory": "./src/quasar.factory.js",
+    "./web-bot-auth": "./src/web-bot-auth/index.js",
     "./i18n": "./src/i18n/helpers.js",
     "./boot/store": "./src/boot/store.js",
     "./boot/QZoom": "./src/boot/QZoom.js",
