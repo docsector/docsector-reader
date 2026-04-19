@@ -19,9 +19,27 @@ function normalizeEditBaseUrl (url = '') {
 
 const base = normalizeEditBaseUrl(docsectorConfig.github?.editBaseUrl || '')
 
+function routePathToSourcePath (path = '') {
+  const cleanPath = String(path)
+    .replace(/\/index\.html$/, '')
+    .replace(/\/+$/, '')
+
+  if (cleanPath === '' || cleanPath === '/') {
+    return '/Homepage'
+  }
+
+  const segments = cleanPath.replace(/^\//, '').split('/').filter(Boolean)
+  if (segments.length < 2) {
+    return `/${segments.join('/')}`
+  }
+
+  const subpage = segments.pop()
+  return `/${segments.join('/')}.${subpage}`
+}
+
 const status = computed(() => route.meta.status)
 const URL = computed(() => {
-  const path = route.path.replace(/\/([^/]*)$/, '.$1')
+  const path = routePathToSourcePath(route.path)
   return `${base}${path}.${locale.value}.md`
 })
 const color = computed(() => {
