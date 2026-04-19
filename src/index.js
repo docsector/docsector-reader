@@ -54,6 +54,9 @@
  * @param {boolean} [config.apiCatalog.enabled=true] - Enables generation of API catalog artifact
  * @param {string} [config.apiCatalog.path='/.well-known/api-catalog'] - Output URI path for API catalog artifact
  * @param {Array<string|{href: string}>} [config.apiCatalog.items=[]] - Additional API endpoint links to include as item relations
+ * @param {Object} [config.markdownNegotiation] - Markdown content negotiation settings for agents
+ * @param {boolean} [config.markdownNegotiation.enabled=true] - Enables markdown negotiation by Accept header in production runtime
+ * @param {boolean} [config.markdownNegotiation.agentFallback=true] - Enables markdown fallback for known AI bot user agents when Accept is absent
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -109,6 +112,12 @@ export function createDocsector (config = {}) {
       path: '/.well-known/api-catalog',
       items: [],
       ...config.apiCatalog
+    },
+
+    markdownNegotiation: {
+      enabled: true,
+      agentFallback: true,
+      ...config.markdownNegotiation
     }
   }
 }

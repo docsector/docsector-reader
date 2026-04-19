@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.1.0'
+const VERSION = '1.2.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -147,6 +147,12 @@ export default {
   //   enabled: true,
   //   path: '/.well-known/api-catalog',
   //   items: ['/mcp']
+  // },
+
+  // @ Markdown negotiation for agents (optional)
+  // markdownNegotiation: {
+  //   enabled: true,
+  //   agentFallback: true
   // },
 
   // @ Languages

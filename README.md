@@ -22,6 +22,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 
 - 📋 **Copy Page** — One-click button copies the current page as raw Markdown, ready to paste into LLMs
 - 📄 **View as Markdown** — Open any page as plain text by appending `.md` to the URL, with locale support (`?lang=`)
+- 🧠 **Markdown Negotiation** — Requests with `Accept: text/markdown` receive markdown responses, while browsers keep HTML by default
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
@@ -46,6 +47,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
+- 🧠 **Markdown Negotiation** — Responds with Markdown when clients send `Accept: text/markdown`, while keeping HTML as browser default
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
@@ -367,6 +369,11 @@ export default {
     enabled: true,
     path: '/.well-known/api-catalog',
     items: []
+  },
+
+  markdownNegotiation: {
+    enabled: true,
+    agentFallback: true
   },
 
   languages: [

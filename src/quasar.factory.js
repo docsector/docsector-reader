@@ -457,6 +457,38 @@ function createMarkdownEndpointPlugin (projectRoot) {
     return null
   }
 
+  function resolveNegotiatedFile (urlPath, lang) {
+    const pathname = (urlPath || '').split('?')[0]
+
+    if (pathname === '/' || pathname === '/index.html') {
+      const homepage = resolve(pagesDir, `Homepage.${lang}.md`)
+      return existsSync(homepage) ? homepage : null
+    }
+
+    if (pathname.endsWith('.md')) {
+      return resolveMarkdownFile(pathname, lang)
+    }
+
+    let clean = pathname
+    if (clean.endsWith('/index.html')) clean = clean.slice(0, -11)
+    if (clean.endsWith('/')) clean = clean.slice(0, -1)
+
+    if (!clean) {
+      const homepage = resolve(pagesDir, `Homepage.${lang}.md`)
+      return existsSync(homepage) ? homepage : null
+    }
+
+    if (clean.endsWith('/overview') || clean.endsWith('/showcase') || clean.endsWith('/vs')) {
+      return resolveMarkdownFile(`${clean}.md`, lang)
+    }
+
+    return resolveMarkdownFile(`${clean}/overview.md`, lang)
+  }
+
+  function estimateMarkdownTokens (markdown = '') {
+    return Math.max(1, Math.ceil(markdown.length / 4))
+  }
+
   // LLM bot user-agent patterns
   const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
 
@@ -466,6 +498,8 @@ function createMarkdownEndpointPlugin (projectRoot) {
     configureServer (server) {
       // Read default language from config
       let defaultLang = 'en-US'
+      let markdownNegotiationEnabled = true
+      let markdownAgentFallback = true
       try {
         const configPath = resolve(projectRoot, 'docsector.config.js')
         if (existsSync(configPath)) {
@@ -473,34 +507,56 @@ function createMarkdownEndpointPlugin (projectRoot) {
           const configContent = readFileSync(configPath, 'utf-8')
           const match = configContent.match(/defaultLanguage\s*:\s*['"]([^'"]+)['"]/)
           if (match) defaultLang = match[1]
+
+          const enabledMatch = configContent.match(/markdownNegotiation\s*:\s*\{[\s\S]*?enabled\s*:\s*(true|false)/)
+          if (enabledMatch) markdownNegotiationEnabled = enabledMatch[1] === 'true'
+
+          const fallbackMatch = configContent.match(/markdownNegotiation\s*:\s*\{[\s\S]*?agentFallback\s*:\s*(true|false)/)
+          if (fallbackMatch) markdownAgentFallback = fallbackMatch[1] === 'true'
         }
       } catch { /* use fallback */ }
 
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url, 'http://localhost')
+        const accept = (req.headers.accept || '').toLowerCase()
+        const wantsMarkdown = accept.includes('text/markdown')
+        const lang = url.searchParams.get('lang') || defaultLang
 
         // Explicit .md request
         if (url.pathname.endsWith('.md')) {
-          const lang = url.searchParams.get('lang') || defaultLang
           const file = resolveMarkdownFile(url.pathname, lang)
           if (!file) return next()
 
           const content = readFileSync(file, 'utf-8')
           res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
+          res.setHeader('Vary', 'Accept')
+          res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
           res.end(content)
           return
         }
 
-        // Auto-serve markdown to LLM bot crawlers
-        const ua = req.headers['user-agent'] || ''
-        if (LLM_BOT_PATTERN.test(ua)) {
-          const lang = url.searchParams.get('lang') || defaultLang
-          // Try appending /overview as the default subpage
-          const mdPath = url.pathname.replace(/\/$/, '') + '/overview.md'
-          const file = resolveMarkdownFile(mdPath, lang)
+        // Content negotiation for agents requesting markdown explicitly
+        if (markdownNegotiationEnabled && wantsMarkdown) {
+          const file = resolveNegotiatedFile(url.pathname, lang)
           if (file) {
             const content = readFileSync(file, 'utf-8')
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
+            res.setHeader('Vary', 'Accept')
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
+            res.end(content)
+            return
+          }
+        }
+
+        // Auto-serve markdown to LLM bot crawlers
+        const ua = req.headers['user-agent'] || ''
+        if (markdownAgentFallback && LLM_BOT_PATTERN.test(ua)) {
+          const file = resolveNegotiatedFile(url.pathname, lang)
+          if (file) {
+            const content = readFileSync(file, 'utf-8')
+            res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
+            res.setHeader('Vary', 'Accept')
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
             res.end(content)
             return
           }
@@ -561,6 +617,25 @@ function createMarkdownBuildPlugin (projectRoot) {
           writeFileSync(destFile, readFileSync(srcFile, 'utf-8'))
           count++
         }
+      }
+
+      // Generate homepage markdown files so root content can be negotiated in production
+      const languageValues = config.languages?.map(language => language.value).filter(Boolean) || []
+      const allLangs = [...new Set([defaultLang, ...languageValues])]
+      let homepageCount = 0
+      for (const lang of allLangs) {
+        const homepageSrc = resolve(pagesDir, `Homepage.${lang}.md`)
+        if (!existsSync(homepageSrc)) continue
+
+        const homepageContent = readFileSync(homepageSrc, 'utf-8')
+        writeFileSync(resolve(distDir, `homepage.${lang}.md`), homepageContent)
+        if (lang === defaultLang) {
+          writeFileSync(resolve(distDir, 'homepage.md'), homepageContent)
+        }
+        homepageCount++
+      }
+      if (homepageCount > 0) {
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated ${homepageCount} homepage markdown file(s)`)
       }
 
       console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
@@ -662,6 +737,103 @@ function createMarkdownBuildPlugin (projectRoot) {
         }
       } else {
         writeFileSync(headersPath, headersRule)
+      }
+
+      const markdownNegotiationConfig = config.markdownNegotiation || {}
+      const markdownNegotiationEnabled = markdownNegotiationConfig.enabled !== false
+      const markdownAgentFallback = markdownNegotiationConfig.agentFallback !== false
+
+      if (markdownNegotiationEnabled) {
+        const functionsDir = resolve(projectRoot, 'functions')
+        mkdirSync(functionsDir, { recursive: true })
+
+        const middlewareCode = `const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
+
+const DEFAULT_LANG = ${JSON.stringify(defaultLang)}
+const AGENT_FALLBACK = ${markdownAgentFallback ? 'true' : 'false'}
+
+function wantsMarkdown (request) {
+  const accept = (request.headers.get('accept') || '').toLowerCase()
+  return accept.includes('text/markdown')
+}
+
+function estimateTokens (markdown = '') {
+  return Math.max(1, Math.ceil(markdown.length / 4))
+}
+
+function shouldBypass (pathname) {
+  if (pathname === '/mcp' || pathname.startsWith('/mcp/')) return true
+  if (pathname.startsWith('/.well-known/')) return true
+  return /\\.(js|css|map|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|xml|json|txt)$/i.test(pathname)
+}
+
+function resolveMarkdownPath (pathname, lang) {
+  if (!pathname) return null
+  if (pathname.endsWith('.md')) return pathname
+  if (pathname === '/' || pathname === '/index.html') return '/homepage.' + lang + '.md'
+
+  let clean = pathname
+  if (clean.endsWith('/index.html')) clean = clean.slice(0, -11)
+  if (clean.endsWith('/')) clean = clean.slice(0, -1)
+
+  if (!clean) return '/homepage.' + lang + '.md'
+  if (clean.endsWith('/overview') || clean.endsWith('/showcase') || clean.endsWith('/vs')) {
+    return clean + '.md'
+  }
+
+  return clean + '/overview.md'
+}
+
+export async function onRequest (context) {
+  const { request, env, next } = context
+
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return next()
+  }
+
+  const url = new URL(request.url)
+  if (shouldBypass(url.pathname)) {
+    return next()
+  }
+
+  const ua = request.headers.get('user-agent') || ''
+  const acceptMarkdown = wantsMarkdown(request)
+  const fallbackMarkdown = AGENT_FALLBACK && LLM_BOT_PATTERN.test(ua)
+  if (!acceptMarkdown && !fallbackMarkdown) {
+    return next()
+  }
+
+  const lang = url.searchParams.get('lang') || DEFAULT_LANG
+  const markdownPath = resolveMarkdownPath(url.pathname, lang)
+  if (!markdownPath) {
+    return next()
+  }
+
+  const markdownUrl = new URL(url.toString())
+  markdownUrl.pathname = markdownPath
+  const markdownRequest = new Request(markdownUrl.toString(), request)
+  const markdownResponse = await env.ASSETS.fetch(markdownRequest)
+  if (!markdownResponse.ok) {
+    return next()
+  }
+
+  const markdown = await markdownResponse.text()
+  const headers = new Headers(markdownResponse.headers)
+  headers.set('Content-Type', 'text/markdown; charset=utf-8')
+  const vary = headers.get('Vary')
+  headers.set('Vary', vary ? vary + ', Accept' : 'Accept')
+  headers.set('x-markdown-tokens', String(estimateTokens(markdown)))
+
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: markdownResponse.status, headers })
+  }
+
+  return new Response(markdown, { status: markdownResponse.status, headers })
+}
+`
+
+        writeFileSync(resolve(functionsDir, '_middleware.js'), middlewareCode)
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated markdown negotiation middleware at functions/_middleware.js`)
       }
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
 
@@ -795,12 +967,12 @@ function createMarkdownBuildPlugin (projectRoot) {
 
             const headersWithLinks = readFileSync(headersPath, 'utf-8')
             if (!headersWithLinks.includes(catalogHref)) {
-              const apiCatalogHeaders = `${catalogHref}\n  Content-Type: application/linkset+json; profile=\"https://www.rfc-editor.org/info/rfc9727\"\n`
+              const apiCatalogHeaders = `${catalogHref}\n  Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"\n`
               writeFileSync(headersPath, headersWithLinks.trimEnd() + '\n\n' + apiCatalogHeaders)
               console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for ${catalogHref}`)
             }
           } else {
-            console.warn(`\x1b[33m[docsector]\x1b[0m Skipped API catalog generation: path must be a local URI path, got \"${apiCatalogPath}\"`)
+            console.warn(`\x1b[33m[docsector]\x1b[0m Skipped API catalog generation: path must be a local URI path, got "${apiCatalogPath}"`)
           }
         }
       }
@@ -874,7 +1046,10 @@ function createMarkdownBuildPlugin (projectRoot) {
           writeFileSync(headersPath, currentHeaders.trimEnd() + '\n\n' + mcpHeaders)
         }
 
-        // Generate or merge _routes.json for Cloudflare Pages
+      }
+
+      // Generate or merge _routes.json for Cloudflare Pages functions
+      if (config.mcp || markdownNegotiationEnabled) {
         const routesPath = resolve(distDir, '_routes.json')
         let routes = { version: 1, include: [], exclude: [] }
         if (existsSync(routesPath)) {
@@ -884,11 +1059,40 @@ function createMarkdownBuildPlugin (projectRoot) {
             // empty
           }
         }
-        if (!routes.include.includes('/mcp')) {
+
+        if (config.mcp && !routes.include.includes('/mcp')) {
           routes.include.push('/mcp')
         }
+
+        if (markdownNegotiationEnabled && !routes.include.includes('/*')) {
+          routes.include.push('/*')
+        }
+
+        const markdownExcludes = [
+          '/assets/*',
+          '/*.js',
+          '/*.css',
+          '/*.png',
+          '/*.jpg',
+          '/*.jpeg',
+          '/*.gif',
+          '/*.webp',
+          '/*.svg',
+          '/*.ico',
+          '/*.woff',
+          '/*.woff2',
+          '/*.ttf',
+          '/*.map'
+        ]
+
+        for (const excludePath of markdownExcludes) {
+          if (!routes.exclude.includes(excludePath)) {
+            routes.exclude.push(excludePath)
+          }
+        }
+
         writeFileSync(routesPath, JSON.stringify(routes, null, 2))
-        console.log(`\x1b[36m[docsector]\x1b[0m Added /mcp to _routes.json`)
+        console.log(`\x1b[36m[docsector]\x1b[0m Updated _routes.json for functions runtime`)
       }
     }
   }

@@ -37,4 +37,4 @@ yarn-error.log*
 yarn.lock
 
 # Other
-/functions/mcp.js
+/functions
