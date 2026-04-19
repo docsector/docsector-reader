@@ -117,9 +117,10 @@ export function filter (source) {
  * @param {Object} options.pages - Page registry from pages/index.js
  * @param {Object} options.boot - Boot meta from pages/boot.js
  * @param {string[]} [options.langs] - Language codes to process (auto-detected from langModules if omitted)
+ * @param {Object<string,string>} [options.homePageOverride] - Optional per-language Home markdown override
  * @returns {Object} Complete i18n messages object keyed by locale
  */
-export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
+export function buildMessages ({ langModules, mdModules, pages, boot, langs, homePageOverride = {} }) {
   // Auto-detect languages from HJSON files if not provided
   if (!langs) {
     langs = Object.keys(langModules).map(key => {
@@ -145,6 +146,11 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
   }
 
   function loadHomepage (lang) {
+    const override = homePageOverride?.[lang] ?? homePageOverride?.['en-US']
+    if (typeof override === 'string' && override.length > 0) {
+      return filter(override)
+    }
+
     const key = `../pages/Homepage.${lang}.md`
     const fallbackKey = '../pages/Homepage.en-US.md'
 
@@ -159,6 +165,23 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
   }
 
   function extractHeadingFromHomepage (lang) {
+    const override = homePageOverride?.[lang] ?? homePageOverride?.['en-US']
+    if (typeof override === 'string' && override.length > 0) {
+      const htmlHeadingMatch = override.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
+      if (htmlHeadingMatch) {
+        const htmlHeading = htmlHeadingMatch[1]
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (htmlHeading) {
+          return htmlHeading
+        }
+      }
+
+      const overrideMatch = override.match(/^#\s+(.+)$/m)
+      return overrideMatch ? overrideMatch[1].trim() : ''
+    }
+
     const key = `../pages/Homepage.${lang}.md`
     const fallbackKey = '../pages/Homepage.en-US.md'
 

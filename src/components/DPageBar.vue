@@ -71,6 +71,13 @@ const rawMarkdown = computed(() => {
 
 const markdownURL = computed(() => {
   if (store.state.page.base === 'home') {
+    const homePage = docsectorConfig.homePage || {}
+    const isRemoteHome = homePage.source === 'remote-readme' && typeof homePage.remoteReadmeUrl === 'string' && homePage.remoteReadmeUrl.length > 0
+
+    if (isRemoteHome) {
+      return homePage.remoteReadmeUrl
+    }
+
     return `/Homepage.${locale.value}.md`
   }
 
@@ -87,12 +94,27 @@ const fullMarkdownURL = computed(() => {
   return `${window.location.origin}${path}.md`
 })
 
+const chatSourceURL = computed(() => {
+  if (store.state.page.base !== 'home') {
+    return fullMarkdownURL.value
+  }
+
+  const homePage = docsectorConfig.homePage || {}
+  const isRemoteHome = homePage.source === 'remote-readme' && typeof homePage.remoteReadmeUrl === 'string' && homePage.remoteReadmeUrl.length > 0
+
+  if (isRemoteHome) {
+    return `${window.location.origin}/`
+  }
+
+  return fullMarkdownURL.value
+})
+
 const chatgptURL = computed(() => {
-  const prompt = `Read ${fullMarkdownURL.value} and answer questions about the content.`
+  const prompt = `Read ${chatSourceURL.value} and answer questions about the content.`
   return `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`
 })
 const claudeURL = computed(() => {
-  const prompt = `Read ${fullMarkdownURL.value} and answer questions about the content.`
+  const prompt = `Read ${chatSourceURL.value} and answer questions about the content.`
   return `https://claude.ai/new?q=${encodeURIComponent(prompt)}`
 })
 

@@ -98,6 +98,11 @@
  * @param {boolean} [config.webMcp.tools.getPage=true] - Enables tool get_page
  * @param {boolean} [config.webMcp.tools.navigateTo=true] - Enables tool navigate_to
  * @param {boolean} [config.webMcp.tools.copyCurrentPage=true] - Enables tool copy_current_page
+ * @param {Object} [config.homePage] - Home page content source settings
+ * @param {'local'|'remote-readme'} [config.homePage.source='local'] - Source strategy for home page markdown
+ * @param {string|null} [config.homePage.remoteReadmeUrl=null] - Absolute URL of remote README markdown when source is remote-readme
+ * @param {number} [config.homePage.timeoutMs=8000] - Timeout in milliseconds for remote README fetch during build
+ * @param {boolean} [config.homePage.fallbackToLocal=true] - Fallback to local Homepage.{lang}.md when remote fetch fails
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -217,6 +222,14 @@ export function createDocsector (config = {}) {
         copyCurrentPage: true,
         ...(config.webMcp?.tools || {})
       }
+    },
+
+    homePage: {
+      source: 'local',
+      remoteReadmeUrl: null,
+      timeoutMs: 8000,
+      fallbackToLocal: true,
+      ...config.homePage
     }
   }
 }

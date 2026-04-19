@@ -58,6 +58,10 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔐 **Web Bot Auth** — Can publish a signed HTTP message signatures directory and includes helpers to sign outbound bot requests
 - 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
+- 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
+- 🧩 **HTML-Preserving Remote Home** — Preserves raw HTML blocks from fetched Home README sources and resolves Home title from HTML `<h1>` or Markdown heading
+- 🧭 **Remote Home Action Routing** — Home action links adapt to remote mode (`/` for AI handoff prompts and `remoteReadmeUrl` for “View as Markdown”)
+- 🧼 **Clean Remote Home Footer** — Hides edit and translation footer metadata on remote Home pages for a cleaner landing experience
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
@@ -330,6 +334,39 @@ export default {
 ```
 
 Set any target to `null` or `false` to disable that relation.
+
+---
+
+## 🏠 Remote README as Home
+
+You can configure Docsector Reader to use a remote README as homepage content.
+
+- Fetch happens at build-time.
+- The same README content is used for all configured languages.
+- If fetch fails, it falls back to local `src/pages/Homepage.{lang}.md` by default.
+
+### Configure
+
+```javascript
+export default {
+  // ...other config
+
+  homePage: {
+    source: 'remote-readme',
+    remoteReadmeUrl: 'https://raw.githubusercontent.com/your-org/your-repo/main/README.md',
+    timeoutMs: 8000,
+    fallbackToLocal: true
+  }
+}
+```
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/homepage.md
+cat dist/spa/homepage.en-US.md
+```
 
 ---
 

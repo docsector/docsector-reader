@@ -157,11 +157,19 @@ const next = computed(() => {
 
   return ''
 })
+
+const hideRemoteHomeFooterMeta = computed(() => {
+  const homePage = docsectorConfig.homePage || {}
+  const isRemoteHome = homePage.source === 'remote-readme' && typeof homePage.remoteReadmeUrl === 'string' && homePage.remoteReadmeUrl.length > 0
+  const isHomePage = route.path === '/' || store.state.page.base === 'home'
+
+  return isRemoteHome && isHomePage
+})
 </script>
 
 <template>
 <div id="d-page-meta">
-  <div class="row justify-between q-mt-lg">
+  <div v-if="!hideRemoteHomeFooterMeta" class="row justify-between q-mt-lg">
     <div id="d-page-edit" class="col">
       <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github">
         <q-icon class="q-mr-xs" name="fab fa-github" size="20px" />

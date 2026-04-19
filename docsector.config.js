@@ -43,6 +43,14 @@ export default {
     toolSuffix: 'docsector'
   },
 
+  // @ Home page source
+  homePage: {
+    source: 'remote-readme',
+    remoteReadmeUrl: 'https://raw.githubusercontent.com/docsector/docsector-reader/main/README.md',
+    timeoutMs: 8000,
+    fallbackToLocal: true
+  },
+
   // @ Languages
   languages: [
     {

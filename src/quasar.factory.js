@@ -141,7 +141,6 @@ function createPrerenderMetaPlugin (projectRoot) {
     async closeBundle () {
       const distDir = resolve(projectRoot, 'dist', 'spa')
       const baseHtmlPath = resolve(distDir, 'index.html')
-
       if (!existsSync(baseHtmlPath)) return
 
       const baseHtml = readFileSync(baseHtmlPath, 'utf-8')
@@ -421,6 +420,148 @@ function createGitDatesPlugin (projectRoot) {
   }
 }
 
+function getHomePageConfig (config = {}) {
+  const homePage = config.homePage || {}
+  return {
+    source: homePage.source || 'local',
+    remoteReadmeUrl: homePage.remoteReadmeUrl || null,
+    timeoutMs: Number.isFinite(homePage.timeoutMs)
+      ? Math.max(1000, Number(homePage.timeoutMs))
+      : 8000,
+    fallbackToLocal: homePage.fallbackToLocal !== false
+  }
+}
+
+function getConfiguredLanguages (config = {}) {
+  const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+  const languageValues = config.languages?.map(language => language.value).filter(Boolean) || []
+  const langs = [...new Set([defaultLang, ...languageValues])]
+  return { defaultLang, langs }
+}
+
+async function fetchRemoteMarkdown (url, timeoutMs = 8000) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'text/markdown, text/plain;q=0.9, */*;q=0.8'
+      },
+      signal: controller.signal
+    })
+
+    if (!response.ok) {
+      throw new Error(`Remote README request failed with status ${response.status}`)
+    }
+
+    return await response.text()
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function resolveHomePageSources (projectRoot, config = {}, options = {}) {
+  const { logPrefix = '[docsector]' } = options
+  const pagesDir = resolve(projectRoot, 'src', 'pages')
+  const { defaultLang, langs } = getConfiguredLanguages(config)
+  const homePageConfig = getHomePageConfig(config)
+
+  const byLang = {}
+  let mode = 'local'
+
+  if (homePageConfig.source === 'remote-readme' && homePageConfig.remoteReadmeUrl) {
+    try {
+      const remote = await fetchRemoteMarkdown(homePageConfig.remoteReadmeUrl, homePageConfig.timeoutMs)
+      for (const lang of langs) {
+        byLang[lang] = remote
+      }
+      mode = 'remote-readme'
+      console.log(`\x1b[36m${logPrefix}\x1b[0m Loaded remote README for home page`)
+      return { mode, byLang, defaultLang, langs }
+    } catch (error) {
+      const reason = error?.message || String(error)
+      console.warn(`${logPrefix} Failed to load remote README for home page: ${reason}`)
+
+      if (!homePageConfig.fallbackToLocal) {
+        throw error
+      }
+    }
+  }
+
+  for (const lang of langs) {
+    const homepage = resolve(pagesDir, `Homepage.${lang}.md`)
+    if (existsSync(homepage)) {
+      byLang[lang] = readFileSync(homepage, 'utf-8')
+      continue
+    }
+
+    const fallback = resolve(pagesDir, `Homepage.${defaultLang}.md`)
+    if (existsSync(fallback)) {
+      byLang[lang] = readFileSync(fallback, 'utf-8')
+    }
+  }
+
+  return { mode, byLang, defaultLang, langs }
+}
+
+function createHomePageOverridePlugin (projectRoot) {
+  const virtualId = 'virtual:docsector-homepage-override'
+  const resolvedId = '\0' + virtualId
+  let byLang = null
+  let loadPromise = null
+
+  const ensureSources = async () => {
+    if (byLang) return byLang
+    if (!loadPromise) {
+      loadPromise = (async () => {
+        const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
+        const { default: config } = await import(configUrl)
+        const sources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
+        byLang = sources.byLang
+        return byLang
+      })().finally(() => {
+        loadPromise = null
+      })
+    }
+
+    return loadPromise
+  }
+
+  return {
+    name: 'docsector-homepage-override',
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    async buildStart () {
+      await ensureSources()
+    },
+    configureServer () {
+      ensureSources().catch((error) => {
+        console.warn(`[docsector] Could not prepare home page override: ${error?.message || String(error)}`)
+      })
+    },
+    async load (id) {
+      if (id === resolvedId) {
+        await ensureSources()
+        return `export default ${JSON.stringify(byLang || {})}`
+      }
+
+      await ensureSources()
+      if (!byLang) return null
+
+      const match = id.match(/Homepage\.([A-Za-z0-9-]+)\.md\?raw(?:$|&)/)
+      if (!match) return null
+
+      const lang = match[1]
+      const content = byLang[lang]
+      if (typeof content !== 'string') return null
+
+      return `export default ${JSON.stringify(content)}`
+    }
+  }
+}
+
 /**
  * Create a Vite plugin that serves raw Markdown content for `.md` suffixed URLs.
  *
@@ -496,31 +637,62 @@ function createMarkdownEndpointPlugin (projectRoot) {
     name: 'docsector-markdown-endpoint',
 
     configureServer (server) {
-      // Read default language from config
       let defaultLang = 'en-US'
       let markdownNegotiationEnabled = true
       let markdownAgentFallback = true
-      try {
-        const configPath = resolve(projectRoot, 'docsector.config.js')
-        if (existsSync(configPath)) {
-          // Dynamic import in dev — we read it synchronously via a simple approach
-          const configContent = readFileSync(configPath, 'utf-8')
-          const match = configContent.match(/defaultLanguage\s*:\s*['"]([^'"]+)['"]/)
-          if (match) defaultLang = match[1]
+      let homepageByLang = null
 
-          const enabledMatch = configContent.match(/markdownNegotiation\s*:\s*\{[\s\S]*?enabled\s*:\s*(true|false)/)
-          if (enabledMatch) markdownNegotiationEnabled = enabledMatch[1] === 'true'
+      const configReady = (async () => {
+        try {
+          const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
+          const { default: config } = await import(configUrl)
 
-          const fallbackMatch = configContent.match(/markdownNegotiation\s*:\s*\{[\s\S]*?agentFallback\s*:\s*(true|false)/)
-          if (fallbackMatch) markdownAgentFallback = fallbackMatch[1] === 'true'
+          defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+          const markdownNegotiationConfig = config.markdownNegotiation || {}
+          markdownNegotiationEnabled = markdownNegotiationConfig.enabled !== false
+          markdownAgentFallback = markdownNegotiationConfig.agentFallback !== false
+
+          const sources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
+          homepageByLang = sources.byLang
+        } catch (error) {
+          console.warn(`[docsector] Could not load config for markdown endpoint: ${error?.message || String(error)}`)
         }
-      } catch { /* use fallback */ }
+      })()
 
-      server.middlewares.use((req, res, next) => {
+      server.middlewares.use(async (req, res, next) => {
+        await configReady
+
         const url = new URL(req.url, 'http://localhost')
         const accept = (req.headers.accept || '').toLowerCase()
         const wantsMarkdown = accept.includes('text/markdown')
         const lang = url.searchParams.get('lang') || defaultLang
+
+        const homepagePath = url.pathname === '/' || url.pathname === '/index.html'
+        const remoteHomepage = homepageByLang?.[lang] || homepageByLang?.[defaultLang] || null
+
+        const homepageMarkdownMatch = url.pathname.match(/^\/homepage(?:\.([A-Za-z0-9-]+))?\.md$/i)
+        if (homepageMarkdownMatch) {
+          const requestedLang = homepageMarkdownMatch[1] || lang
+          const homepageMarkdown = homepageByLang?.[requestedLang] || homepageByLang?.[defaultLang] || null
+
+          if (typeof homepageMarkdown === 'string' && homepageMarkdown.length > 0) {
+            res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
+            res.setHeader('Vary', 'Accept')
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(homepageMarkdown)))
+            res.end(homepageMarkdown)
+            return
+          }
+        }
+
+        if (homepagePath && typeof remoteHomepage === 'string' && remoteHomepage.length > 0) {
+          if ((markdownNegotiationEnabled && wantsMarkdown) || (markdownAgentFallback && LLM_BOT_PATTERN.test(req.headers['user-agent'] || ''))) {
+            res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
+            res.setHeader('Vary', 'Accept')
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(remoteHomepage)))
+            res.end(remoteHomepage)
+            return
+          }
+        }
 
         // Explicit .md request
         if (url.pathname.endsWith('.md')) {
@@ -620,16 +792,14 @@ function createMarkdownBuildPlugin (projectRoot) {
       }
 
       // Generate homepage markdown files so root content can be negotiated in production
-      const languageValues = config.languages?.map(language => language.value).filter(Boolean) || []
-      const allLangs = [...new Set([defaultLang, ...languageValues])]
+      const homepageSources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
       let homepageCount = 0
-      for (const lang of allLangs) {
-        const homepageSrc = resolve(pagesDir, `Homepage.${lang}.md`)
-        if (!existsSync(homepageSrc)) continue
+      for (const lang of homepageSources.langs) {
+        const homepageContent = homepageSources.byLang?.[lang]
+        if (typeof homepageContent !== 'string' || homepageContent.length === 0) continue
 
-        const homepageContent = readFileSync(homepageSrc, 'utf-8')
         writeFileSync(resolve(distDir, `homepage.${lang}.md`), homepageContent)
-        if (lang === defaultLang) {
+        if (lang === homepageSources.defaultLang) {
           writeFileSync(resolve(distDir, 'homepage.md'), homepageContent)
         }
         homepageCount++
@@ -1705,6 +1875,7 @@ export function createQuasarConfig (options = {}) {
 
       vitePlugins: [
         createHjsonPlugin(),
+        createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),
         createMarkdownEndpointPlugin(projectRoot),
         createMarkdownBuildPlugin(projectRoot),

@@ -130,7 +130,10 @@ const tokenized = computed(() => {
 
   const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(normalizedSource)
 
-  const Markdown = new MarkdownIt()
+  const Markdown = new MarkdownIt({
+    // Home remote README may contain raw HTML blocks (badges, centered headers, etc.)
+    html: true
+  })
   Markdown.use(attrs, {
     leftDelimiter: ':',
     rightDelimiter: ';',

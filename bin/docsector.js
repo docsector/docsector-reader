@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.6.0'
+const VERSION = '1.7.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -163,6 +163,16 @@ export default {
   //     navigateTo: true,
   //     copyCurrentPage: true
   //   }
+  // },
+
+  // @ Home page source (optional)
+  // Use a remote README.md as homepage content at build-time.
+  // Falls back to local src/pages/Homepage.{lang}.md on fetch failure by default.
+  // homePage: {
+  //   source: 'remote-readme', // 'local' | 'remote-readme'
+  //   remoteReadmeUrl: 'https://raw.githubusercontent.com/your-org/your-repo/main/README.md',
+  //   timeoutMs: 8000,
+  //   fallbackToLocal: true
   // },
 
   // @ Homepage Link headers for agent discovery (optional)
