@@ -41,6 +41,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 🧱 **Raw HTML in Markdown** — Renders inline and block HTML tags inside markdown sections (including homepage remote README content)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
@@ -59,6 +60,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
+- 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
