@@ -78,6 +78,15 @@
  * @param {string} [config.agentSkills.path='/.well-known/agent-skills/index.json'] - Output URI path for Agent Skills index
  * @param {string} [config.agentSkills.schema='https://schemas.agentskills.io/discovery/0.2.0/schema.json'] - JSON Schema identifier for index payload
  * @param {Array<{name:string,type:'skill-md'|'archive',description:string,url:string,digest?:string}>} [config.agentSkills.skills=[]] - Skills to publish in discovery index
+ * @param {Object} [config.mcpServerCard] - MCP Server Card discovery settings
+ * @param {boolean} [config.mcpServerCard.enabled=false] - Enables generation of MCP Server Card discovery document
+ * @param {string} [config.mcpServerCard.path='/.well-known/mcp/server-card.json'] - Output URI path for MCP Server Card
+ * @param {string} [config.mcpServerCard.transportEndpoint='/mcp'] - MCP transport endpoint exposed by the server
+ * @param {string} [config.mcpServerCard.transportType='streamable-http'] - Transport type label for discovery metadata
+ * @param {string} [config.mcpServerCard.protocolVersion='2025-03-26'] - Protocol version advertised by the server card
+ * @param {Object} [config.mcpServerCard.capabilities] - Optional capability overrides for tools/resources/prompts
+ * @param {Array<Object>} [config.mcpServerCard.remotes=[]] - Optional additional remotes to include in the server card
+ * @param {Object} [config.mcpServerCard.metadata] - Optional additional metadata merged into the server card payload
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -169,6 +178,18 @@ export function createDocsector (config = {}) {
       schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
       skills: [],
       ...config.agentSkills
+    },
+
+    mcpServerCard: {
+      enabled: false,
+      path: '/.well-known/mcp/server-card.json',
+      transportEndpoint: '/mcp',
+      transportType: 'streamable-http',
+      protocolVersion: '2025-03-26',
+      capabilities: null,
+      remotes: [],
+      metadata: null,
+      ...config.mcpServerCard
     }
   }
 }

@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.4.0'
+const VERSION = '1.5.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -131,6 +131,21 @@ export default {
   // mcp: {
   //   serverName: 'my-docs',
   //   toolSuffix: 'my_docs'
+  // },
+
+  // @ MCP Server Card discovery (optional)
+  // Publishes /.well-known/mcp/server-card.json for pre-connection discovery.
+  // mcpServerCard: {
+  //   enabled: true,
+  //   path: '/.well-known/mcp/server-card.json',
+  //   transportEndpoint: '/mcp',
+  //   transportType: 'streamable-http',
+  //   protocolVersion: '2025-03-26',
+  //   capabilities: {
+  //     tools: { supported: true },
+  //     resources: { supported: false },
+  //     prompts: { supported: false }
+  //   }
   // },
 
   // @ Homepage Link headers for agent discovery (optional)

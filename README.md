@@ -30,6 +30,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
+- 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -138,6 +139,69 @@ curl -X POST http://localhost:8788/mcp \
   }
 }
 ```
+
+---
+
+## 🪪 MCP Server Card Discovery
+
+Docsector Reader can publish an MCP Server Card at:
+
+- `/.well-known/mcp/server-card.json`
+
+This supports pre-connection MCP discovery, exposing:
+
+- `serverInfo` (`name`, `version`)
+- MCP transport endpoint (defaults to `/mcp`)
+- `capabilities` for tools/resources/prompts
+
+When MCP is enabled, tool capabilities are derived from the generated server:
+
+- `search_{toolSuffix}`
+- `get_page_{toolSuffix}`
+
+### Configure
+
+```javascript
+export default {
+  // ...other config
+
+  mcp: {
+    serverName: 'my-docs',
+    toolSuffix: 'my_docs'
+  },
+
+  mcpServerCard: {
+    enabled: true,
+    path: '/.well-known/mcp/server-card.json',
+    transportEndpoint: '/mcp',
+    transportType: 'streamable-http',
+    protocolVersion: '2025-03-26',
+    capabilities: {
+      tools: { supported: true },
+      resources: { supported: false },
+      prompts: { supported: false }
+    }
+  }
+}
+```
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/.well-known/mcp/server-card.json
+cat dist/spa/_headers
+```
+
+External validation:
+
+```bash
+curl -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://YOUR-SITE.com"}'
+```
+
+Check `checks.discovery.mcpServerCard.status` equals `"pass"`.
 
 ---
 
@@ -548,6 +612,14 @@ export default {
   markdownNegotiation: {
     enabled: true,
     agentFallback: true
+  },
+
+  mcpServerCard: {
+    enabled: true,
+    path: '/.well-known/mcp/server-card.json',
+    transportEndpoint: '/mcp',
+    transportType: 'streamable-http',
+    protocolVersion: '2025-03-26'
   },
 
   contentSignals: {

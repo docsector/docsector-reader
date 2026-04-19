@@ -757,6 +757,8 @@ function createMarkdownBuildPlugin (projectRoot) {
       const contentSignalsEnabled = contentSignalsConfig.enabled === true
       const agentSkillsConfig = config.agentSkills || {}
       const agentSkillsEnabled = agentSkillsConfig.enabled === true
+      const mcpServerCardConfig = config.mcpServerCard || {}
+      const mcpServerCardEnabled = mcpServerCardConfig.enabled === true
 
       const toUrl = (href) => {
         if (!href) return null
@@ -1108,6 +1110,54 @@ export async function onRequest (context) {
             const skillsHeaders = `${indexHref}\n  Content-Type: application/json; charset=utf-8\n`
             writeFileSync(headersPath, headersWithSkills.trimEnd() + '\n\n' + skillsHeaders)
             console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for ${indexHref}`)
+          }
+        }
+      }
+
+      if (mcpServerCardEnabled) {
+        if (!config.mcp) {
+          console.warn('\x1b[33m[docsector]\x1b[0m Skipped MCP Server Card generation: mcp config is not enabled')
+        } else {
+          const mcpServerCardPath = mcpServerCardConfig.path || '/.well-known/mcp/server-card.json'
+          const cardDistPath = normalizeLocalPath(mcpServerCardPath)
+
+          if (!cardDistPath) {
+            console.warn(`\x1b[33m[docsector]\x1b[0m Skipped MCP Server Card generation: path must be a local URI path, got "${mcpServerCardPath}"`)
+          } else {
+            const cardHref = mcpServerCardPath.startsWith('/') ? mcpServerCardPath : `/${mcpServerCardPath}`
+            const mcpServerName = config.mcp.serverName || config.branding?.name || 'docs'
+            const mcpServerVersion = config.branding?.version || '1.0.0'
+            const mcpToolSuffix = config.mcp.toolSuffix || 'docs'
+            const transportEndpoint = mcpServerCardConfig.transportEndpoint || '/mcp'
+            const endpoint = toUrl(transportEndpoint)
+
+            if (!endpoint) {
+              console.warn('\x1b[33m[docsector]\x1b[0m Skipped MCP Server Card generation: unable to resolve transport endpoint URL')
+            } else {
+              const cardPayload = buildMcpServerCardPayload({
+                config,
+                mcpServerCardConfig,
+                serverName: mcpServerName,
+                serverVersion: mcpServerVersion,
+                endpoint,
+                toolSuffix: mcpToolSuffix
+              })
+
+              const cardDir = resolve(distDir, cardDistPath, '..')
+              mkdirSync(cardDir, { recursive: true })
+              writeFileSync(
+                resolve(distDir, cardDistPath),
+                JSON.stringify(cardPayload, null, 2) + '\n'
+              )
+              console.log(`\x1b[36m[docsector]\x1b[0m Generated ${cardHref}`)
+
+              const headersWithServerCard = readFileSync(headersPath, 'utf-8')
+              if (!headersWithServerCard.includes(cardHref)) {
+                const serverCardHeaders = `${cardHref}\n  Content-Type: application/json; charset=utf-8\n`
+                writeFileSync(headersPath, headersWithServerCard.trimEnd() + '\n\n' + serverCardHeaders)
+                console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for ${cardHref}`)
+              }
+            }
           }
         }
       }
@@ -1502,6 +1552,87 @@ function resolveAgentSkillArtifactPath (artifactUrl, { siteUrl, distDir }) {
   if (!relativePath) return null
 
   return resolve(distDir, relativePath)
+}
+
+function mergeObjects (base, override) {
+  if (!override || typeof override !== 'object' || Array.isArray(override)) {
+    return base
+  }
+
+  return { ...base, ...override }
+}
+
+function buildMcpServerCardPayload ({
+  config,
+  mcpServerCardConfig,
+  serverName,
+  serverVersion,
+  endpoint,
+  toolSuffix
+}) {
+  const transportType = mcpServerCardConfig.transportType || 'streamable-http'
+  const protocolVersion = mcpServerCardConfig.protocolVersion || '2025-03-26'
+  const baseTools = [
+    `search_${toolSuffix}`,
+    `get_page_${toolSuffix}`
+  ]
+
+  const defaultCapabilities = {
+    tools: {
+      supported: true,
+      names: baseTools
+    },
+    resources: {
+      supported: false
+    },
+    prompts: {
+      supported: false
+    }
+  }
+
+  const capabilitiesOverride = (mcpServerCardConfig.capabilities && typeof mcpServerCardConfig.capabilities === 'object' && !Array.isArray(mcpServerCardConfig.capabilities))
+    ? mcpServerCardConfig.capabilities
+    : {}
+  const capabilities = {
+    ...capabilitiesOverride,
+    tools: mergeObjects(defaultCapabilities.tools, capabilitiesOverride.tools),
+    resources: mergeObjects(defaultCapabilities.resources, capabilitiesOverride.resources),
+    prompts: mergeObjects(defaultCapabilities.prompts, capabilitiesOverride.prompts)
+  }
+
+  const primaryRemote = {
+    transportType,
+    endpoint,
+    supportedProtocolVersions: [protocolVersion]
+  }
+
+  const customRemotes = Array.isArray(mcpServerCardConfig.remotes)
+    ? mcpServerCardConfig.remotes
+    : []
+  const remotes = [primaryRemote, ...customRemotes]
+
+  const payload = {
+    serverInfo: {
+      name: serverName,
+      version: serverVersion
+    },
+    title: config.branding?.name || serverName,
+    description: config.branding?.description || null,
+    transport: {
+      type: transportType,
+      endpoint
+    },
+    remotes,
+    capabilities,
+    tools: baseTools.map(name => ({ name }))
+  }
+
+  const metadata = mcpServerCardConfig.metadata
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return { ...payload, ...metadata }
+  }
+
+  return payload
 }
 
 /**
