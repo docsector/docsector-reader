@@ -47,6 +47,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
+- 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - 🧠 **Markdown Negotiation** — Responds with Markdown when clients send `Accept: text/markdown`, while keeping HTML as browser default
