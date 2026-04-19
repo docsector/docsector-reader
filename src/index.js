@@ -47,8 +47,13 @@
  * @param {Object} [config.linkHeaders] - Homepage Link headers for agent discovery
  * @param {boolean} [config.linkHeaders.enabled=true] - Enables homepage Link headers generation
  * @param {string|null|false} [config.linkHeaders.serviceDoc='/'] - Target URI for rel="service-doc"
+ * @param {string|null|false} [config.linkHeaders.apiCatalog='/.well-known/api-catalog'] - Target URI for rel="api-catalog"
  * @param {string|null|false} [config.linkHeaders.serviceDesc='/mcp'] - Target URI for rel="service-desc" (only emitted when MCP is enabled)
  * @param {string|null|false} [config.linkHeaders.describedBy='/llms.txt'] - Target URI for rel="describedby" (only emitted when llms.txt is generated)
+ * @param {Object} [config.apiCatalog] - API catalog generation settings
+ * @param {boolean} [config.apiCatalog.enabled=true] - Enables generation of API catalog artifact
+ * @param {string} [config.apiCatalog.path='/.well-known/api-catalog'] - Output URI path for API catalog artifact
+ * @param {Array<string|{href: string}>} [config.apiCatalog.items=[]] - Additional API endpoint links to include as item relations
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -93,9 +98,17 @@ export function createDocsector (config = {}) {
     linkHeaders: {
       enabled: true,
       serviceDoc: '/',
+      apiCatalog: '/.well-known/api-catalog',
       serviceDesc: '/mcp',
       describedBy: '/llms.txt',
       ...config.linkHeaders
+    },
+
+    apiCatalog: {
+      enabled: true,
+      path: '/.well-known/api-catalog',
+      items: [],
+      ...config.apiCatalog
     }
   }
 }

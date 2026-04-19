@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -136,9 +136,17 @@ export default {
   // @ Homepage Link headers for agent discovery (optional)
   // linkHeaders: {
   //   enabled: true,
+  //   apiCatalog: '/.well-known/api-catalog',
   //   serviceDoc: '/',
   //   serviceDesc: '/mcp',
   //   describedBy: '/llms.txt'
+  // },
+
+  // @ API catalog artifact (RFC 9727) (optional)
+  // apiCatalog: {
+  //   enabled: true,
+  //   path: '/.well-known/api-catalog',
+  //   items: ['/mcp']
   // },
 
   // @ Languages

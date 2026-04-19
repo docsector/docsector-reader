@@ -679,6 +679,13 @@ function createMarkdownBuildPlugin (projectRoot) {
           homepageLinks.push({ rel: 'service-doc', href: serviceDocHref })
         }
 
+        const apiCatalogHref = linkHeadersConfig.apiCatalog === undefined
+          ? '/.well-known/api-catalog'
+          : linkHeadersConfig.apiCatalog
+        if (apiCatalogHref) {
+          homepageLinks.push({ rel: 'api-catalog', href: apiCatalogHref })
+        }
+
         const serviceDescHref = linkHeadersConfig.serviceDesc === undefined
           ? '/mcp'
           : linkHeadersConfig.serviceDesc
@@ -694,19 +701,106 @@ function createMarkdownBuildPlugin (projectRoot) {
         }
 
         if (homepageLinks.length > 0) {
-          const linkLines = homepageLinks.map(({ rel, href }) => `  Link: <${href}>; rel="${rel}"`).join('\n')
-          const homepageRule = ['/','/index.html']
-            .map(path => `${path}\n${linkLines}`)
-            .join('\n\n') + '\n'
-
           const currentHeaders = readFileSync(headersPath, 'utf-8')
-          const hasAgentLinks = currentHeaders.includes('rel="service-doc"')
-            || currentHeaders.includes('rel="service-desc"')
-            || currentHeaders.includes('rel="describedby"')
+          const missingHomepageLinks = homepageLinks.filter(({ rel }) => !currentHeaders.includes(`rel="${rel}"`))
 
-          if (!hasAgentLinks) {
+          if (missingHomepageLinks.length > 0) {
+            const linkLines = missingHomepageLinks
+              .map(({ rel, href }) => `  Link: <${href}>; rel="${rel}"`)
+              .join('\n')
+            const homepageRule = ['/', '/index.html']
+              .map(path => `${path}\n${linkLines}`)
+              .join('\n\n') + '\n'
+
             writeFileSync(headersPath, currentHeaders.trimEnd() + '\n\n' + homepageRule)
-            console.log(`\x1b[36m[docsector]\x1b[0m Added homepage Link headers for agent discovery`)
+            console.log(`\x1b[36m[docsector]\x1b[0m Added homepage Link headers for agent discovery (${missingHomepageLinks.length} relation(s))`)
+          }
+        }
+
+        // Generate /.well-known/api-catalog Linkset document (RFC 9727)
+        const apiCatalogConfig = config.apiCatalog || {}
+        const apiCatalogEnabled = apiCatalogConfig.enabled !== false
+        const apiCatalogPath = (apiCatalogConfig.path || apiCatalogHref || '/.well-known/api-catalog')
+
+        const toUrl = (href) => {
+          if (!href) return null
+          if (/^https?:\/\//i.test(href)) return href
+          const normalizedHref = href.startsWith('/') ? href : `/${href}`
+          return siteUrl ? `${siteUrl}${normalizedHref}` : normalizedHref
+        }
+
+        const normalizeLocalPath = (href) => {
+          if (!href || /^https?:\/\//i.test(href)) return null
+          const path = href.startsWith('/') ? href.slice(1) : href
+          return path || null
+        }
+
+        if (apiCatalogEnabled && apiCatalogPath) {
+          const catalogDistPath = normalizeLocalPath(apiCatalogPath)
+
+          if (catalogDistPath) {
+            const catalogHref = apiCatalogPath.startsWith('/') ? apiCatalogPath : `/${apiCatalogPath}`
+            const catalogEntry = {
+              anchor: toUrl(catalogHref)
+            }
+
+            const catalogServiceDoc = toUrl(serviceDocHref)
+            if (catalogServiceDoc) {
+              catalogEntry['service-doc'] = [{ href: catalogServiceDoc }]
+            }
+
+            const catalogServiceDesc = config.mcp ? toUrl(serviceDescHref) : null
+            if (catalogServiceDesc) {
+              catalogEntry['service-desc'] = [{ href: catalogServiceDesc }]
+            }
+
+            const catalogDescribedBy = siteUrl ? toUrl(describedByHref) : null
+            if (catalogDescribedBy) {
+              catalogEntry.describedby = [{ href: catalogDescribedBy }]
+            }
+
+            const customItems = Array.isArray(apiCatalogConfig.items)
+              ? apiCatalogConfig.items
+              : []
+            const itemHrefs = new Set()
+
+            if (catalogServiceDesc) {
+              itemHrefs.add(catalogServiceDesc)
+            }
+
+            for (const item of customItems) {
+              if (typeof item === 'string') {
+                const href = toUrl(item)
+                if (href) itemHrefs.add(href)
+                continue
+              }
+
+              if (item && typeof item === 'object' && typeof item.href === 'string') {
+                const href = toUrl(item.href)
+                if (href) itemHrefs.add(href)
+              }
+            }
+
+            if (itemHrefs.size > 0) {
+              catalogEntry.item = [...itemHrefs].map(href => ({ href }))
+            }
+
+            const catalogDir = resolve(distDir, catalogDistPath, '..')
+            mkdirSync(catalogDir, { recursive: true })
+            writeFileSync(
+              resolve(distDir, catalogDistPath),
+              JSON.stringify({ linkset: [catalogEntry] }, null, 2) + '\n'
+            )
+            console.log(`\x1b[36m[docsector]\x1b[0m Generated ${catalogHref}`)
+
+            const headersWithLinks = readFileSync(headersPath, 'utf-8')
+            if (!headersWithLinks.includes(catalogHref)) {
+              const apiCatalogHeaders = `${catalogHref}\n  Content-Type: application/linkset+json; profile=\"https://www.rfc-editor.org/info/rfc9727\"\n`
+              writeFileSync(headersPath, headersWithLinks.trimEnd() + '\n\n' + apiCatalogHeaders)
+              console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for ${catalogHref}`)
+            }
+          } else {
+            console.warn(`\x1b[33m[docsector]\x1b[0m Skipped API catalog generation: path must be a local URI path, got \"${apiCatalogPath}\"`)
           }
         }
       }

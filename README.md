@@ -26,7 +26,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
-- 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
+- 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
 
@@ -48,6 +48,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
+- 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 
 ---
@@ -162,6 +163,7 @@ Docsector Reader adds homepage `Link` response headers at build time for agent d
 
 Default relations emitted on homepage (`/` and `/index.html`):
 
+- `rel="api-catalog"` → `</.well-known/api-catalog>`
 - `rel="service-doc"` → `</>`
 - `rel="service-desc"` → `</mcp>` (only when `mcp` is enabled)
 - `rel="describedby"` → `</llms.txt>` (only when `siteUrl` is configured, i.e. `llms.txt` is generated)
@@ -169,6 +171,7 @@ Default relations emitted on homepage (`/` and `/index.html`):
 Generated in:
 
 - `dist/spa/_headers`
+- `dist/spa/.well-known/api-catalog` (Linkset JSON)
 
 ### Optional configuration
 
@@ -178,9 +181,19 @@ export default {
 
   linkHeaders: {
     enabled: true,
+    apiCatalog: '/.well-known/api-catalog',
     serviceDoc: '/',
     serviceDesc: '/mcp',
     describedBy: '/llms.txt'
+  },
+
+  apiCatalog: {
+    enabled: true,
+    path: '/.well-known/api-catalog',
+    items: [
+      '/mcp',
+      'https://api.example.com/openapi.json'
+    ]
   }
 }
 ```
@@ -192,6 +205,7 @@ Set any target to `null` or `false` to disable that relation.
 ```bash
 npx docsector build
 cat dist/spa/_headers
+cat dist/spa/.well-known/api-catalog
 ```
 
 Or scan discoverability:
@@ -343,9 +357,16 @@ export default {
 
   linkHeaders: {
     enabled: true,
+    apiCatalog: '/.well-known/api-catalog',
     serviceDoc: '/',
     serviceDesc: '/mcp',
     describedBy: '/llms.txt'
+  },
+
+  apiCatalog: {
+    enabled: true,
+    path: '/.well-known/api-catalog',
+    items: []
   },
 
   languages: [
