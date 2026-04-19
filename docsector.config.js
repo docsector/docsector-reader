@@ -24,7 +24,7 @@ export default {
     discussions: 'https://github.com/docsector/docsector-reader/discussions',
     chat: null, // e.g., Discord/Slack invite URL
     email: null, // e.g., 'mailto:contact@example.com'
-    changelog: '/changelog',
+    changelog: 'https://github.com/docsector/docsector-reader/releases',
     roadmap: null, // e.g., external roadmap URL
     sponsor: null, // e.g., GitHub Sponsors URL
     explore: null // e.g., URL to explore related repos
