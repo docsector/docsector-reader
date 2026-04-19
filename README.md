@@ -46,6 +46,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
+- 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
+- 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 
 ---

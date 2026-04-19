@@ -12,10 +12,10 @@ export default {
       commit('page/resetNodes', null, { root: true })
 
       // Route
-      const firstRoutePath = routeMatched[0].path
-      const secondRoutePath = routeMatched[1].path
+      const firstRoutePath = routeMatched[0]?.path || ''
+      const secondRoutePath = routeMatched[1]?.path || ''
 
-      const base = firstRoutePath.substr(1)
+      const base = firstRoutePath === '/' ? 'home' : firstRoutePath.substr(1)
       let relative = secondRoutePath.substr(firstRoutePath.length)
 
       if (relative !== '/') {

@@ -13,6 +13,7 @@ import DH6 from './DH6.vue'
 import DPageSourceCode from './DPageSourceCode.vue'
 import DMermaidDiagram from './DMermaidDiagram.vue'
 import DPageBlockquote from './DPageBlockquote.vue'
+import DQuickLinks from './DQuickLinks.vue'
 
 const props = defineProps({
   id: {
@@ -49,6 +50,71 @@ const parseAlertMarker = (rawContent = '') => {
   }
 }
 
+const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
+
+const parseTagAttributes = (raw = '') => {
+  const attrs = {}
+  const pattern = /(\w+)\s*=\s*"([^"]*)"|(\w+)\s*=\s*'([^']*)'/g
+
+  let match = pattern.exec(raw)
+  while (match !== null) {
+    const key = match[1] || match[3]
+    const value = match[2] || match[4] || ''
+    attrs[key] = value
+    match = pattern.exec(raw)
+  }
+
+  return attrs
+}
+
+const extractQuickLinksBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const blockPattern = /<d-quick-links\b([^>]*)>([\s\S]*?)<\/d-quick-links>/gi
+  const replaced = String(source).replace(blockPattern, (_, blockAttrsRaw, inner) => {
+    const blockAttrs = parseTagAttributes(blockAttrsRaw)
+    const items = []
+    const itemPattern = /<d-quick-link\b([^>]*)\/?\s*>/gi
+
+    let itemMatch = itemPattern.exec(inner)
+    while (itemMatch !== null) {
+      const attrs = parseTagAttributes(itemMatch[1])
+      const title = attrs.title || ''
+      const description = attrs.description || ''
+      const to = attrs.to || ''
+      const href = attrs.href || ''
+
+      if (title && description && (to || href)) {
+        items.push({
+          icon: attrs.icon || 'link',
+          title,
+          description,
+          to,
+          href
+        })
+      }
+
+      itemMatch = itemPattern.exec(inner)
+    }
+
+    const marker = `${QUICK_LINKS_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      title: blockAttrs.title || '',
+      items
+    })
+
+    return `\n${marker}\n`
+  })
+
+  return {
+    source: replaced,
+    quickLinksMap: map
+  }
+}
+
 const tokenized = computed(() => {
   const absolute = store.state.i18n.absolute
 
@@ -61,6 +127,8 @@ const tokenized = computed(() => {
     .replace(/&#123;/g, '{')
     .replace(/&#125;/g, '}')
     .replace(/&amp;/g, '&')
+
+  const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(normalizedSource)
 
   const Markdown = new MarkdownIt()
   Markdown.use(attrs, {
@@ -75,7 +143,7 @@ const tokenized = computed(() => {
 
   const markdownEnv = {}
 
-  const parsed = Markdown.parse(normalizedSource, markdownEnv)
+  const parsed = Markdown.parse(sourceWithQuickLinks, markdownEnv)
 
   // @ map
   const tokens = []
@@ -213,6 +281,17 @@ const tokenized = computed(() => {
       // Push
       switch (element.type) {
         case 'inline':
+          if (quickLinksMap.has(element.content.trim())) {
+            const data = quickLinksMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'quick-links',
+              title: data.title,
+              items: data.items
+            })
+            break
+          }
+
           tokens.push({
             tag,
             map: element.map,
@@ -394,6 +473,12 @@ const tokenized = computed(() => {
     <d-mermaid-diagram
       v-else-if="token.tag === 'mermaid'"
       :content="token.content"
+    />
+
+    <d-quick-links
+      v-else-if="token.tag === 'quick-links'"
+      :title="token.title"
+      :items="token.items"
     />
   </template>
 </section>

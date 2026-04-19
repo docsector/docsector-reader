@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '0.13.0'
+const VERSION = '1.0.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -339,6 +339,22 @@ export default {
     }
   }
 }
+`
+
+const TEMPLATE_HOMEPAGE_MD = `\
+# Welcome to Docsector Reader
+
+Docsector Reader is a markdown-first documentation engine.
+
+## Quick Links
+
+- [Getting Started](/guide/getting-started/overview/)
+- [Configuration](/guide/configuration/overview/)
+- [Pages and Routing](/guide/pages-and-routing/overview/)
+
+## About
+
+- Repository: [docsector/docsector-reader](https://github.com/docsector/docsector-reader)
 `
 
 const TEMPLATE_BOOT_PAGE = `\
@@ -703,6 +719,18 @@ npm-debug.log*
 .thumbs.db
 `
 
+const TEMPLATE_MARKDOWNLINT = `\
+{
+  "MD013": false,
+  "MD033": {
+    "allowed_elements": [
+      "d-quick-links",
+      "d-quick-link"
+    ]
+  }
+}
+`
+
 const TEMPLATE_ROBOTS_TXT = `\
 User-agent: *
 Allow: /
@@ -822,9 +850,11 @@ Here's an overview of the project files:
 | --- | --- |
 | \`docsector.config.js\` | Branding, links, languages, and GitHub config |
 | \`quasar.config.js\` | Quasar/Vite build configuration (via factory) |
+| \`.markdownlint.json\` | Markdown lint rules (allows Docsector custom tags) |
 | \`src/pages/index.js\` | Page registry — defines all documentation pages |
 | \`src/pages/boot.js\` | Boot metadata for the home page |
-| \`src/pages/@/\` | Special pages (Home, 404) |
+| \`src/pages/Homepage.en-US.md\` | Home page content in Markdown |
+| \`src/pages/404Page.vue\` | Not found page |
 | \`src/pages/guide/\` | Guide pages (Markdown files) |
 | \`src/i18n/languages/\` | Translation files (HJSON format) |
 | \`src/css/app.sass\` | Custom styles |
@@ -927,7 +957,6 @@ function initProject (name) {
     'src/i18n',
     'src/i18n/languages',
     'src/pages',
-    'src/pages/@',
     'src/pages/guide',
     'public',
     'public/images',
@@ -944,6 +973,7 @@ function initProject (name) {
     ['package.json', getTemplatePackageJson(name)],
     ['quasar.config.js', TEMPLATE_QUASAR_CONFIG],
     ['docsector.config.js', TEMPLATE_DOCSECTOR_CONFIG],
+    ['.markdownlint.json', TEMPLATE_MARKDOWNLINT],
     ['index.html', TEMPLATE_INDEX_HTML],
     ['postcss.config.cjs', TEMPLATE_POSTCSS],
     ['.gitignore', TEMPLATE_GITIGNORE],
@@ -953,8 +983,8 @@ function initProject (name) {
     ['src/i18n/languages/en-US.hjson', TEMPLATE_I18N_HJSON],
     ['src/pages/index.js', TEMPLATE_PAGES_INDEX],
     ['src/pages/boot.js', TEMPLATE_PAGES_BOOT],
-    ['src/pages/@/BootPage.vue', TEMPLATE_BOOT_PAGE],
-    ['src/pages/@/404Page.vue', TEMPLATE_404_PAGE],
+    ['src/pages/Homepage.en-US.md', TEMPLATE_HOMEPAGE_MD],
+    ['src/pages/404Page.vue', TEMPLATE_404_PAGE],
     ['src/pages/guide/getting-started.overview.en-US.md', TEMPLATE_GETTING_STARTED_MD]
   ]
 
@@ -972,6 +1002,7 @@ function initProject (name) {
   console.log(`    ${name}/`)
   console.log('    ├── docsector.config.js')
   console.log('    ├── quasar.config.js')
+  console.log('    ├── .markdownlint.json')
   console.log('    ├── package.json')
   console.log('    ├── index.html')
   console.log('    ├── postcss.config.cjs')
@@ -990,9 +1021,8 @@ function initProject (name) {
   console.log('        └── pages/')
   console.log('            ├── index.js')
   console.log('            ├── boot.js')
-  console.log('            ├── @/')
-  console.log('            │   ├── BootPage.vue')
-  console.log('            │   └── 404Page.vue')
+  console.log('            ├── Homepage.en-US.md')
+  console.log('            ├── 404Page.vue')
   console.log('            └── guide/')
   console.log('                └── getting-started.overview.en-US.md')
 

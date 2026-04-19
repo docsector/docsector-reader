@@ -1,4 +1,5 @@
 import pages from 'pages'
+import boot from 'pages/boot'
 
 const pagesRoutes = []
 for (const [path, page] of Object.entries(pages)) {
@@ -59,9 +60,27 @@ const routes = [
   ...pagesRoutes,
 
   {
-    path: '/',
+    path: '/home',
+    alias: '/',
     component: () => import('layouts/DefaultLayout.vue'),
     meta: {
+      icon: 'home',
+      menu: {},
+      status: 'done',
+      type: 'home',
+      subpages: {
+        showcase: false,
+        vs: false
+      },
+      data: {
+        'en-US': {
+          title: 'Home'
+        },
+        'pt-BR': {
+          title: 'Pagina inicial'
+        }
+      },
+      meta: boot.meta,
       layouts: {
         footer: false,
         submenu: false
@@ -71,7 +90,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/@/BootPage.vue'),
+        component: () => import('components/DSubpage.vue'),
         meta: {
           icon: 'home',
           menu: 'home'
@@ -89,7 +108,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/@/404Page.vue')
+        component: () => import('pages/404Page.vue')
       }
     ]
   }

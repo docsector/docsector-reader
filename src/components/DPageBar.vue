@@ -70,11 +70,19 @@ const rawMarkdown = computed(() => {
 })
 
 const markdownURL = computed(() => {
+  if (store.state.page.base === 'home') {
+    return `/Homepage.${locale.value}.md`
+  }
+
   const path = route.path.replace(/\/+$/, '')
   return `${path}.md`
 })
 
 const fullMarkdownURL = computed(() => {
+  if (store.state.page.base === 'home') {
+    return `${window.location.origin}/Homepage.${locale.value}.md`
+  }
+
   const path = route.path.replace(/\/+$/, '')
   return `${window.location.origin}${path}.md`
 })

@@ -144,6 +144,38 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
     return source
   }
 
+  function loadHomepage (lang) {
+    const key = `../pages/Homepage.${lang}.md`
+    const fallbackKey = '../pages/Homepage.en-US.md'
+
+    const content = mdModules[key] ?? mdModules[fallbackKey]
+    if (!content) {
+      console.warn(`[i18n] Missing homepage markdown: ${key}`)
+      return ''
+    }
+
+    const source = filter(typeof content === 'string' ? content : String(content))
+    return source
+  }
+
+  function extractHeadingFromHomepage (lang) {
+    const key = `../pages/Homepage.${lang}.md`
+    const fallbackKey = '../pages/Homepage.en-US.md'
+
+    const content = mdModules[key] ?? mdModules[fallbackKey]
+    if (!content) {
+      return ''
+    }
+
+    const raw = typeof content === 'string' ? content : String(content)
+    const match = raw.match(/^#\s+(.+)$/m)
+    if (!match) {
+      return ''
+    }
+
+    return match[1].trim()
+  }
+
   // @ Iterate langs
   for (const lang of langs) {
     // Load HJSON language file
@@ -154,6 +186,26 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs }) {
     if (engineDefaults[lang]) {
       deepMerge(i18n[lang], engineDefaults[lang])
     }
+
+    // @ Homepage markdown in root route
+    if (i18n[lang]._ === undefined) {
+      i18n[lang]._ = {}
+    }
+    if (i18n[lang]._.home === undefined) {
+      i18n[lang]._.home = {}
+    }
+
+    const homepageHeading = extractHeadingFromHomepage(lang)
+    i18n[lang]._.home._ = homepageHeading || i18n[lang]._.home._ || i18n[lang].menu?.home || 'Home'
+
+    if (i18n[lang]._.home.overview === undefined) {
+      i18n[lang]._.home.overview = {}
+    }
+
+    const homeMeta = boot?.meta?.[lang] || boot?.meta?.['en-US'] || {}
+    i18n[lang]._.home.overview._translations = homeMeta?.overview?._translations
+    i18n[lang]._.home.overview._sections = homeMeta?.overview?._sections
+    i18n[lang]._.home.overview.source = loadHomepage(lang)
 
     // @ Iterate pages
     for (const [key, page] of Object.entries(pages)) {
