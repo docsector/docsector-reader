@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.2.4'
+const VERSION = '1.3.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -168,6 +168,17 @@ export default {
   //   keyId: null,
   //   signatureMaxAge: 300,
   //   signatureLabel: 'sig1'
+  // },
+
+  // @ Content Signals (optional)
+  // Declares AI usage preferences in robots.txt.
+  // contentSignals: {
+  //   enabled: true,
+  //   aiTrain: 'yes',
+  //   search: 'yes',
+  //   aiInput: 'yes',
+  //   userAgent: '*',
+  //   applyToAllBlocks: false
   // },
 
   // @ Languages
@@ -763,6 +774,7 @@ const TEMPLATE_MARKDOWNLINT = `\
 const TEMPLATE_ROBOTS_TXT = `\
 User-agent: *
 Allow: /
+Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 # Explicitly allow AI crawlers
 # OpenAI

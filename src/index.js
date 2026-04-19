@@ -66,6 +66,13 @@
  * @param {string|null} [config.webBotAuth.keyId=null] - Optional static fallback key identifier when env var is absent
  * @param {number} [config.webBotAuth.signatureMaxAge=300] - Signature validity window in seconds for directory responses
  * @param {string} [config.webBotAuth.signatureLabel='sig1'] - Signature label used in Signature and Signature-Input headers
+ * @param {Object} [config.contentSignals] - Content Signals policy for robots.txt
+ * @param {boolean} [config.contentSignals.enabled=false] - Enables Content-Signal injection in robots.txt during build
+ * @param {'yes'|'no'|boolean} [config.contentSignals.aiTrain='yes'] - Permission for AI model training consumption
+ * @param {'yes'|'no'|boolean} [config.contentSignals.search='yes'] - Permission for AI search indexing/discovery consumption
+ * @param {'yes'|'no'|boolean} [config.contentSignals.aiInput='yes'] - Permission for AI input/inference-time consumption
+ * @param {string} [config.contentSignals.userAgent='*'] - Target User-agent block for directive injection
+ * @param {boolean} [config.contentSignals.applyToAllBlocks=false] - When true, applies directive to every User-agent block
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -139,6 +146,16 @@ export function createDocsector (config = {}) {
       signatureMaxAge: 300,
       signatureLabel: 'sig1',
       ...config.webBotAuth
+    },
+
+    contentSignals: {
+      enabled: false,
+      aiTrain: 'yes',
+      search: 'yes',
+      aiInput: 'yes',
+      userAgent: '*',
+      applyToAllBlocks: false,
+      ...config.contentSignals
     }
   }
 }

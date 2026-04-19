@@ -753,6 +753,8 @@ function createMarkdownBuildPlugin (projectRoot) {
         ? Math.max(30, Number(webBotAuthConfig.signatureMaxAge))
         : 300
       const webBotAuthSignatureLabel = webBotAuthConfig.signatureLabel || 'sig1'
+      const contentSignalsConfig = config.contentSignals || {}
+      const contentSignalsEnabled = contentSignalsConfig.enabled === true
 
       if (markdownNegotiationEnabled || webBotAuthEnabled) {
         const functionsDir = resolve(projectRoot, 'functions')
@@ -1001,6 +1003,25 @@ export async function onRequest (context) {
         writeFileSync(resolve(functionsDir, '_middleware.js'), middlewareCode)
         console.log(`\x1b[36m[docsector]\x1b[0m Generated runtime middleware at functions/_middleware.js`)
       }
+
+      if (contentSignalsEnabled) {
+        const robotsPath = resolve(distDir, 'robots.txt')
+        const existingRobots = existsSync(robotsPath)
+          ? readFileSync(robotsPath, 'utf-8')
+          : 'User-agent: *\nAllow: /\n'
+        const contentSignalLine = buildContentSignalLine(contentSignalsConfig)
+        const patchedRobots = applyContentSignalsToRobots(existingRobots, {
+          contentSignalLine,
+          userAgent: contentSignalsConfig.userAgent || '*',
+          applyToAllBlocks: contentSignalsConfig.applyToAllBlocks === true
+        })
+
+        if (patchedRobots !== existingRobots) {
+          writeFileSync(robotsPath, patchedRobots)
+          console.log(`\x1b[36m[docsector]\x1b[0m Updated robots.txt with Content-Signal policy`)
+        }
+      }
+
       console.log(`\x1b[36m[docsector]\x1b[0m Added _headers rule for .md files`)
 
       // Add homepage Link headers for agent discovery (RFC 8288 / RFC 9727)
@@ -1272,6 +1293,87 @@ export async function onRequest (context) {
       }
     }
   }
+}
+
+function normalizeContentSignalValue (value, fallback = 'yes') {
+  if (typeof value === 'boolean') return value ? 'yes' : 'no'
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'yes' || normalized === 'no') return normalized
+  }
+  return fallback
+}
+
+function buildContentSignalLine (contentSignalsConfig = {}) {
+  const aiTrain = normalizeContentSignalValue(contentSignalsConfig.aiTrain, 'yes')
+  const search = normalizeContentSignalValue(contentSignalsConfig.search, 'yes')
+  const aiInput = normalizeContentSignalValue(contentSignalsConfig.aiInput, 'yes')
+  return `Content-Signal: ai-train=${aiTrain}, search=${search}, ai-input=${aiInput}`
+}
+
+function ensureContentSignalInBlock (blockLines, contentSignalLine) {
+  const cleanedBlock = blockLines.filter((line, index) => {
+    if (index === 0) return true
+    return !/^\s*Content-Signal\s*:/i.test(line)
+  })
+
+  let insertAt = cleanedBlock.findIndex(line => /^\s*Allow\s*:/i.test(line))
+  if (insertAt === -1) {
+    insertAt = 0
+  }
+
+  cleanedBlock.splice(insertAt + 1, 0, contentSignalLine)
+  return cleanedBlock
+}
+
+function applyContentSignalsToRobots (robotsContent, { contentSignalLine, userAgent = '*', applyToAllBlocks = false }) {
+  const input = typeof robotsContent === 'string' ? robotsContent : ''
+  const lines = input.replace(/\r\n/g, '\n').split('\n')
+  const userAgentIndexes = []
+
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*User-agent\s*:/i.test(lines[i])) {
+      userAgentIndexes.push(i)
+    }
+  }
+
+  if (userAgentIndexes.length === 0) {
+    const scaffold = [
+      `User-agent: ${userAgent}`,
+      'Allow: /',
+      contentSignalLine,
+      ''
+    ].join('\n')
+    return scaffold.endsWith('\n') ? scaffold : scaffold + '\n'
+  }
+
+  const targetIndexes = []
+  for (const startIndex of userAgentIndexes) {
+    const uaValue = lines[startIndex].split(':').slice(1).join(':').trim()
+    if (applyToAllBlocks || uaValue.toLowerCase() === String(userAgent).toLowerCase()) {
+      targetIndexes.push(startIndex)
+    }
+  }
+
+  if (targetIndexes.length === 0) {
+    targetIndexes.push(userAgentIndexes[0])
+  }
+
+  let updated = []
+  let cursor = 0
+
+  for (const startIndex of targetIndexes) {
+    const nextUserAgent = userAgentIndexes.find(index => index > startIndex)
+    const endIndex = nextUserAgent === undefined ? lines.length : nextUserAgent
+
+    updated = updated.concat(lines.slice(cursor, startIndex))
+    const currentBlock = lines.slice(startIndex, endIndex)
+    updated = updated.concat(ensureContentSignalInBlock(currentBlock, contentSignalLine))
+    cursor = endIndex
+  }
+
+  updated = updated.concat(lines.slice(cursor))
+  return updated.join('\n').replace(/\n+$/g, '') + '\n'
 }
 
 /**

@@ -58,5 +58,8 @@ export default {
   ],
 
   // @ Default language
-  defaultLanguage: 'en-US'
+  defaultLanguage: 'en-US',
+  contentSignals: {
+    enabled: true
+  }
 }

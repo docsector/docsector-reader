@@ -28,6 +28,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
+- 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -50,6 +51,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
 - 🧠 **Markdown Negotiation** — Responds with Markdown when clients send `Accept: text/markdown`, while keeping HTML as browser default
 - 🔐 **Web Bot Auth** — Can publish a signed HTTP message signatures directory and includes helpers to sign outbound bot requests
+- 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
@@ -280,6 +282,56 @@ Check `checks.discoverability.linkHeaders.status` equals `"pass"`.
 
 ---
 
+## 🧭 Content Signals
+
+Docsector Reader can declare AI usage preferences in `robots.txt` via `Content-Signal`.
+
+When enabled, build output ensures a deterministic directive format:
+
+- `Content-Signal: ai-train=..., search=..., ai-input=...`
+
+### Configure
+
+```javascript
+export default {
+  // ...other config
+
+  contentSignals: {
+    enabled: true,
+    aiTrain: 'yes',
+    search: 'yes',
+    aiInput: 'yes',
+    userAgent: '*',
+    applyToAllBlocks: false
+  }
+}
+```
+
+Notes:
+
+- `aiTrain`, `search`, and `aiInput` accept `yes` / `no` (or booleans).
+- Default scope is only `User-agent: *`.
+- Build patch is idempotent: repeated builds do not duplicate `Content-Signal` lines.
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/robots.txt
+```
+
+Optional external validation:
+
+```bash
+curl -X POST https://isitagentready.com/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://YOUR-SITE.com"}'
+```
+
+Check `checks.botAccessControl.contentSignals.status` equals `"pass"`.
+
+---
+
 ## �🚀 Quick Start
 
 ### 📦 Install
@@ -432,6 +484,15 @@ export default {
   markdownNegotiation: {
     enabled: true,
     agentFallback: true
+  },
+
+  contentSignals: {
+    enabled: true,
+    aiTrain: 'yes',
+    search: 'yes',
+    aiInput: 'yes',
+    userAgent: '*',
+    applyToAllBlocks: false
   },
 
   languages: [
