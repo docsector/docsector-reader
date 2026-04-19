@@ -767,6 +767,7 @@ Consumer projects use the `buildMessages` helper from the engine:
 
 ```javascript
 import { buildMessages } from '@docsector/docsector-reader/i18n'
+import homePageOverride from 'virtual:docsector-homepage-override'
 
 const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
 const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
@@ -774,7 +775,7 @@ const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?r
 import boot from 'pages/boot'
 import pages from 'pages'
 
-export default buildMessages({ langModules, mdModules, pages, boot })
+export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
 ```
 
 ### Language files

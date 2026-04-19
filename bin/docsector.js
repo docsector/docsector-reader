@@ -264,6 +264,7 @@ const TEMPLATE_CSS_STUB = `\
 const TEMPLATE_I18N_INDEX = `\
 // @ Import i18n message builder from Docsector Reader
 import { buildMessages } from '@docsector/docsector-reader/i18n'
+import homePageOverride from 'virtual:docsector-homepage-override'
 
 // @ Import language HJSON files (Vite-compatible eager import)
 const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
@@ -274,7 +275,7 @@ const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?r
 import boot from 'pages/boot'
 import pages from 'pages'
 
-export default buildMessages({ langModules, mdModules, pages, boot })
+export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
 `
 
 const TEMPLATE_I18N_HJSON = `\
