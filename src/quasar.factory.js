@@ -783,7 +783,7 @@ function bytesToBase64 (bytes) {
 }
 
 function bytesToBase64Url (bytes) {
-  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+  return bytesToBase64(bytes).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '')
 }
 
 async function sha256 (input) {
@@ -841,7 +841,7 @@ async function importEd25519PrivateKey (privateJwk) {
 async function signDirectoryResponse ({ authority, keyId, created, expires, privateKey }) {
   const params = '("@authority";req);created=' + created + ';expires=' + expires + ';keyid="' + keyId + '";alg="ed25519";tag="http-message-signatures-directory"'
   const signatureInput = WEB_BOT_AUTH_SIGNATURE_LABEL + '=' + params
-  const base = '"@authority";req: ' + authority + '\n"@signature-params": ' + params
+  const base = '"@authority";req: ' + authority + '\\n"@signature-params": ' + params
   const signature = await crypto.subtle.sign('Ed25519', privateKey, textEncoder.encode(base))
 
   return {
