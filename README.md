@@ -50,6 +50,9 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 🌐 **WebMCP Browser Tools** — Registers in-page tools for browser agents with `registerTool` and optional `provideContext` fallback
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
+- 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
+- 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
+- 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and dock to the bottom on mobile
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, or `empty` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
@@ -94,7 +97,7 @@ When `mcp` is configured, `docsector build` generates:
 
 | File | Purpose |
 |---|---|
-| `dist/spa/mcp-pages.json` | Page index (title, path, type) for search |
+| `dist/spa/mcp-pages.json` | Page index (title, path, book) for search |
 | `functions/mcp.js` | Cloudflare Pages Function implementing MCP |
 | `dist/spa/_routes.json` | Routes `/mcp` to the function |
 | `dist/spa/_headers` | CORS headers for MCP endpoint |
@@ -775,10 +778,12 @@ const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
 const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
 
 import boot from 'pages/boot'
-import pages from 'pages'
+import { books } from 'virtual:docsector-books'
 
-export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
+export default buildMessages({ langModules, mdModules, books, boot, homePageOverride })
 ```
+
+> `books` is the preferred source because it preserves per-book registries and avoids path collisions when two books reuse the same route key.
 
 ### Language files
 
@@ -815,7 +820,10 @@ my-docs/
 ├── package.json
 ├── src/
 │   ├── pages/
-│   │   ├── index.js           # Page registry (routes + metadata)
+│   │   ├── manual.book.js     # Manual tab metadata (icon, order, active/inactive colors)
+│   │   ├── manual.index.js    # Manual page registry (routes + metadata)
+│   │   ├── guide.book.js      # Guide tab metadata (icon, order, active/inactive colors)
+│   │   ├── guide.index.js     # Guide page registry (routes + metadata)
 │   │   ├── boot.js            # Boot page data
 │   │   ├── guide/             # Guide pages (.md files)
 │   │   └── manual/            # Manual pages (.md files)
@@ -835,17 +843,54 @@ my-docs/
 
 ---
 
-## 📄 Adding Pages
+## ⚠️ Migrating from 1.x to 2.0
 
-1️⃣ Register in `src/pages/index.js`:
+- Split the legacy `src/pages/index.js` registry into per-book files such as `src/pages/manual.book.js`, `src/pages/manual.index.js`, `src/pages/guide.book.js`, and `src/pages/guide.index.js`.
+- Update i18n wiring to import `books` from `virtual:docsector-books` and pass it to `buildMessages({ ... })`.
+- Rename `config.type` to `config.book` in page definitions. Legacy fallback still works, but `config.book` is the supported API moving forward.
+
+---
+
+## 📚 Defining Books (Tabs)
+
+Each documentation tab is defined by a `*.book.js` file paired with a matching `*.index.js` registry.
 
 ```javascript
+import { defineBook } from '@docsector/docsector-reader'
+
+export default defineBook({
+  id: 'guide',
+  label: 'Guide',
+  icon: 'school',
+  order: 2,
+  color: {
+    active: 'white',
+    inactive: 'secondary'
+  }
+})
+```
+
+Notes:
+
+- `color.active` and `color.inactive` control the tab text color for each state.
+- Color values accept Quasar tokens (`secondary`, `red-6`), CSS variables (`--brand-color` or `var(--brand-color)`), and plain CSS colors (`white`, `#fff`, `rgb(...)`).
+- Legacy `color: 'secondary'` still works, but the object form is the recommended API.
+- Tabs are ordered by `order`.
+
+---
+
+## 📄 Adding Pages
+
+1️⃣ Register in `src/pages/manual.index.js` (or `src/pages/guide.index.js`):
+
+```javascript
+import { definePage } from '@docsector/docsector-reader'
+
 export default {
-  '/manual/my-section/my-page': {
+  '/my-section/my-page': definePage({
     config: {
       icon: 'description',
       status: 'done',        // 'done' | 'draft' | 'empty'
-      type: 'manual',        // 'guide' | 'manual'
       menu: {
         header: { label: '.my-section', icon: 'category' }
       },
@@ -855,9 +900,15 @@ export default {
       'en-US': { title: 'My Page' },
       'pt-BR': { title: 'Minha Página' }
     }
-  }
+  })
 }
 ```
+
+Notes:
+
+- In `manual.index.js`, route keys are relative to the `manual` book (for example `'/my-section/my-page'` becomes `/manual/my-section/my-page/...`).
+- You only need to set `config.book` when overriding the inferred book from the registry file.
+- When `showcase` or `vs` are enabled, the subpage toolbar aligns with the content width on desktop and becomes a bottom action bar on mobile.
 
 2️⃣ Create Markdown files:
 
@@ -865,6 +916,34 @@ export default {
 src/pages/manual/my-section/my-page.overview.en-US.md
 src/pages/manual/my-section/my-page.overview.pt-BR.md
 ```
+
+### Internal Links / Menu Shortcuts
+
+Use `config.link.to` when an entry should appear in menus but redirect immediately to another internal page.
+
+```javascript
+import { definePage } from '@docsector/docsector-reader'
+
+export default {
+  '/getting-started': definePage({
+    config: {
+      link: {
+        to: '/guide/getting-started/overview/'
+      }
+    },
+    data: {
+      'en-US': { title: 'Getting started' },
+      'pt-BR': { title: 'Começando' }
+    }
+  })
+}
+```
+
+Notes:
+
+- For shortcut pages, `link.to` and `data` are enough.
+- `icon` and `status` automatically fall back to the destination page when omitted.
+- Internal links redirect directly to the target route instead of rendering `overview` / `showcase` / `vs` locally.
 
 ### GitHub-Style Alert Example
 
@@ -899,9 +978,12 @@ docsector help                 # Show help
 
 | Import path | Export | Description |
 |---|---|---|
+| `@docsector/docsector-reader` | `createDocsector()` | Main helper for `docsector.config.js` objects |
+| `@docsector/docsector-reader` | `defineBook()` | Define `*.book.js` tab metadata with active/inactive colors |
+| `@docsector/docsector-reader` | `definePage()` | Define page registry entries, including internal shortcut pages |
 | `@docsector/docsector-reader/quasar-factory` | `createQuasarConfig()` | Config factory for consumer projects |
 | `@docsector/docsector-reader/quasar-factory` | `configure()` | No-op wrapper (avoids needing `quasar` dep) |
-| `@docsector/docsector-reader/i18n` | `buildMessages()` | Build i18n messages from globs + pages |
+| `@docsector/docsector-reader/i18n` | `buildMessages()` | Build i18n messages from globs + book/page registries |
 | `@docsector/docsector-reader/i18n` | `filter()` | Filter i18n messages by locale |
 
 ---

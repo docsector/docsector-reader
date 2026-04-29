@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -24,6 +24,38 @@ const props = defineProps({
 })
 
 const pageScrollArea = ref(null)
+const pageContainer = ref(null)
+const submenu = ref(null)
+const pageMinHeight = ref('calc(100vh - 86px)')
+const submenuHeight = ref('36px')
+const pageBottomInset = ref('0px')
+
+const updatePageMinHeight = () => {
+  const pageContainerEl = pageContainer.value?.$el || pageContainer.value
+  const submenuEl = submenu.value?.$el || submenu.value
+
+  if (!pageContainerEl || !submenuEl) {
+    return
+  }
+
+  const pageContainerStyles = window.getComputedStyle(pageContainerEl)
+  const headerHeight = Number.parseFloat(pageContainerStyles.paddingTop) || 0
+  const measuredSubmenuHeight = submenuEl.offsetHeight || 0
+  const isMobile = $q.screen.lt.md
+  const totalOffset = Math.max(0, Math.round(headerHeight + (isMobile ? 0 : measuredSubmenuHeight)))
+
+  pageMinHeight.value = `calc(100vh - ${totalOffset}px)`
+  submenuHeight.value = `${Math.max(36, Math.round(measuredSubmenuHeight))}px`
+  pageBottomInset.value = isMobile ? submenuHeight.value : '0px'
+}
+
+const schedulePageMinHeightUpdate = () => {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      updatePageMinHeight()
+    })
+  })
+}
 
 const overview = computed(() => route.matched[0].path)
 const showcase = computed(() => {
@@ -164,6 +196,10 @@ const handleMainScrollKeys = (event) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleMainScrollKeys)
+  window.addEventListener('resize', schedulePageMinHeightUpdate)
+  nextTick(() => {
+    schedulePageMinHeightUpdate()
+  })
 
   router.beforeEach((to, from, next) => {
     resetPageScroll()
@@ -180,38 +216,60 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleMainScrollKeys)
+  window.removeEventListener('resize', schedulePageMinHeightUpdate)
+})
+
+watch(() => route.fullPath, () => {
+  nextTick(() => {
+    schedulePageMinHeightUpdate()
+  })
 })
 </script>
 
 <template>
-<q-page-container id="page-container">
-  <q-toolbar id="submenu" class="bg-grey-8 text-white">
-    <q-toolbar-title class="toolbar-container">
-      <q-btn-group :class="$q.screen.lt.md ? 'mobile' : null">
-        <q-btn
-          v-if="overview && (showcase || vs)"
-          no-caps flat
-          :class="pActive('/overview')"
-          :label="$t('submenu.overview')" icon="pageview"
-          @click="subroute('/overview')"
-        />
-        <q-btn
-          v-if="showcase"
-          no-caps flat
-          :class="pActive('/showcase')"
-          :label="$t('submenu.showcase')" icon="play_circle_filled"
-          @click="subroute('/showcase')"
-        />
-        <q-btn
-          v-if="vs"
-          no-caps flat
-          :class="pActive('/vs')"
-          :label="$t('submenu.versus')" icon="compare"
-          @click="subroute('/vs')"
-        />
-      </q-btn-group>
-    </q-toolbar-title>
-    <q-btn @click="toggleSectionsTree" icon="account_tree" />
+<q-page-container
+  id="page-container"
+  ref="pageContainer"
+  :style="{
+    '--d-page-min-height': pageMinHeight,
+    '--d-submenu-height': submenuHeight,
+    '--d-page-bottom-inset': pageBottomInset
+  }"
+>
+  <q-toolbar
+    id="submenu"
+    ref="submenu"
+    class="bg-grey-8 text-white"
+    :class="$q.screen.lt.md ? 'd-submenu--mobile' : 'd-submenu--desktop'"
+  >
+    <div class="d-submenu__content">
+      <q-toolbar-title class="toolbar-container">
+        <q-btn-group :class="$q.screen.lt.md ? 'mobile' : null">
+          <q-btn
+            v-if="overview && (showcase || vs)"
+            no-caps flat
+            :class="pActive('/overview')"
+            :label="$t('submenu.overview')" icon="pageview"
+            @click="subroute('/overview')"
+          />
+          <q-btn
+            v-if="showcase"
+            no-caps flat
+            :class="pActive('/showcase')"
+            :label="$t('submenu.showcase')" icon="play_circle_filled"
+            @click="subroute('/showcase')"
+          />
+          <q-btn
+            v-if="vs"
+            no-caps flat
+            :class="pActive('/vs')"
+            :label="$t('submenu.versus')" icon="compare"
+            @click="subroute('/vs')"
+          />
+        </q-btn-group>
+      </q-toolbar-title>
+      <q-btn class="d-submenu__toggle" @click="toggleSectionsTree" icon="account_tree" />
+    </div>
   </q-toolbar>
 
   <q-page id="page">
@@ -236,7 +294,7 @@ onBeforeUnmount(() => {
 
 .content,
 .content > div.scroll
-  min-height: calc(100vh - 86px)
+  min-height: var(--d-page-min-height, calc(100vh - 86px))
 
 .content > div.scroll > div.q-scrollarea__content
   max-width: 100%
@@ -244,9 +302,10 @@ onBeforeUnmount(() => {
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 15px
+  padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + env(safe-area-inset-bottom, 0px))
 
 #page
-  min-height: calc(100vh - 86px) !important
+  min-height: var(--d-page-min-height, calc(100vh - 86px)) !important
 
 #scroll-container
   width: 100%
@@ -259,10 +318,23 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px rgba(0,0,0,0.14), 0 1px 6px rgba(0,0,0,0.12)
   overflow: visible
 
+  .d-submenu__content
+    width: calc(100% - 30px)
+    max-width: 1200px
+    min-height: inherit
+    margin: 0 auto
+    display: flex
+    align-items: center
+    align-self: stretch
+
+  .d-submenu__toggle
+    flex: 0 0 auto
+
   .on-left
     margin-right: 5px
   .toolbar-container
     overflow: visible
+    padding: 0
   .q-btn-group
     box-shadow: none
     &.mobile
@@ -275,6 +347,19 @@ onBeforeUnmount(() => {
     div
       &:not(.focus-helper)
         margin-left: 6px
+
+#submenu.d-submenu--mobile
+  position: fixed
+  left: 0
+  right: 0
+  bottom: 0
+  z-index: 1500
+  min-height: 40px
+  padding-bottom: env(safe-area-inset-bottom, 0px)
+  box-shadow: 0 -1px 2px rgba(0,0,0,0.12), 0 -2px 6px rgba(0,0,0,0.08)
+
+  .d-submenu__content
+    align-items: flex-end
 
 #submenu a,
 #submenu button
@@ -289,6 +374,10 @@ body.body--light
     background-color: #fff !important
     color: #000
     box-shadow: 0 10px 0 0 #fff
+
+  #submenu.d-submenu--mobile a.active,
+  #submenu.d-submenu--mobile button.active
+    box-shadow: 0 -10px 0 0 #fff
 // Dark
 body.body--dark
   #submenu a.active,
@@ -296,6 +385,10 @@ body.body--dark
     background-color: var(--q-dark-page) !important
     color: #fff
     box-shadow: 0 10px 0 0 var(--q-dark-page)
+
+  #submenu.d-submenu--mobile a.active,
+  #submenu.d-submenu--mobile button.active
+    box-shadow: 0 -10px 0 0 var(--q-dark-page)
 
 body.mobile.body--dark
   .q-drawer--right

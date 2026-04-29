@@ -61,33 +61,344 @@ function getPackageRoot (projectRoot) {
 }
 
 /**
- * Create a Vite plugin that watches consumer content files (pages/index.js,
- * i18n languages, etc.) and forces the Vite dep optimizer to re-run when
- * they change.
+ * Normalize paths for cross-platform file matching.
+ */
+function normalizePathForMatch (path) {
+  return String(path || '').replace(/\\/g, '/')
+}
+
+/**
+ * List top-level page registry definition files.
+ *
+ * Includes:
+ * - src/pages/index.js (legacy)
+ * - src/pages/*.book.js
+ * - src/pages/*.index.js
+ */
+function getPagesRegistryFiles (projectRoot) {
+  const pagesDir = resolve(projectRoot, 'src', 'pages')
+  if (!existsSync(pagesDir)) return []
+
+  const names = readdirSync(pagesDir, { withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => entry.name)
+
+  return names
+    .filter(name => {
+      if (name === 'index.js') return true
+      return /^[^/]+\.book\.js$/.test(name) || /^[^/]+\.index\.js$/.test(name)
+    })
+    .sort()
+    .map(name => resolve(pagesDir, name))
+}
+
+/**
+ * Discover configured books from src/pages/*.book.js paired with *.index.js.
+ */
+function getBookRegistryEntries (projectRoot) {
+  const pagesDir = resolve(projectRoot, 'src', 'pages')
+  if (!existsSync(pagesDir)) return []
+
+  const names = readdirSync(pagesDir, { withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => entry.name)
+
+  const books = names
+    .filter(name => /^[^/]+\.book\.js$/.test(name))
+    .sort()
+
+  const entries = []
+  for (const bookFile of books) {
+    const baseName = bookFile.slice(0, -'.book.js'.length)
+    const indexFile = `${baseName}.index.js`
+    if (!names.includes(indexFile)) continue
+
+    entries.push({
+      id: baseName,
+      bookFile,
+      indexFile,
+      bookPath: resolve(pagesDir, bookFile),
+      indexPath: resolve(pagesDir, indexFile)
+    })
+  }
+
+  return entries
+}
+
+/**
+ * Resolve book identifier from page config with legacy fallback support.
+ */
+function resolvePageBook (config, fallbackBook = 'manual') {
+  if (!config || typeof config !== 'object') return fallbackBook
+  return config.book ?? config.type ?? fallbackBook
+}
+
+const DEFAULT_BOOK_COLORS = Object.freeze({
+  active: 'white',
+  inactive: 'rgba(255, 255, 255, 0.72)'
+})
+
+function normalizeBookColorConfig (rawColor) {
+  if (typeof rawColor === 'object' && rawColor !== null && !Array.isArray(rawColor)) {
+    const active = typeof rawColor.active === 'string' && rawColor.active.trim().length > 0
+      ? rawColor.active.trim()
+      : DEFAULT_BOOK_COLORS.active
+
+    const inactive = typeof rawColor.inactive === 'string' && rawColor.inactive.trim().length > 0
+      ? rawColor.inactive.trim()
+      : active
+
+    return { active, inactive }
+  }
+
+  if (typeof rawColor === 'string' && rawColor.trim().length > 0) {
+    const normalized = rawColor.trim()
+    return {
+      active: normalized,
+      inactive: normalized
+    }
+  }
+
+  return { ...DEFAULT_BOOK_COLORS }
+}
+
+/**
+ * Build source code for the virtual module `virtual:docsector-books`.
+ */
+function buildVirtualBooksModule (projectRoot) {
+  const bookEntries = getBookRegistryEntries(projectRoot)
+
+  // Legacy fallback: support projects that still define src/pages/index.js only.
+  if (bookEntries.length === 0) {
+    return `import legacyPages from 'pages'
+
+const defaultBook = {
+  id: 'manual',
+  label: 'Manual',
+  icon: 'menu_book',
+  order: 1,
+  color: {
+    active: 'white',
+    inactive: 'rgba(255, 255, 255, 0.72)'
+  }
+}
+
+const normalizedPages = legacyPages || {}
+
+export const books = {
+  manual: {
+    config: defaultBook,
+    routes: normalizedPages
+  }
+}
+
+export const allBooks = [defaultBook]
+export const allPages = normalizedPages
+
+export default books
+`
+  }
+
+  const imports = []
+  const rows = []
+
+  for (const [index, entry] of bookEntries.entries()) {
+    imports.push(`import __book_${index} from 'pages/${entry.bookFile}'`)
+    imports.push(`import __routes_${index} from 'pages/${entry.indexFile}'`)
+    rows.push(`  { fallbackId: ${JSON.stringify(entry.id)}, config: __book_${index}, routes: __routes_${index} }`)
+  }
+
+  return `${imports.join('\n')}
+
+const entries = [
+${rows.join(',\n')}
+]
+
+const DEFAULT_BOOK_COLORS = Object.freeze({
+  active: 'white',
+  inactive: 'rgba(255, 255, 255, 0.72)'
+})
+
+const normalizeBookColor = (rawColor) => {
+  if (typeof rawColor === 'object' && rawColor !== null && !Array.isArray(rawColor)) {
+    const active = typeof rawColor.active === 'string' && rawColor.active.trim().length > 0
+      ? rawColor.active.trim()
+      : DEFAULT_BOOK_COLORS.active
+
+    const inactive = typeof rawColor.inactive === 'string' && rawColor.inactive.trim().length > 0
+      ? rawColor.inactive.trim()
+      : active
+
+    return { active, inactive }
+  }
+
+  if (typeof rawColor === 'string' && rawColor.trim().length > 0) {
+    const normalized = rawColor.trim()
+    return {
+      active: normalized,
+      inactive: normalized
+    }
+  }
+
+  return { ...DEFAULT_BOOK_COLORS }
+}
+
+export const books = entries.reduce((accumulator, entry, index) => {
+  const config = entry.config || {}
+  const resolvedId = config.id || entry.fallbackId || ('book-' + (index + 1))
+  const label = config.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
+  const normalizedConfig = {
+    ...config,
+    id: resolvedId,
+    label,
+    icon: config.icon || 'menu_book',
+    order: config.order ?? (index + 1),
+    color: normalizeBookColor(config.color)
+  }
+
+  accumulator[resolvedId] = {
+    config: normalizedConfig,
+    routes: entry.routes || {}
+  }
+  return accumulator
+}, {})
+
+export const allBooks = Object.values(books).map(book => book.config)
+export const allPages = Object.values(books).reduce((accumulator, book) => {
+  return {
+    ...accumulator,
+    ...(book.routes || {})
+  }
+}, {})
+
+export default books
+`
+}
+
+/**
+ * Load books and merged pages for build-time plugins (Node context).
+ */
+async function loadBooksRegistry (projectRoot) {
+  const entries = getBookRegistryEntries(projectRoot)
+
+  // Legacy fallback
+  if (entries.length === 0) {
+    const legacyPath = resolve(projectRoot, 'src', 'pages', 'index.js')
+    const pages = existsSync(legacyPath)
+      ? ((await import(pathToFileURL(legacyPath).href)).default || {})
+      : {}
+
+    const defaultBook = {
+      id: 'manual',
+      label: 'Manual',
+      icon: 'menu_book',
+      order: 1,
+      color: {
+        active: 'white',
+        inactive: 'rgba(255, 255, 255, 0.72)'
+      }
+    }
+
+    return {
+      books: {
+        manual: {
+          config: defaultBook,
+          routes: pages
+        }
+      },
+      allBooks: [defaultBook],
+      allPages: pages
+    }
+  }
+
+  const books = {}
+  const allPages = {}
+
+  for (const [index, entry] of entries.entries()) {
+    const { default: rawConfig = {} } = await import(pathToFileURL(entry.bookPath).href)
+    const { default: routes = {} } = await import(pathToFileURL(entry.indexPath).href)
+
+    const resolvedId = rawConfig.id || entry.id || `book-${index + 1}`
+    const label = rawConfig.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
+
+    const config = {
+      ...rawConfig,
+      id: resolvedId,
+      label,
+      icon: rawConfig.icon || 'menu_book',
+      order: rawConfig.order ?? (index + 1),
+      color: normalizeBookColorConfig(rawConfig.color)
+    }
+
+    books[resolvedId] = {
+      config,
+      routes
+    }
+
+    Object.assign(allPages, routes || {})
+  }
+
+  const allBooks = Object.values(books).map(book => book.config)
+
+  return {
+    books,
+    allBooks,
+    allPages
+  }
+}
+
+/**
+ * Check if a file path is a book registry definition file.
+ */
+function isPagesRegistryFile (projectRoot, changedPath) {
+  const pagesDir = normalizePathForMatch(resolve(projectRoot, 'src', 'pages'))
+  const normalizedPath = normalizePathForMatch(changedPath)
+  const prefix = `${pagesDir}/`
+
+  if (!normalizedPath.startsWith(prefix)) return false
+  const relativePath = normalizedPath.slice(prefix.length)
+
+  if (relativePath === 'index.js') return true
+  return /^[^/]+\.book\.js$/.test(relativePath) || /^[^/]+\.index\.js$/.test(relativePath)
+}
+
+/**
+ * Create a Vite plugin that exposes discovered books through
+ * `virtual:docsector-books` and restarts dev server when definitions change.
  *
  * Why: The router module (`routes.js`) imports consumer content via the
  * `pages` alias. Vite's dep optimizer pre-bundles the router with the
  * consumer content inlined, but the optimizer cache hash is based on config
- * and lockfile only — NOT on consumer source files. So when pages/index.js
- * changes during development, the optimizer serves stale pre-bundled code
- * until the cache is manually cleared.
- *
- * Fix: When pages/index.js changes, the watcher plugin clears the dep cache,
- * sets an env flag, and restarts the server. On restart, the config reads the
- * flag and sets `optimizeDeps.force = true`, which makes Vite generate a new
- * browserHash — effectively busting the browser module cache.
+ * and lockfile only — NOT on consumer source files. So when page registries
+ * change during development, the optimizer can serve stale pre-bundled code.
  */
-function createPagesWatchPlugin (projectRoot) {
-  const pagesIndex = resolve(projectRoot, 'src', 'pages', 'index.js')
+function createBooksPlugin (projectRoot) {
+  const virtualId = 'virtual:docsector-books'
+  const resolvedId = '\0' + virtualId
+
   return {
-    name: 'docsector-pages-watch',
+    name: 'docsector-books',
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    load (id) {
+      if (id !== resolvedId) return null
+      return buildVirtualBooksModule(projectRoot)
+    },
     configureServer (server) {
-      server.watcher.on('change', (changedPath) => {
-        if (changedPath === pagesIndex) {
+      const onPagesRegistryChange = (changedPath) => {
+        if (isPagesRegistryFile(projectRoot, changedPath)) {
           server.config.logger.info(
-            '\\x1b[36m[docsector]\\x1b[0m pages/index.js changed — clearing dep cache and restarting...',
+            `\\x1b[36m[docsector]\\x1b[0m pages registry changed (${changedPath}) — clearing dep cache and restarting...`,
             { timestamp: true }
           )
+
+          // Invalidate virtual module before restart
+          const module = server.moduleGraph.getModuleById(resolvedId)
+          if (module) {
+            server.moduleGraph.invalidateModule(module)
+          }
+
           // Signal the restarted config to force a new optimizer hash
           process.env.__DOCSECTOR_FORCE_OPTIMIZE = '1'
           // Delete the stale optimizer cache
@@ -95,7 +406,11 @@ function createPagesWatchPlugin (projectRoot) {
           rmSync(cacheDir, { recursive: true, force: true })
           server.restart()
         }
-      })
+      }
+
+      server.watcher.on('add', onPagesRegistryChange)
+      server.watcher.on('change', onPagesRegistryChange)
+      server.watcher.on('unlink', onPagesRegistryChange)
     }
   }
 }
@@ -145,11 +460,10 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       const baseHtml = readFileSync(baseHtmlPath, 'utf-8')
 
-      // Dynamic import pages registry and docsector config
-      const pagesUrl = pathToFileURL(resolve(projectRoot, 'src', 'pages', 'index.js')).href
+      // Dynamic import books registry and docsector config
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
-      const { default: pages } = await import(pagesUrl)
+      const { allPages: pages } = await loadBooksRegistry(projectRoot)
       const { default: config } = await import(configUrl)
 
       const brandingName = config.branding?.name || ''
@@ -170,7 +484,7 @@ function createPrerenderMetaPlugin (projectRoot) {
       for (const [pagePath, page] of Object.entries(pages)) {
         if (page.config === null) continue
 
-        const type = page.config.type ?? 'manual'
+        const book = resolvePageBook(page.config, 'manual')
         const titleData = page.data?.[defaultLang] || page.data?.['*'] || page.data?.['en-US'] || Object.values(page.data || {})[0]
         const title = titleData?.title || ''
         const fullTitle = title
@@ -186,7 +500,7 @@ function createPrerenderMetaPlugin (projectRoot) {
         if (page.config.subpages?.vs) subpages.push('vs')
 
         for (const subpage of subpages) {
-          const routePath = `${type}${pagePath}/${subpage}`
+          const routePath = `${book}${pagePath}/${subpage}`
 
           const html = baseHtml
             .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
@@ -759,10 +1073,9 @@ function createMarkdownBuildPlugin (projectRoot) {
 
       const pagesDir = resolve(projectRoot, 'src', 'pages')
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
-      const pagesUrl = pathToFileURL(resolve(projectRoot, 'src', 'pages', 'index.js')).href
 
       const { default: config } = await import(configUrl)
-      const { default: pages } = await import(pagesUrl)
+      const { allPages: pages } = await loadBooksRegistry(projectRoot)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
       let count = 0
@@ -771,17 +1084,17 @@ function createMarkdownBuildPlugin (projectRoot) {
         if (page.config === null) continue
         if (page.config.status === 'empty') continue
 
-        const type = page.config.type ?? 'manual'
+        const book = resolvePageBook(page.config, 'manual')
 
         const subpages = ['overview']
         if (page.config.subpages?.showcase) subpages.push('showcase')
         if (page.config.subpages?.vs) subpages.push('vs')
 
         for (const subpage of subpages) {
-          const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+          const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
           if (!existsSync(srcFile)) continue
 
-          const routePath = `${type}${pagePath}/${subpage}`
+          const routePath = `${book}${pagePath}/${subpage}`
           const destFile = resolve(distDir, `${routePath}.md`)
           const destDir = resolve(destFile, '..')
 
@@ -820,17 +1133,17 @@ function createMarkdownBuildPlugin (projectRoot) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
-          const type = page.config.type ?? 'manual'
+          const book = resolvePageBook(page.config, 'manual')
 
           const subpages = ['overview']
           if (page.config.subpages?.showcase) subpages.push('showcase')
           if (page.config.subpages?.vs) subpages.push('vs')
 
           for (const subpage of subpages) {
-            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
             if (!existsSync(srcFile)) continue
 
-            const routePath = `/${type}${pagePath}/${subpage}`
+            const routePath = `/${book}${pagePath}/${subpage}`
             urls += `  <url>\n    <loc>${siteUrl}${routePath}</loc>\n    <lastmod>${today}</lastmod>\n  </url>\n`
           }
         }
@@ -853,7 +1166,7 @@ function createMarkdownBuildPlugin (projectRoot) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
-          const type = page.config.type ?? 'manual'
+          const book = resolvePageBook(page.config, 'manual')
           const title = page.data?.['*']?.title
             || page.data?.[defaultLang]?.title
             || page.data?.['en-US']?.title
@@ -865,18 +1178,18 @@ function createMarkdownBuildPlugin (projectRoot) {
           if (page.config.subpages?.vs) subpages.push('vs')
 
           for (const subpage of subpages) {
-            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
             if (!existsSync(srcFile)) continue
 
-            const routePath = `${type}${pagePath}/${subpage}`
+            const routePath = `${book}${pagePath}/${subpage}`
             const mdUrl = `${siteUrl}/${routePath}.md`
             const pageUrl = `${siteUrl}/${routePath}`
 
             const desc = page.config.meta?.description
             const descText = typeof desc === 'object' ? (desc[defaultLang] || desc['en-US'] || '') : (desc || '')
 
-            if (!llmsSections[type]) llmsSections[type] = []
-            llmsSections[type].push(
+            if (!llmsSections[book]) llmsSections[book] = []
+            llmsSections[book].push(
               descText
                 ? `- [${title}](${mdUrl}): ${descText}`
                 : `- [${title}](${mdUrl})`
@@ -1474,7 +1787,7 @@ export async function onRequest (context) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
-          const type = page.config.type ?? 'manual'
+          const book = resolvePageBook(page.config, 'manual')
           const defaultTitle = page.data?.['*']?.title
             || page.data?.[defaultLang]?.title
             || page.data?.['en-US']?.title
@@ -1486,13 +1799,14 @@ export async function onRequest (context) {
           if (page.config.subpages?.vs) subpageList.push('vs')
 
           for (const subpage of subpageList) {
-            const srcFile = resolve(pagesDir, `${type}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
             if (!existsSync(srcFile)) continue
 
             mcpPages.push({
-              path: `${type}${pagePath}/${subpage}`,
+              path: `${book}${pagePath}/${subpage}`,
               title: defaultTitle,
-              type,
+              book,
+              type: book,
               subpage
             })
           }
@@ -1874,12 +2188,12 @@ export function createQuasarConfig (options = {}) {
       vueRouterMode: 'history',
 
       vitePlugins: [
+        createBooksPlugin(projectRoot),
         createHjsonPlugin(),
         createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),
         createMarkdownEndpointPlugin(projectRoot),
         createMarkdownBuildPlugin(projectRoot),
-        createPagesWatchPlugin(projectRoot),
         createPrerenderMetaPlugin(projectRoot),
         ...vitePlugins
       ],
@@ -1897,16 +2211,23 @@ export function createQuasarConfig (options = {}) {
           viteConf.optimizeDeps.force = true
         }
 
-        // Include a hash of pages/index.js in the optimizer config so that
-        // Vite's configHash (and thus browserHash) changes whenever page
-        // definitions change. This prevents the browser from serving stale
-        // pre-bundled router modules from its module cache.
-        const pagesFile = resolve(projectRoot, 'src', 'pages', 'index.js')
-        if (existsSync(pagesFile)) {
+        // Include a hash of page registry definition files (legacy index.js,
+        // plus *.book.js and *.index.js) in optimizer config so Vite's
+        // configHash/browserHash changes whenever routes/books are edited.
+        const pagesRegistryFiles = getPagesRegistryFiles(projectRoot)
+        if (pagesRegistryFiles.length > 0) {
+          const pagesHashBuilder = createHash('sha256')
+          for (const file of pagesRegistryFiles) {
+            pagesHashBuilder
+              .update(file)
+              .update(readFileSync(file))
+          }
+
           const pagesHash = createHash('sha256')
-            .update(readFileSync(pagesFile))
+            .update(pagesHashBuilder.digest('hex'))
             .digest('hex')
             .slice(0, 8)
+
           viteConf.optimizeDeps.esbuildOptions = viteConf.optimizeDeps.esbuildOptions || {}
           viteConf.optimizeDeps.esbuildOptions.define = {
             ...(viteConf.optimizeDeps.esbuildOptions.define || {}),
@@ -1950,7 +2271,7 @@ export function createQuasarConfig (options = {}) {
         // The router is excluded because routes.js imports consumer content via
         // the `pages` alias. If pre-bundled, consumer content gets embedded in
         // the optimizer cache whose hash doesn't track source file changes,
-        // causing stale routes after editing pages/index.js.
+        // causing stale routes after editing page registry files.
         viteConf.optimizeDeps.exclude = [
           ...(viteConf.optimizeDeps.exclude || []),
           'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios'

@@ -1,6 +1,8 @@
 module.exports = {
   root: true,
 
+  ignorePatterns: ['docsector.config.js'],
+
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module'

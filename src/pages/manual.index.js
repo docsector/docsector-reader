@@ -1,207 +1,4 @@
-/**
- * Docsector Reader - Pages Registry
- *
- * Define your documentation pages here. Each entry maps a URL path
- * to its configuration, data (titles per language), and optional metadata.
- *
- * config.type: determines the top-level route prefix (e.g., 'manual', 'guide', 'API')
- * config.status: 'done' | 'draft' | 'empty'
- * config.meta.description: string or localized object for SEO/social description
- * config.icon: Material Design icon name
- * config.menu: menu display options (header, subheader, separator)
- * config.subpages: { showcase: bool, vs: bool }
- * data: per-language titles (use '*' for all languages)
- * meta: per-language section/translation counts
- *
- * Set config to null for category nodes (non-navigable groupings).
- */
 export default {
-  // =========================================================================
-  // Guides
-  // =========================================================================
-  '/getting-started': {
-    config: {
-      icon: 'flag',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Getting Started — Documentation of Docsector Reader',
-          'pt-BR': 'Começando — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {
-        header: {
-          icon: 'school',
-          label: 'Guides'
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Getting Started' },
-      'pt-BR': { title: 'Começando' }
-    }
-  },
-
-  '/configuration': {
-    config: {
-      icon: 'tune',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Configuration — Documentation of Docsector Reader',
-          'pt-BR': 'Configuração — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {
-        separator: ' page'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Configuration' },
-      'pt-BR': { title: 'Configuração' }
-    }
-  },
-
-  '/pages-and-routing': {
-    config: {
-      icon: 'route',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Pages & Routing — Documentation of Docsector Reader',
-          'pt-BR': 'Páginas & Rotas — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Pages & Routing' },
-      'pt-BR': { title: 'Páginas & Rotas' }
-    }
-  },
-
-  '/i18n-and-markdown': {
-    config: {
-      icon: 'translate',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'i18n & Markdown — Documentation of Docsector Reader',
-          'pt-BR': 'i18n & Markdown — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'i18n & Markdown' },
-      'pt-BR': { title: 'i18n & Markdown' }
-    }
-  },
-
-  '/alerts-and-blockquotes': {
-    config: {
-      icon: 'notification_important',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Alerts & Blockquotes — Documentation of Docsector Reader',
-          'pt-BR': 'Alertas & Blockquotes — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Alerts & Blockquotes' },
-      'pt-BR': { title: 'Alertas & Blockquotes' }
-    }
-  },
-
-  '/theming': {
-    config: {
-      icon: 'palette',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Theming — Documentation of Docsector Reader',
-          'pt-BR': 'Temas — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Theming' },
-      'pt-BR': { title: 'Temas' }
-    }
-  },
-
-  '/deployment': {
-    config: {
-      icon: 'cloud_upload',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Deployment — Documentation of Docsector Reader',
-          'pt-BR': 'Deploy — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Deployment' },
-      'pt-BR': { title: 'Deploy' }
-    }
-  },
-
-  '/plugins': {
-    config: {
-      icon: 'extension',
-      status: 'empty',
-      meta: {
-        description: {
-          'en-US': 'Plugins — Documentation of Docsector Reader',
-          'pt-BR': 'Plugins — Documentacao do Docsector Reader'
-        }
-      },
-      type: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Plugins' },
-      'pt-BR': { title: 'Plugins' }
-    }
-  },
-
   // =========================================================================
   // Components — Layout
   // =========================================================================
@@ -223,7 +20,7 @@ export default {
           'pt-BR': 'DPage — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {
         header: {
           icon: 'widgets',
@@ -251,7 +48,7 @@ export default {
           'pt-BR': 'DSubpage — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false
@@ -273,7 +70,7 @@ export default {
           'pt-BR': 'DPageSection — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {
         separator: ' page'
       },
@@ -300,7 +97,7 @@ export default {
           'pt-BR': 'DH1 – DH6 (Títulos) — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: true
@@ -322,7 +119,7 @@ export default {
           'pt-BR': 'DPageSourceCode — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: true
@@ -344,7 +141,7 @@ export default {
           'pt-BR': 'DMermaidDiagram — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: true
@@ -366,7 +163,7 @@ export default {
           'pt-BR': 'DPageBlockquote — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {
         separator: ' page'
       },
@@ -393,7 +190,7 @@ export default {
           'pt-BR': 'DMenu — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false
@@ -415,7 +212,7 @@ export default {
           'pt-BR': 'DPageAnchor — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false
@@ -437,7 +234,7 @@ export default {
           'pt-BR': 'DPageMeta — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false
@@ -462,7 +259,7 @@ export default {
           'pt-BR': 'QZoom — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {
         separator: ' page'
       },
@@ -497,7 +294,7 @@ export default {
           'pt-BR': 'useNavigator — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false
@@ -530,7 +327,7 @@ export default {
           'pt-BR': 'Módulos Vuex — Documentacao do Docsector Reader'
         }
       },
-      type: 'manual',
+      book: 'manual',
       menu: {},
       subpages: {
         showcase: false

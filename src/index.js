@@ -235,10 +235,33 @@ export function createDocsector (config = {}) {
 }
 
 /**
+ * Define a Docsector book entry for the pages registry.
+ *
+ * @param {Object} config - Book configuration (id, label, icon, order, color)
+ * @param {Object|string} [config.color] - Tab text color settings
+ * @param {string} [config.color.active] - Active tab text color token (Quasar color key, CSS var, or CSS color)
+ * @param {string} [config.color.inactive] - Inactive tab text color token (Quasar color key, CSS var, or CSS color)
+ * @returns {Object} Normalized book definition
+ */
+export function defineBook (config = {}) {
+  const resolvedId = typeof config.id === 'string' ? config.id : ''
+  const resolvedLabel = config.label
+    || (resolvedId ? `${resolvedId.charAt(0).toUpperCase()}${resolvedId.slice(1)}` : '')
+
+  return {
+    ...config,
+    ...(resolvedId ? { id: resolvedId } : {}),
+    ...(resolvedLabel ? { label: resolvedLabel } : {})
+  }
+}
+
+/**
  * Define a Docsector page entry for the pages registry.
  *
  * @param {Object} options - Page options
- * @param {Object} options.config - Page configuration (icon, status, type, menu, subpages)
+ * @param {Object} options.config - Page configuration (icon, status, book, menu, subpages, link)
+ * @param {Object} [options.config.link] - Optional internal navigation link (menu shortcut)
+ * @param {string} options.config.link.to - Internal destination path (e.g. '/guide/getting-started/overview/')
  * @param {Object} options.data - Per-language titles { 'en-US': { title: '...' } }
  * @returns {Object} Page definition
  */
@@ -249,4 +272,4 @@ export function definePage (options) {
   }
 }
 
-export default { createDocsector, definePage }
+export default { createDocsector, defineBook, definePage }

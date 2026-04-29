@@ -4,6 +4,7 @@ import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n";
 
 import useNavigator from '../composables/useNavigator'
+import { pageTitleI18nPath } from '../i18n/path'
 
 const props = defineProps({
   id: {
@@ -22,7 +23,7 @@ const heading = computed(() => {
 
   let h = ''
   if (base && absolute) {
-    h = t(`_.${base}._`)
+    h = t(pageTitleI18nPath(base))
   }
 
   return h

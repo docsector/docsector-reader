@@ -1,6 +1,6 @@
 ## Registro de Páginas
 
-Todas as páginas de documentação são definidas em `src/pages/index.js`. Cada entrada mapeia um caminho URL para sua configuração, dados traduzíveis e metadata opcional.
+As páginas de documentação são definidas em registros separados, como `src/pages/guide.index.js` e `src/pages/manual.index.js`. Cada entrada mapeia um caminho URL para sua configuração, dados traduzíveis e metadata opcional.
 
 ## Estrutura de uma Entrada
 
@@ -9,7 +9,7 @@ Todas as páginas de documentação são definidas em `src/pages/index.js`. Cada
   config: &#123;
     icon: 'description',
     status: 'done',
-    type: 'guide',
+    book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
   &#125;,
@@ -22,7 +22,7 @@ Todas as páginas de documentação são definidas em `src/pages/index.js`. Cada
 
 ## Propriedades do Config
 
-- **type** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'`
+- **book** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'` (compatível com `type` legado)
 - **status** — Status da página: `'done'`, `'draft'` ou `'empty'`
 - **icon** — Nome do ícone Material Design exibido no menu lateral
 - **menu** — Objeto controlando exibição do menu (header, subheader, separator)
@@ -68,9 +68,9 @@ menu: &#123;
 
 Cada página requer arquivos Markdown seguindo este padrão de nomenclatura:
 
-`src/pages/&#123;type&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
+`src/pages/&#123;book&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
 
-Por exemplo, uma página em `/components/d-page` com type `manual`:
+Por exemplo, uma página em `/components/d-page` com book `manual`:
 
 - `src/pages/manual/components/d-page.overview.en-US.md`
 - `src/pages/manual/components/d-page.overview.pt-BR.md`
@@ -78,7 +78,7 @@ Por exemplo, uma página em `/components/d-page` com type `manual`:
 
 ## Geração de Rotas
 
-Rotas são geradas automaticamente a partir do registro de páginas. Uma página com path `/my-page` e type `guide` produz:
+Rotas são geradas automaticamente a partir do registro de páginas. Uma página com path `/my-page` e book `guide` produz:
 
 - `/guide/my-page/overview` — Aba de conteúdo principal
 - `/guide/my-page/showcase` — Aba de demonstração (se habilitada)

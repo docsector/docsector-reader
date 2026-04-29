@@ -7,6 +7,7 @@ import { copyToClipboard, useQuasar } from 'quasar'
 
 import docsectorConfig from 'docsector.config.js'
 import gitDates from 'virtual:docsector-git-dates'
+import { pageValueI18nPath } from '../i18n/path'
 
 const $q = useQuasar()
 const store = useStore()
@@ -59,7 +60,7 @@ const rawMarkdown = computed(() => {
   const absolute = store.state.i18n.absolute
   if (!absolute) return ''
 
-  const source = t(`_.${absolute}.source`)
+  const source = t(pageValueI18nPath(absolute, 'source'))
   if (!source) return ''
 
   return String(source)

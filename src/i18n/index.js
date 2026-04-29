@@ -9,6 +9,6 @@ const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?r
 
 // @ Import pages
 import boot from 'pages/boot'
-import pages from 'pages'
+import { books } from 'virtual:docsector-books'
 
-export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
+export default buildMessages({ langModules, mdModules, books, boot, homePageOverride })

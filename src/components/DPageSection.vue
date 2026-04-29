@@ -14,6 +14,7 @@ import DPageSourceCode from './DPageSourceCode.vue'
 import DMermaidDiagram from './DMermaidDiagram.vue'
 import DPageBlockquote from './DPageBlockquote.vue'
 import DQuickLinks from './DQuickLinks.vue'
+import { pageValueI18nPath } from '../i18n/path'
 
 const props = defineProps({
   id: {
@@ -122,7 +123,7 @@ const tokenized = computed(() => {
     return []
   }
 
-  const source = t(`_.${absolute}.source`)
+  const source = t(pageValueI18nPath(absolute, 'source'))
   const normalizedSource = String(source)
     .replace(/&#123;/g, '{')
     .replace(/&#125;/g, '}')

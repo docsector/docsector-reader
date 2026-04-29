@@ -1,6 +1,6 @@
 ## Page Registry
 
-All documentation pages are defined in `src/pages/index.js`. Each entry maps a URL path to its configuration, translatable data, and optional metadata.
+Documentation pages are defined in split registries such as `src/pages/guide.index.js` and `src/pages/manual.index.js`. Each entry maps a URL path to its configuration, translatable data, and optional metadata.
 
 ## Page Entry Structure
 
@@ -9,7 +9,7 @@ All documentation pages are defined in `src/pages/index.js`. Each entry maps a U
   config: &#123;
     icon: 'description',
     status: 'done',
-    type: 'guide',
+    book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
   &#125;,
@@ -22,7 +22,7 @@ All documentation pages are defined in `src/pages/index.js`. Each entry maps a U
 
 ## Config Properties
 
-- **type** — Route prefix: `'guide'`, `'manual'`, or `'API'`
+- **book** — Route prefix: `'guide'`, `'manual'`, or `'API'` (legacy `type` is still supported)
 - **status** — Page status: `'done'`, `'draft'`, or `'empty'`
 - **icon** — Material Design icon name shown in the sidebar
 - **menu** — Object controlling menu display (header, subheader, separator)
@@ -68,9 +68,9 @@ menu: &#123;
 
 Each page requires Markdown files following this naming pattern:
 
-`src/pages/&#123;type&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
+`src/pages/&#123;book&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
 
-For example, a page at `/components/d-page` with type `manual`:
+For example, a page at `/components/d-page` with book `manual`:
 
 - `src/pages/manual/components/d-page.overview.en-US.md`
 - `src/pages/manual/components/d-page.overview.pt-BR.md`
@@ -78,7 +78,7 @@ For example, a page at `/components/d-page` with type `manual`:
 
 ## Route Generation
 
-Routes are automatically generated from the page registry. A page with path `/my-page` and type `guide` produces:
+Routes are automatically generated from the page registry. A page with path `/my-page` and book `guide` produces:
 
 - `/guide/my-page/overview` — Main content tab
 - `/guide/my-page/showcase` — Showcase tab (if enabled)

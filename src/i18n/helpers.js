@@ -8,10 +8,10 @@
  *
  *   import { buildMessages } from '@docsector/docsector-reader/i18n'
  *   import boot from 'pages/boot'
- *   import pages from 'pages'
+ *   import { allPages as pages } from 'virtual:docsector-books'
  *
  *   const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
- *   const mdModules = import.meta.glob('../pages/⁣**​/⁣*.md', { eager: true, query: '?raw', import: 'default' })
+ *   const mdModules = import.meta.glob('all markdown files under ../pages recursively', { eager: true, query: '?raw', import: 'default' })
  *
  *   export default buildMessages({ langModules, mdModules, pages, boot })
  */
@@ -113,14 +113,15 @@ export function filter (source) {
  *
  * @param {Object} options
  * @param {Object} options.langModules - Result of import.meta.glob('./languages/*.hjson', { eager: true })
- * @param {Object} options.mdModules - Result of import.meta.glob('../pages/**​/*.md', { eager: true, query: '?raw', import: 'default' })
- * @param {Object} options.pages - Page registry from pages/index.js
+ * @param {Object} options.mdModules - Result of recursively globbing markdown files under ../pages with eager raw imports
+ * @param {Object} [options.pages] - Legacy merged page registry from virtual:docsector-books (allPages)
+ * @param {Object} [options.books] - Book registry from virtual:docsector-books (preferred, avoids path collisions)
  * @param {Object} options.boot - Boot meta from pages/boot.js
  * @param {string[]} [options.langs] - Language codes to process (auto-detected from langModules if omitted)
  * @param {Object<string,string>} [options.homePageOverride] - Optional per-language Home markdown override
  * @returns {Object} Complete i18n messages object keyed by locale
  */
-export function buildMessages ({ langModules, mdModules, pages, boot, langs, homePageOverride = {} }) {
+export function buildMessages ({ langModules, mdModules, pages, books, boot, langs, homePageOverride = {} }) {
   // Auto-detect languages from HJSON files if not provided
   if (!langs) {
     langs = Object.keys(langModules).map(key => {
@@ -199,6 +200,23 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs, hom
     return match[1].trim()
   }
 
+  const pageEntries = []
+
+  if (books && typeof books === 'object' && Object.keys(books).length > 0) {
+    for (const [bookId, book] of Object.entries(books)) {
+      const routes = book?.routes || {}
+      const fallbackBook = book?.config?.id || bookId || 'manual'
+
+      for (const [key, page] of Object.entries(routes)) {
+        pageEntries.push({ key, page, fallbackBook })
+      }
+    }
+  } else {
+    for (const [key, page] of Object.entries(pages || {})) {
+      pageEntries.push({ key, page, fallbackBook: null })
+    }
+  }
+
   // @ Iterate langs
   for (const lang of langs) {
     // Load HJSON language file
@@ -231,14 +249,18 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs, hom
     i18n[lang]._.home.overview.source = loadHomepage(lang)
 
     // @ Iterate pages
-    for (const [key, page] of Object.entries(pages)) {
-      const path = key.slice(1)
+    for (const entry of pageEntries) {
+      const { key, page, fallbackBook } = entry
+      const path = key.startsWith('/') ? key.slice(1) : key
 
       const config = page.config
       const data = page.data
       const meta = page.meta || boot.meta
 
-      const topPage = config?.type ?? 'manual'
+      const topPage = config?.book ?? config?.type ?? fallbackBook ?? 'manual'
+      if (i18n[lang]._[topPage] === undefined) {
+        i18n[lang]._[topPage] = {}
+      }
 
       // ---
 
@@ -254,7 +276,7 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs, hom
         // @ Set metadata
         // title
         if (node._ === undefined) {
-          node._ = data[lang]?.title || data['*']?.title
+          node._ = data?.[lang]?.title || data?.['*']?.title || data?.['en-US']?.title || ''
         }
 
         if (config === null) {
@@ -290,6 +312,11 @@ export function buildMessages ({ langModules, mdModules, pages, boot, langs, hom
       // ---
 
       if (config === null || config.status === 'empty') {
+        continue
+      }
+
+      const hasInternalLink = typeof config?.link?.to === 'string' && config.link.to.trim().length > 0
+      if (hasInternalLink) {
         continue
       }
 

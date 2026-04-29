@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '1.7.1'
+const VERSION = '2.0.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -71,7 +71,7 @@ function getTemplatePackageJson (name) {
       serve: 'docsector serve'
     },
     dependencies: {
-      '@docsector/docsector-reader': '^0.6.0',
+      '@docsector/docsector-reader': `^${VERSION}`,
       '@quasar/extras': '^1.16.12',
       'quasar': '^2.16.6',
       'vue': '^3.5.13',
@@ -273,7 +273,7 @@ const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?r
 
 // @ Import pages
 import boot from 'pages/boot'
-import pages from 'pages'
+import { allPages as pages } from 'virtual:docsector-books'
 
 export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
 `
@@ -383,14 +383,24 @@ const TEMPLATE_I18N_HJSON = `\
 }
 `
 
+const TEMPLATE_PAGES_GUIDE_BOOK = `\
+export default {
+  id: 'guide',
+  label: 'Guide',
+  icon: 'school',
+  order: 1,
+  color: 'secondary'
+}
+`
+
 const TEMPLATE_PAGES_INDEX = `\
 /**
- * Pages Registry
+ * Guide Pages Registry
  *
- * Define your documentation pages here. Each key is a URL path,
- * and each value configures the page's type, icon, status, and titles.
+ * Define guide pages here. Each key is a URL path,
+ * and each value configures the page's book, icon, status, and titles.
  *
- * config.type: top-level route prefix — 'manual', 'guide', etc.
+ * config.book: top-level route prefix — 'guide', 'manual', etc.
  * config.status: 'done' | 'draft' | 'empty'
  * config.meta.description: string or localized object for SEO/social description
  * config.icon: Material Design icon name
@@ -410,7 +420,7 @@ export default {
           'en-US': 'Get started quickly with setup and project structure.'
         }
       },
-      type: 'guide',
+      book: 'guide',
       menu: {
         header: {
           icon: 'school',
@@ -952,7 +962,8 @@ Here's an overview of the project files:
 | \`docsector.config.js\` | Branding, links, languages, and GitHub config |
 | \`quasar.config.js\` | Quasar/Vite build configuration (via factory) |
 | \`.markdownlint.json\` | Markdown lint rules (allows Docsector custom tags) |
-| \`src/pages/index.js\` | Page registry — defines all documentation pages |
+| \`src/pages/guide.book.js\` | Guide book definition (tab metadata) |
+| \`src/pages/guide.index.js\` | Guide page registry (routes + metadata) |
 | \`src/pages/boot.js\` | Boot metadata for the home page |
 | \`src/pages/Homepage.en-US.md\` | Home page content in Markdown |
 | \`src/pages/404Page.vue\` | Not found page |
@@ -963,8 +974,9 @@ Here's an overview of the project files:
 
 ## Adding a Page
 
-1. Register the page in \`src/pages/index.js\`
-2. Create the Markdown file at \`src/pages/{type}/{path}.overview.{lang}.md\`
+1. Register the page in \`src/pages/guide.index.js\`
+2. Set \`config.book\` (for example: \`'guide'\`)
+3. Create the Markdown file at \`src/pages/{book}/{path}.overview.{lang}.md\`
 3. The page will automatically appear in the sidebar navigation
 
 ## Customization
@@ -1082,7 +1094,8 @@ function initProject (name) {
     ['src/css/app.sass', TEMPLATE_CSS_STUB],
     ['src/i18n/index.js', TEMPLATE_I18N_INDEX],
     ['src/i18n/languages/en-US.hjson', TEMPLATE_I18N_HJSON],
-    ['src/pages/index.js', TEMPLATE_PAGES_INDEX],
+    ['src/pages/guide.book.js', TEMPLATE_PAGES_GUIDE_BOOK],
+    ['src/pages/guide.index.js', TEMPLATE_PAGES_INDEX],
     ['src/pages/boot.js', TEMPLATE_PAGES_BOOT],
     ['src/pages/Homepage.en-US.md', TEMPLATE_HOMEPAGE_MD],
     ['src/pages/404Page.vue', TEMPLATE_404_PAGE],
@@ -1120,7 +1133,8 @@ function initProject (name) {
   console.log('        │   └── languages/')
   console.log('        │       └── en-US.hjson')
   console.log('        └── pages/')
-  console.log('            ├── index.js')
+  console.log('            ├── guide.book.js')
+  console.log('            ├── guide.index.js')
   console.log('            ├── boot.js')
   console.log('            ├── Homepage.en-US.md')
   console.log('            ├── 404Page.vue')

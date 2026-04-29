@@ -1,4 +1,5 @@
 import docsectorConfig from 'docsector.config.js'
+import { pageValueI18nPath } from '../i18n/path'
 
 let activeCleanup = null
 
@@ -253,7 +254,7 @@ function createToolDefinitions ({
 
         let content = ''
         if (includeContent && absolute) {
-          const source = translate(`_.${absolute}.source`)
+          const source = translate(pageValueI18nPath(absolute, 'source'))
           if (source) {
             content = decodeMarkdownSource(source)
           }

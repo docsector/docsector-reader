@@ -59,7 +59,8 @@ Após o `init`, seu projeto terá esta estrutura:
 - `docsector.config.js` — Branding, links, idiomas, config do GitHub
 - `quasar.config.js` — Wrapper fino usando `createQuasarConfig()` do pacote
 - `index.html` — Ponto de entrada HTML com título e meta tags
-- `src/pages/index.js` — Registro de páginas (rotas e metadata)
+- `src/pages/guide.book.js` — Metadata do book Guide (aba)
+- `src/pages/guide.index.js` — Registro de páginas do Guide (rotas e metadata)
 - `src/pages/guide/` — Páginas tipo guia (arquivos Markdown)
 - `src/pages/manual/` — Páginas tipo manual (arquivos Markdown)
 - `src/i18n/index.js` — Loader i18n usando `buildMessages()` do pacote
@@ -71,7 +72,7 @@ O motor de renderização (componentes, layouts, router, store, composables) fic
 ## Próximos Passos
 
 - Configure o branding do seu projeto em **docsector.config.js**
-- Defina suas páginas em **src/pages/index.js**
+- Defina suas páginas em **src/pages/guide.index.js** (e outros registros `*.index.js`)
 - Escreva sua documentação em **Markdown**
 - Adicione palavras-chave de busca em **src/i18n/tags.hjson**
 - Personalize temas e aparência

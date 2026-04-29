@@ -2,13 +2,16 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useStore } from 'vuex'
 import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from "vue-router";
 
 import useNavigator from '../composables/useNavigator'
+import { pageTitleI18nPath } from '../i18n/path'
 
 const store = useStore()
 const $q = useQuasar()
 const route = useRoute()
+const { t } = useI18n()
 const { navigate, anchor, selected: navigatorSelected } = useNavigator()
 
 const scrolling = ref(null)
@@ -45,6 +48,15 @@ const stylize = computed(() => {
   } else {
     return 'q-ma-xs'
   }
+})
+
+const fallbackNodeLabel = computed(() => {
+  const base = store.state.i18n.base
+  if (!base) {
+    return ''
+  }
+
+  return t(pageTitleI18nPath(base))
 })
 
 const scrollToActiveAnchor = () => {
@@ -109,7 +121,7 @@ onBeforeUnmount(() => {
 >
   <template v-slot:default-header="props">
     <b v-if="props.node.label" v-html="props.node.label"></b>
-    <b v-else>{{ $t(`_.${$store.state.i18n.base}._`) }}</b>
+    <b v-else>{{ fallbackNodeLabel }}</b>
   </template>
 </q-tree>
 </template>

@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
+import { namespacedLabelI18nPath, routeTitleI18nPath } from '../i18n/path'
+
 const props = defineProps({
   items: {
     type: Number,
@@ -36,13 +38,17 @@ const getMenuItemHeaderBackground = () => {
 }
 
 const getMenuItemLabel = (item, index) => {
-  const path = `_${item.path.replace(/_$/, '').replace(/\//g, '.')}._`
-  return t(path)
+  return t(routeTitleI18nPath(item.path))
 }
 
 const getMenuItemSubheader = (meta) => {
-  const subheader = meta.menu.subheader
-  const path = `_.${meta.type}${subheader}._`
+  const subheader = meta.menu?.subheader
+  if (!subheader) {
+    return ''
+  }
+
+  const book = meta.book ?? meta.type ?? 'manual'
+  const path = namespacedLabelI18nPath(book, subheader)
 
   return t(path)
 }
@@ -95,7 +101,7 @@ const isMenuItemActive = (path) => {
 
 <template>
 <!-- Menu Separator - Subheader -->
-<q-item-section v-if="subitem.meta.menu.subheader">
+<q-item-section v-if="subitem.meta.menu?.subheader">
   <q-item-label class="label subheader" header>
     {{ getMenuItemSubheader(subitem.meta) }}
   </q-item-label>
@@ -123,7 +129,7 @@ const isMenuItemActive = (path) => {
 </q-item>
 
 <!-- Menu Separator -->
-<li v-if="subitem.meta.menu.separator" role="listitem">
+<li v-if="subitem.meta.menu?.separator" role="listitem">
   <q-separator
     :class="'separator' + (subitem.meta.menu.separator === true ? '' : subitem.meta.menu.separator)"
     role="separator"

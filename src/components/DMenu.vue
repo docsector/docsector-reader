@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 import tags from '@docsector/tags'
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
+import { allBooks } from 'virtual:docsector-books'
+import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
 
 const $q = useQuasar()
 const $route = useRoute()
@@ -27,6 +29,27 @@ const subpage = computed(() => {
   const parent = $route.matched[0]?.path
   const child = $route.matched[1]?.path
   return child.substring(parent.length)
+})
+
+const defaultBookId = computed(() => {
+  const sortedBooks = [...(allBooks || [])]
+    .filter(book => book && typeof book.id === 'string' && book.id.length > 0)
+    .sort((a, b) => {
+      const orderA = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER
+      const orderB = Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER
+      return orderA - orderB
+    })
+
+  return sortedBooks[0]?.id || null
+})
+
+const currentBookId = computed(() => {
+  const routeBook = $route.matched?.[0]?.meta?.book ?? $route.meta?.book ?? null
+  if (routeBook && routeBook !== 'home') {
+    return routeBook
+  }
+
+  return defaultBookId.value
 })
 
 const searchTerm = (term) => {
@@ -76,7 +99,7 @@ const searchTermInI18nTexts = (route, term, locale) => {
   let source = null
   let found = false
   for (const subpage of subpages) {
-    const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
+    const path = routeSubpageSourceI18nPath(route, subpage)
     const msgExists = te(path, locale)
     if (msgExists) {
       source = tm(path, locale)
@@ -99,7 +122,8 @@ const clearSearchTerm = () => {
 const getMenuItemHeaderLabel = (meta) => {
   const label = meta.menu.header.label
   if (label[0] === '.') { // Node path
-    const path = `_.${meta.type}${label}._`
+    const book = meta.book ?? meta.type ?? 'manual'
+    const path = namespacedLabelI18nPath(book, label)
     return t(path)
   }
   return label // String raw
@@ -156,38 +180,54 @@ onBeforeUnmount(() => {
   }
 })
 
-// # Events
-// Create
-const routes = $router.options.routes.slice(0, -2) // Delete last 2 routes
-const itemsArray = []
+const buildMenuItems = () => {
+  const routes = ($router.options.routes || []).slice(0, -2) // Delete last 2 routes
+  const activeBook = currentBookId.value
 
-let nodeBasepath = ''
-let nodeIndex = 0
-for (const [index, route] of routes.entries()) {
-  const item = Object.freeze({
-    path: route.path,
-    meta: route.meta
+  const filteredRoutes = routes.filter(route => {
+    const routeBook = route?.meta?.book ?? route?.meta?.type
+    if (!activeBook) return true
+    return routeBook === activeBook
   })
-  // # Route
-  const basepath = route.path.split('/')[2]
-  const header = route.meta.menu.header
 
-  if (header !== undefined && basepath !== nodeBasepath) {
-    nodeBasepath = basepath
-    nodeIndex = index
-    itemsArray[index] = []
-  } else if (header === undefined && basepath !== nodeBasepath) {
-    nodeBasepath = ''
+  const itemsArray = []
+
+  let nodeBasepath = ''
+  let nodeIndex = 0
+  for (const [index, route] of filteredRoutes.entries()) {
+    const item = Object.freeze({
+      path: route.path,
+      meta: route.meta
+    })
+
+    // # Route
+    const basepath = route.path.split('/')[2]
+    const header = route.meta?.menu?.header
+
+    if (header !== undefined && basepath !== nodeBasepath) {
+      nodeBasepath = basepath
+      nodeIndex = index
+      itemsArray[index] = []
+    } else if (header === undefined && basepath !== nodeBasepath) {
+      nodeBasepath = ''
+    }
+
+    if (nodeBasepath !== '') {
+      itemsArray[nodeIndex].push(item)
+    } else {
+      itemsArray.push(item)
+    }
   }
 
-  if (nodeBasepath !== '') {
-    itemsArray[nodeIndex].push(item)
-  } else {
-    itemsArray.push(item)
-  }
+  return Object.freeze(itemsArray.filter(item => item !== undefined))
 }
 
-items.value = Object.freeze(itemsArray.filter(item => item !== undefined))
+const rebuildItems = () => {
+  items.value = buildMenuItems()
+}
+
+rebuildItems()
+watch(currentBookId, rebuildItems)
 </script>
 
 <template>

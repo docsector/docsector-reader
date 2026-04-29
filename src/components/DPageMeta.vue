@@ -6,6 +6,7 @@ import { openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
 import docsectorConfig from 'docsector.config.js'
+import { pageValueI18nPath, routeTitleI18nPath } from '../i18n/path'
 
 const store = useStore()
 const route = useRoute()
@@ -72,7 +73,7 @@ const progress = computed(() => {
   const currentLang = locale.value
 
   // Count headers (## and ###) in the default language source
-  const defaultSourcePath = `_.${i18nPathAbsolute}.source`
+  const defaultSourcePath = pageValueI18nPath(i18nPathAbsolute, 'source')
   const defaultSource = te(defaultSourcePath, defaultLang) ? tm(defaultSourcePath, defaultLang) : ''
 
   if (!defaultSource || typeof defaultSource !== 'string') {
@@ -106,7 +107,7 @@ const progress = computed(() => {
 
 const languages = computed(() => {
   const i18nPathAbsolute = store.state.i18n.absolute
-  const translations = `_.${i18nPathAbsolute}._translations`
+  const translations = pageValueI18nPath(i18nPathAbsolute, '_translations')
   const i18nLocales = availableLocales
   let fallbackLastUpdated = null
 
@@ -165,6 +166,10 @@ const hideRemoteHomeFooterMeta = computed(() => {
 
   return isRemoteHome && isHomePage
 })
+
+const getRouteTitle = (path) => {
+  return t(routeTitleI18nPath(path))
+}
 </script>
 
 <template>
@@ -197,11 +202,11 @@ const hideRemoteHomeFooterMeta = computed(() => {
     <router-link class="link col" v-if="prev" :to="`${prev}/overview/`">
       <div class="text-caption">{{ $t('page.nav.prev') }}</div>
       <q-icon name="navigate_before" />
-      <span>{{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}</span>
+      <span>{{ getRouteTitle(prev) }}</span>
     </router-link>
     <router-link class="link col" v-if="next" :to="`${next}/overview/`">
       <div class="text-caption">{{ $t('page.nav.next') }}</div>
-      <span>{{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}</span>
+      <span>{{ getRouteTitle(next) }}</span>
       <q-icon name="navigate_next" />
     </router-link>
   </nav>
