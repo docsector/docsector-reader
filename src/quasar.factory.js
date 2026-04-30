@@ -348,6 +348,32 @@ async function loadBooksRegistry (projectRoot) {
 }
 
 /**
+ * Return page entries while preserving the book that contributed each route.
+ *
+ * Why: `allPages` is a legacy flattened registry and cannot represent two
+ * books that reuse the same route key, such as `/getting-started` in both
+ * `guide.index.js` and `manual.index.js`. Build artifacts that need concrete
+ * URLs must iterate per book instead.
+ */
+function getBookPageEntries (books = {}) {
+  const pageEntries = []
+
+  for (const [bookId, book] of Object.entries(books || {})) {
+    const fallbackBook = book?.config?.id || bookId || 'manual'
+
+    for (const [pagePath, page] of Object.entries(book?.routes || {})) {
+      pageEntries.push({
+        book: resolvePageBook(page?.config, fallbackBook),
+        pagePath,
+        page
+      })
+    }
+  }
+
+  return pageEntries
+}
+
+/**
  * Check if a file path is a book registry definition file.
  */
 function isPagesRegistryFile (projectRoot, changedPath) {
@@ -463,7 +489,8 @@ function createPrerenderMetaPlugin (projectRoot) {
       // Dynamic import books registry and docsector config
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
-      const { allPages: pages } = await loadBooksRegistry(projectRoot)
+      const { books } = await loadBooksRegistry(projectRoot)
+      const pageEntries = getBookPageEntries(books)
       const { default: config } = await import(configUrl)
 
       const brandingName = config.branding?.name || ''
@@ -481,10 +508,9 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       let count = 0
 
-      for (const [pagePath, page] of Object.entries(pages)) {
+      for (const { book, pagePath, page } of pageEntries) {
         if (page.config === null) continue
 
-        const book = resolvePageBook(page.config, 'manual')
         const titleData = page.data?.[defaultLang] || page.data?.['*'] || page.data?.['en-US'] || Object.values(page.data || {})[0]
         const title = titleData?.title || ''
         const fullTitle = title
@@ -1075,16 +1101,15 @@ function createMarkdownBuildPlugin (projectRoot) {
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
       const { default: config } = await import(configUrl)
-      const { allPages: pages } = await loadBooksRegistry(projectRoot)
+      const { books } = await loadBooksRegistry(projectRoot)
+      const pageEntries = getBookPageEntries(books)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
       let count = 0
 
-      for (const [pagePath, page] of Object.entries(pages)) {
+      for (const { book, pagePath, page } of pageEntries) {
         if (page.config === null) continue
         if (page.config.status === 'empty') continue
-
-        const book = resolvePageBook(page.config, 'manual')
 
         const subpages = ['overview']
         if (page.config.subpages?.showcase) subpages.push('showcase')
@@ -1129,11 +1154,9 @@ function createMarkdownBuildPlugin (projectRoot) {
         const today = new Date().toISOString().split('T')[0]
         let urls = ''
 
-        for (const [pagePath, page] of Object.entries(pages)) {
+        for (const { book, pagePath, page } of pageEntries) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
-
-          const book = resolvePageBook(page.config, 'manual')
 
           const subpages = ['overview']
           if (page.config.subpages?.showcase) subpages.push('showcase')
@@ -1162,11 +1185,10 @@ function createMarkdownBuildPlugin (projectRoot) {
 
         const llmsSections = {}
 
-        for (const [pagePath, page] of Object.entries(pages)) {
+        for (const { book, pagePath, page } of pageEntries) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
-          const book = resolvePageBook(page.config, 'manual')
           const title = page.data?.['*']?.title
             || page.data?.[defaultLang]?.title
             || page.data?.['en-US']?.title
@@ -1783,11 +1805,10 @@ export async function onRequest (context) {
 
         // Collect page index for MCP
         const mcpPages = []
-        for (const [pagePath, page] of Object.entries(pages)) {
+        for (const { book, pagePath, page } of pageEntries) {
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
-          const book = resolvePageBook(page.config, 'manual')
           const defaultTitle = page.data?.['*']?.title
             || page.data?.[defaultLang]?.title
             || page.data?.['en-US']?.title
