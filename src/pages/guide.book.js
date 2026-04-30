@@ -7,6 +7,6 @@ export default defineBook({
   order: 2,
   color: {
     active: 'white',
-    inactive: 'secondary'
+    inactive: 'white'
   }
 })

@@ -94,6 +94,20 @@ const pActive = (relative) => {
   return null
 }
 
+const normalizeRoutePath = (path) => {
+  const normalized = String(path || '').trim()
+  if (normalized === '' || normalized === '/') {
+    return '/'
+  }
+
+  const sanitized = normalized.replace(/\/+$/, '')
+  return sanitized === '' ? '/' : sanitized
+}
+
+const isSameEffectivePage = (from, to) => {
+  return normalizeRoutePath(from?.path) === normalizeRoutePath(to?.path)
+}
+
 const subroute = (to) => {
   const base = '/' + store.state.page.base
   const relative = store.state.page.relative
@@ -204,7 +218,7 @@ onMounted(() => {
   router.beforeEach((to, from, next) => {
     resetPageScroll()
 
-    if (to.hash === '' && from.path !== to.path) {
+    if (to.hash === '' && !isSameEffectivePage(from, to)) {
       store.commit('page/resetAnchor')
       store.commit('page/resetAnchors')
       store.commit('page/resetNodes')

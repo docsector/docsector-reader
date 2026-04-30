@@ -294,11 +294,25 @@ function onBookTabChange (bookId) {
   }
 }
 
+const normalizeRoutePath = (path) => {
+  const normalized = String(path || '').trim()
+  if (normalized === '' || normalized === '/') {
+    return '/'
+  }
+
+  const sanitized = normalized.replace(/\/+$/, '')
+  return sanitized === '' ? '/' : sanitized
+}
+
+const isSameEffectivePage = (from, to) => {
+  return normalizeRoutePath(from?.path) === normalizeRoutePath(to?.path)
+}
+
 // --- created logic (runs at setup time) ---
 store.dispatch('app/configureLanguage', route.matched)
 
 router.afterEach((to, from) => {
-  if (!to.hash || (from.path !== to.path)) {
+  if (!isSameEffectivePage(from, to)) {
     store.dispatch('app/configureLanguage', to.matched)
   }
 })

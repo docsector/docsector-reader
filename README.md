@@ -47,6 +47,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking and auto-scroll to active section
+- 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 🌐 **WebMCP Browser Tools** — Registers in-page tools for browser agents with `registerTool` and optional `provideContext` fallback
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers

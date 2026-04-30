@@ -1,12 +1,15 @@
 <script setup>
 // defineProps is a compiler macro in <script setup>, no import needed
-import { useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { namespacedLabelI18nPath, routeTitleI18nPath } from '../i18n/path'
 
-const props = defineProps({
+const $route = useRoute()
+const $router = useRouter()
+const { t } = useI18n()
+
+defineProps({
   items: {
     type: Number,
     required: true
@@ -24,24 +27,20 @@ const props = defineProps({
     required: true
   },
   founds: {
-    type: [Boolean, Array],
+    type: [Boolean, Array, Object],
     required: true
   }
 })
 
-const $q = useQuasar()
-const $route = useRoute()
-const { t } = useI18n()
+const getMenuItemLabel = (item) => {
+  if (!item?.path) {
+    return ''
+  }
 
-const getMenuItemHeaderBackground = () => {
-  return $q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
-}
-
-const getMenuItemLabel = (item, index) => {
   return t(routeTitleI18nPath(item.path))
 }
 
-const getMenuItemSubheader = (meta) => {
+const getMenuItemSubheader = (meta = {}) => {
   const subheader = meta.menu?.subheader
   if (!subheader) {
     return ''
@@ -97,28 +96,54 @@ const normalizePath = (path) => {
 const isMenuItemActive = (path) => {
   return normalizePath(path) === normalizePath($route.path)
 }
+
+const getMenuItemTargetPath = (path) => {
+  return `${path}/overview/`
+}
+
+const getMenuItemTo = (path) => {
+  return getMenuItemTargetPath(path)
+}
+
+const onMenuItemClick = (event, path, currentSubpage) => {
+  const currentPath = `${path}${currentSubpage}`
+  if (!isMenuItemActive(currentPath)) {
+    return
+  }
+
+  event?.preventDefault?.()
+  event?.stopPropagation?.()
+
+  if ($route.hash) {
+    $router.replace({ path: $route.path, hash: '' })
+  }
+}
 </script>
 
 <template>
 <!-- Menu Separator - Subheader -->
-<q-item-section v-if="subitem.meta.menu?.subheader">
+<q-item-section v-if="subitem?.meta?.menu?.subheader">
   <q-item-label class="label subheader" header>
     {{ getMenuItemSubheader(subitem.meta) }}
   </q-item-label>
 </q-item-section>
 
 <q-item
-  :to="subitem.path + '/overview/'"
+  v-if="subitem?.path"
+  :to="getMenuItemTo(subitem.path)"
   :active="isMenuItemActive(subitem.path + subpage)"
+  :class="{ 'd-menu-item--active': isMenuItemActive(subitem.path + subpage) }"
+  clickable
+  @click="onMenuItemClick($event, subitem.path, subpage)"
   v-show="founds[subitem.path] || !founds"
 >
   <q-item-section side>
-    <q-icon v-if="subitem.meta.icon" :name="subitem.meta.icon" />
+    <q-icon v-if="subitem?.meta?.icon" :name="subitem.meta.icon" />
   </q-item-section>
   <q-item-section>
-    {{ getMenuItemLabel(subitem, subindex) }}
+    {{ getMenuItemLabel(subitem) }}
   </q-item-section>
-  <q-item-section class="page-status" v-if="subitem.meta.status !== 'done'" side>
+  <q-item-section class="page-status" v-if="subitem?.meta && subitem.meta.status !== 'done'" side>
     <q-badge
       :text-color="getPageStatusTextColor(subitem.meta.status)"
       :color="getPageStatusColor(subitem.meta.status)"
@@ -129,10 +154,17 @@ const isMenuItemActive = (path) => {
 </q-item>
 
 <!-- Menu Separator -->
-<li v-if="subitem.meta.menu?.separator" role="listitem">
+<li v-if="subitem?.meta?.menu?.separator" role="listitem">
   <q-separator
     :class="'separator' + (subitem.meta.menu.separator === true ? '' : subitem.meta.menu.separator)"
     role="separator"
   />
 </li>
 </template>
+
+<style lang="sass">
+.d-menu-item--active
+  cursor: pointer
+  user-select: none
+  -webkit-user-select: none
+</style>
