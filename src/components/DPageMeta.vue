@@ -107,23 +107,25 @@ const progress = computed(() => {
 
 const languages = computed(() => {
   const i18nPathAbsolute = store.state.i18n.absolute
-  const translations = pageValueI18nPath(i18nPathAbsolute, '_translations')
   const i18nLocales = availableLocales
-  let fallbackLastUpdated = null
+  const sourcePath = pageValueI18nPath(i18nPathAbsolute, 'source')
 
-  if (te(translations, 'en-US')) {
-    fallbackLastUpdated = tm(translations, 'en-US')
+  if (!i18nPathAbsolute || i18nLocales.length === 0) {
+    return `0/${i18nLocales.length}`
   }
 
   let i18nLocalesAvailable = 0
-  if (fallbackLastUpdated) {
-    for (let i = 0; i < i18nLocales.length; i++) {
-      if (t(translations, i18nLocales[i]) !== fallbackLastUpdated) {
-        i18nLocalesAvailable++
-      }
+  for (let i = 0; i < i18nLocales.length; i++) {
+    const currentLocale = i18nLocales[i]
+
+    if (!te(sourcePath, currentLocale)) {
+      continue
     }
-  } else {
-    i18nLocalesAvailable = 1
+
+    const source = tm(sourcePath, currentLocale)
+    if (typeof source === 'string' && source.trim().length > 0) {
+      i18nLocalesAvailable++
+    }
   }
 
   return `${i18nLocalesAvailable}/${i18nLocales.length}`

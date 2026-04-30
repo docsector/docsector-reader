@@ -59,6 +59,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 📊 **Translation Progress** — Automatic translation percentage based on header coverage
+- 🌐 **Accurate Available Translations** — Locale availability counter now uses actual localized page source presence, avoiding false negatives when metadata is equal
 - 🧠 **Markdown Negotiation** — Responds with Markdown when clients send `Accept: text/markdown`, while keeping HTML as browser default
 - 🔐 **Web Bot Auth** — Can publish a signed HTTP message signatures directory and includes helpers to sign outbound bot requests
 - 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
