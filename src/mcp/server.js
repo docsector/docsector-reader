@@ -149,21 +149,27 @@ async function handleGetPage (args, env) {
   }
 
   const siteBase = SITE_URL || 'http://localhost'
+  const pages = await getPages(env)
 
   // Try the path as-is, then with /overview appended
-  const attempts = [`/${path}.md`]
+  const attempts = [path]
   if (!path.endsWith('/overview') && !path.endsWith('/showcase') && !path.endsWith('/vs')) {
-    attempts.push(`/${path}/overview.md`)
+    attempts.push(`${path}/overview`)
   }
 
-  for (const mdPath of attempts) {
-    const url = new URL(mdPath, siteBase)
+  for (const pagePath of attempts) {
+    if (!pages.some(page => page.path === pagePath)) continue
+
+    const url = new URL(`/${pagePath}.md`, siteBase)
     const res = await env.ASSETS.fetch(url.toString())
 
     if (res.ok) {
       const text = await res.text()
+      const contentType = res.headers.get('content-type') || ''
+      const looksLikeHtml = /^\s*<!doctype\s+html/i.test(text) || /^\s*<html[\s>]/i.test(text)
+      if (contentType.includes('text/html') || looksLikeHtml) continue
+
       const siteUrl = siteBase.replace(/\/+$/, '')
-      const pagePath = mdPath.replace(/^\//, '').replace(/\.md$/, '')
 
       return {
         content: [{
