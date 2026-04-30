@@ -18,6 +18,8 @@
       <q-btn class="filled" square icon="settings" aria-label="Configuration" @click="openSettingsDialog" />
     </q-toolbar>
 
+    <q-separator v-if="sortedBooks.length > 0" class="d-book-tabs-separator" dark />
+
     <q-tabs
       v-if="sortedBooks.length > 0"
       :model-value="activeBookTab"
@@ -328,6 +330,8 @@ store.commit('page/resetAnchors')
       padding: 0
   .q-tabs
     margin-top: 2px
+  .d-book-tabs-separator
+    opacity: 0.25
   .d-book-tabs
     .q-tab__indicator
       background-color: currentColor
