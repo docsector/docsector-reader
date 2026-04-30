@@ -343,6 +343,10 @@ watch(() => route.fullPath, () => {
 
   .d-submenu__toggle
     flex: 0 0 auto
+    align-self: stretch
+    min-height: inherit
+    border-radius: 0
+    margin-right: 0
 
   .on-left
     margin-right: 5px
@@ -373,7 +377,18 @@ watch(() => route.fullPath, () => {
   box-shadow: 0 -1px 2px rgba(0,0,0,0.12), 0 -2px 6px rgba(0,0,0,0.08)
 
   .d-submenu__content
-    align-items: flex-end
+    width: 100%
+    max-width: none
+    margin: 0
+    align-items: stretch
+
+  .toolbar-container
+    display: flex
+    align-items: center
+
+  .d-submenu__toggle
+    margin-right: 0
+    padding-right: 12px
 
 #submenu a,
 #submenu button
