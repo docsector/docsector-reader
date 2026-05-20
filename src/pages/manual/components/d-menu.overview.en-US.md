@@ -26,7 +26,11 @@ Reads from `docsector.config.js`:
 - `branding.logo` — Project logo image
 - `branding.name` — Project name text
 - `branding.version` — Current version
-- `branding.versions` — Version dropdown options
+- `branding.versions` — Version dropdown options, including optional release badges
+
+The selector keeps current docs on unprefixed routes and switches archived versions to prefixed routes. For example, current `/guide/getting-started/overview/` can switch to archived `/v0.x/guide/getting-started/overview/` when a matching page exists under `src/pages/.old/v0.x/`.
+
+Every version object shows a badge after the version label. Released versions default to `released`; versions with `released: false` or `status: 'draft'` default to `draft`; versions with `status: 'deprecated'` or `deprecated: true` default to `deprecated` in red. The badge can be customized with `badge: { label, color, textColor }`.
 
 ## External Links
 
@@ -43,7 +47,7 @@ Each link is conditionally rendered — set to `null` in the config to hide:
 
 ## Page Tree
 
-The page tree is built from the router's routes at component creation time. Routes are grouped by their basepath (second URL segment). Groups with a `menu.header` configuration get an expansion panel with a sticky header.
+The page tree is built from the router's routes at component creation time. Routes are filtered by active version and book, then grouped by their page basepath. Groups with a `menu.header` configuration get an expansion panel with a sticky header.
 
 ## Menu Item Grouping
 

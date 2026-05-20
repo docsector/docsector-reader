@@ -15,7 +15,19 @@ export default {
     // Project name displayed in the sidebar
     name: 'Docsector Reader',
     // Version label displayed next to the name
-    version: 'v' + pkg.version
+    version: 'v' + pkg.version,
+    versions: [
+      {
+        id: 'v' + pkg.version,
+        current: true,
+        released: false
+      },
+      {
+        id: 'v0.x',
+        released: true,
+        status: 'deprecated'
+      }
+    ]
   },
 
   // @ Links

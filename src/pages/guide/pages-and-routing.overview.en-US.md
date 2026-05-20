@@ -83,3 +83,5 @@ Routes are automatically generated from the page registry. A page with path `/my
 - `/guide/my-page/overview` — Main content tab
 - `/guide/my-page/showcase` — Showcase tab (if enabled)
 - `/guide/my-page/vs` — Comparison tab (if enabled)
+
+Archived major versions use the same structure under `src/pages/.old/&#123;version&#125;/`. A page registered in `src/pages/.old/v0.x/guide.index.js` produces `/v0.x/guide/my-page/overview` while the current version remains `/guide/my-page/overview`.

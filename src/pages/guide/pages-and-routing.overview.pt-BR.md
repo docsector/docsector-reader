@@ -83,3 +83,5 @@ Rotas são geradas automaticamente a partir do registro de páginas. Uma página
 - `/guide/my-page/overview` — Aba de conteúdo principal
 - `/guide/my-page/showcase` — Aba de demonstração (se habilitada)
 - `/guide/my-page/vs` — Aba de comparação (se habilitada)
+
+Versões major arquivadas usam a mesma estrutura em `src/pages/.old/&#123;version&#125;/`. Uma página registrada em `src/pages/.old/v0.x/guide.index.js` produz `/v0.x/guide/my-page/overview`, enquanto a versão atual continua em `/guide/my-page/overview`.

@@ -73,6 +73,19 @@ export function splitDotPathSegments (dotPath) {
   return normalized.split('.').filter(Boolean)
 }
 
+function splitI18nPathSegments (path) {
+  if (Array.isArray(path)) {
+    return normalizeSegments(path)
+  }
+
+  const normalized = String(path || '').trim()
+  if (normalized.includes('/')) {
+    return splitRoutePathSegments(normalized)
+  }
+
+  return splitDotPathSegments(normalized)
+}
+
 export function routeTitleI18nPath (routePath) {
   return buildI18nPath('_', ...splitRoutePathSegments(routePath), '_')
 }
@@ -82,11 +95,11 @@ export function routeSubpageSourceI18nPath (routePath, subpage = 'overview') {
 }
 
 export function pageTitleI18nPath (basePath) {
-  return buildI18nPath('_', ...splitDotPathSegments(basePath), '_')
+  return buildI18nPath('_', ...splitI18nPathSegments(basePath), '_')
 }
 
 export function pageValueI18nPath (absolutePath, key = 'source') {
-  return buildI18nPath('_', ...splitDotPathSegments(absolutePath), key)
+  return buildI18nPath('_', ...splitI18nPathSegments(absolutePath), key)
 }
 
 export function namespacedLabelI18nPath (book, nodePath) {

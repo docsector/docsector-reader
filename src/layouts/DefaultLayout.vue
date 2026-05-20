@@ -59,7 +59,7 @@ import { useMeta, colors } from 'quasar'
 
 import DMenu from '../components/DMenu.vue'
 import docsectorConfig from 'docsector.config.js'
-import { allBooks } from 'virtual:docsector-books'
+import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { pageTitleI18nPath } from '../i18n/path'
 
 defineOptions({ name: 'LayoutDefault' })
@@ -178,8 +178,20 @@ const getBookTabStyle = (book) => {
   }
 }
 
+const activeVersionId = computed(() => {
+  return route.matched?.[0]?.meta?.version ?? route.meta?.version ?? null
+})
+
+const activeVersionBooks = computed(() => {
+  if (activeVersionId.value && booksByVersion?.[activeVersionId.value]?.allBooks) {
+    return booksByVersion[activeVersionId.value].allBooks
+  }
+
+  return allBooks || []
+})
+
 const sortedBooks = computed(() => {
-  return [...(allBooks || [])]
+  return [...activeVersionBooks.value]
     .filter(book => book && typeof book.id === 'string' && book.id.length > 0)
     .sort((a, b) => {
       const orderA = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER
@@ -261,10 +273,12 @@ function openSettingsDialog () {
 
 function getFirstRoutePathByBook (bookId) {
   const routes = router.options?.routes || []
+  const versionId = activeVersionId.value
   let fallbackPath = null
 
   for (const topRoute of routes) {
     if (!topRoute || typeof topRoute.path !== 'string') continue
+    if (versionId && topRoute.meta?.version !== versionId) continue
     if ((topRoute.meta?.book ?? topRoute.meta?.type) !== bookId) continue
 
     const children = Array.isArray(topRoute.children) ? topRoute.children : []

@@ -20,7 +20,17 @@ function normalizeEditBaseUrl (url = '') {
 
 const base = normalizeEditBaseUrl(docsectorConfig.github?.editBaseUrl || '')
 
+function getCurrentSubpageName () {
+  const relative = store.state.page.relative || '/overview'
+  return String(relative).replace(/^\/+|\/+$/g, '') || 'overview'
+}
+
 function routePathToSourcePath (path = '') {
+  const sourcePathBase = route.matched?.[0]?.meta?.sourcePathBase
+  if (typeof sourcePathBase === 'string' && sourcePathBase.length > 0) {
+    return `/${sourcePathBase}.${getCurrentSubpageName()}`
+  }
+
   const cleanPath = String(path)
     .replace(/\/index\.html$/, '')
     .replace(/\/+$/, '')
@@ -131,34 +141,38 @@ const languages = computed(() => {
   return `${i18nLocalesAvailable}/${i18nLocales.length}`
 })
 
-const prev = computed(() => {
-  const base = store.state.page.base
-  const routes = router.options.routes.slice(0, -2)
-
-  for (let i = 0; i < routes.length; i++) {
-    if ('/' + base === routes[i].path) {
-      if (i > 0) {
-        return routes[i - 1].path
-      }
-    }
+const normalizeRoutePath = (path) => {
+  const normalized = String(path || '').trim()
+  if (normalized === '' || normalized === '/') {
+    return '/'
   }
 
-  return ''
+  const sanitized = normalized.replace(/\/+$/, '')
+  return sanitized === '' ? '/' : sanitized
+}
+
+const getVersionSiblingPath = (offset) => {
+  const versionId = route.matched?.[0]?.meta?.version ?? null
+  const currentPath = normalizeRoutePath(route.matched?.[0]?.path || `/${store.state.page.base}`)
+  const routes = router.options.routes
+    .slice(0, -2)
+    .filter(item => !versionId || item?.meta?.version === versionId)
+
+  const index = routes.findIndex(item => normalizeRoutePath(item.path) === currentPath)
+  if (index < 0) return ''
+
+  const sibling = routes[index + offset]
+  if (!sibling) return ''
+
+  return sibling.path
+}
+
+const prev = computed(() => {
+  return getVersionSiblingPath(-1)
 })
 
 const next = computed(() => {
-  const base = store.state.page.base
-  const routes = router.options.routes.slice(0, -2)
-
-  for (let i = 0; i < routes.length; i++) {
-    if ('/' + base === routes[i].path) {
-      if (typeof routes[i + 1] !== 'undefined') {
-        return routes[i + 1].path
-      }
-    }
-  }
-
-  return ''
+  return getVersionSiblingPath(1)
 })
 
 const hideRemoteHomeFooterMeta = computed(() => {

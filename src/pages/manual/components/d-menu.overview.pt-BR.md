@@ -26,7 +26,11 @@ Lê do `docsector.config.js`:
 - `branding.logo` — Imagem do logo do projeto
 - `branding.name` — Texto do nome do projeto
 - `branding.version` — Versão atual
-- `branding.versions` — Opções do dropdown de versão
+- `branding.versions` — Opções do dropdown de versão, incluindo badges opcionais de release
+
+O seletor mantém a documentação atual em rotas sem prefixo e troca versões arquivadas para rotas prefixadas. Por exemplo, `/guide/getting-started/overview/` pode trocar para `/v0.x/guide/getting-started/overview/` quando existe uma página equivalente em `src/pages/.old/v0.x/`.
+
+Todo objeto de versão mostra um badge depois do label da versão. Versões lançadas usam `released` por padrão; versões com `released: false` ou `status: 'draft'` usam `draft`; versões com `status: 'deprecated'` ou `deprecated: true` usam `deprecated` em vermelho. O badge pode ser customizado com `badge: { label, color, textColor }`.
 
 ## Links Externos
 
@@ -43,7 +47,7 @@ Cada link é renderizado condicionalmente — defina como `null` no config para 
 
 ## Árvore de Páginas
 
-A árvore de páginas é construída a partir das rotas do roteador no momento de criação do componente. Rotas são agrupadas pelo seu basepath (segundo segmento da URL). Grupos com configuração `menu.header` recebem um painel de expansão com header sticky.
+A árvore de páginas é construída a partir das rotas do roteador no momento de criação do componente. Rotas são filtradas pela versão e pelo book ativos, depois agrupadas pelo basepath da página. Grupos com configuração `menu.header` recebem um painel de expansão com header sticky.
 
 ## Agrupamento de Itens
 

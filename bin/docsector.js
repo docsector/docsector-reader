@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '2.0.7'
+const VERSION = '2.1.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -105,7 +105,10 @@ export default {
   branding: {
     logo: '/images/logo.png',
     name: 'My Documentation',
-    version: 'v0.1.0'
+    version: 'v0.1.0',
+    versions: [
+      { id: 'v0.1.0', current: true, released: false }
+    ]
   },
 
   // @ Links
@@ -269,13 +272,15 @@ import homePageOverride from 'virtual:docsector-homepage-override'
 // @ Import language HJSON files (Vite-compatible eager import)
 const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
 // @ Import markdown files (Vite-compatible eager import as raw strings)
-const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const currentMdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const oldMdModules = import.meta.glob('../pages/.old/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const mdModules = { ...currentMdModules, ...oldMdModules }
 
 // @ Import pages
 import boot from 'pages/boot'
-import { allPages as pages } from 'virtual:docsector-books'
+import { books, pageEntries } from 'virtual:docsector-books'
 
-export default buildMessages({ langModules, mdModules, pages, boot, homePageOverride })
+export default buildMessages({ langModules, mdModules, books, pageEntries, boot, homePageOverride })
 `
 
 const TEMPLATE_I18N_HJSON = `\

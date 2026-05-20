@@ -68,6 +68,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
+- 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
+- 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
 
 ---
@@ -675,7 +677,10 @@ export default {
     logo: '/images/logo/my-logo.png',
     name: 'My Project',
     version: 'v1.0.0',
-    versions: ['v1.0.0', 'v0.9.0']
+    versions: [
+      { id: 'v1.0.0', current: true, released: false },
+      { id: 'v0.9.0', released: true, status: 'deprecated' }
+    ]
   },
 
   links: {
@@ -754,6 +759,10 @@ export default {
 }
 ```
 
+The current version keeps the normal unprefixed routes such as `/guide/getting-started/overview/`. Archived major versions can be placed under `src/pages/.old/<version>/` with the same book/index/Markdown layout, and are exposed with a URL prefix such as `/v0.x/guide/getting-started/overview/`.
+
+Every version shows a release badge in the selector. Released versions default to `released`; versions with `released: false` or `status: 'draft'` default to `draft`; versions with `status: 'deprecated'` or `deprecated: true` default to `deprecated` in red. Use `badge: { label, color, textColor }` when you need custom badge copy or colors.
+
 ### MCP (optional)
 
 ```javascript
@@ -777,15 +786,17 @@ import { buildMessages } from '@docsector/docsector-reader/i18n'
 import homePageOverride from 'virtual:docsector-homepage-override'
 
 const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
-const mdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const currentMdModules = import.meta.glob('../pages/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const oldMdModules = import.meta.glob('../pages/.old/**/*.md', { eager: true, query: '?raw', import: 'default' })
+const mdModules = { ...currentMdModules, ...oldMdModules }
 
 import boot from 'pages/boot'
-import { books } from 'virtual:docsector-books'
+import { books, pageEntries } from 'virtual:docsector-books'
 
-export default buildMessages({ langModules, mdModules, books, boot, homePageOverride })
+export default buildMessages({ langModules, mdModules, books, pageEntries, boot, homePageOverride })
 ```
 
-> `books` is the preferred source because it preserves per-book registries and avoids path collisions when two books reuse the same route key.
+> `pageEntries` is the preferred source because it preserves per-book and per-version registries and avoids path collisions when books or archived versions reuse the same route key.
 
 ### Language files
 

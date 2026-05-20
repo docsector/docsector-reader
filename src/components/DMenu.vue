@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import tags from '@docsector/tags'
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
-import { allBooks } from 'virtual:docsector-books'
+import { allBooks, booksByVersion, versions } from 'virtual:docsector-books'
 import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
 
 const $q = useQuasar()
@@ -20,19 +20,93 @@ const links = docsectorConfig.links || {}
 
 const term = ref(null)
 const founds = ref(false)
-const version = ref(branding.version || 'v0.x')
-const versions = ref(branding.versions || ['v0.x'])
 const items = ref([])
 const scrolling = ref(null)
 
 const subpage = computed(() => {
   const parent = $route.matched[0]?.path
   const child = $route.matched[1]?.path
+  if (!parent || !child) return '/overview'
   return child.substring(parent.length)
 })
 
+const activeVersionId = computed(() => {
+  return $route.matched?.[0]?.meta?.version ?? versions?.[0]?.id ?? ''
+})
+
+const activeBooks = computed(() => {
+  if (activeVersionId.value && booksByVersion?.[activeVersionId.value]?.allBooks) {
+    return booksByVersion[activeVersionId.value].allBooks
+  }
+
+  return allBooks || []
+})
+
+const draftReleaseStatuses = new Set(['draft', 'unreleased', 'preview', 'next'])
+
+const normalizeVersionBadge = (item) => {
+  const configuredStatus = item.deprecated === true
+    ? 'deprecated'
+    : (item.releaseStatus || item.status)
+  const explicitlyReleased = item.released !== undefined ? item.released !== false : null
+  const released = configuredStatus === 'deprecated'
+    ? true
+    : (explicitlyReleased ?? !draftReleaseStatuses.has(String(configuredStatus || '').toLowerCase()))
+  const releaseStatus = configuredStatus || (released ? 'released' : 'draft')
+  const rawBadge = item.badge ?? item.releaseBadge
+  const deprecated = releaseStatus === 'deprecated'
+  const defaultColor = deprecated ? 'negative' : (released ? 'positive' : 'warning')
+  const defaultTextColor = (deprecated || released) ? 'white' : 'dark'
+
+  if (rawBadge === false || rawBadge === null) {
+    return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'string') {
+    return { label: rawBadge, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'object' && rawBadge !== null) {
+    const label = rawBadge.label || rawBadge.text || releaseStatus
+    if (!label) {
+      return null
+    }
+
+    return {
+      ...rawBadge,
+      label,
+      color: rawBadge.color || defaultColor,
+      textColor: rawBadge.textColor || defaultTextColor
+    }
+  }
+
+  return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+}
+
+const versionOptions = computed(() => {
+  return (versions || [])
+    .filter(item => item && item.id)
+    .map(item => ({
+      label: item.label || item.id,
+      value: item.id,
+      badge: normalizeVersionBadge(item),
+      released: item.released !== false,
+      deprecated: item.deprecated === true || item.releaseStatus === 'deprecated' || item.status === 'deprecated',
+      releaseStatus: item.releaseStatus || item.status || (item.released === false ? 'draft' : 'released')
+    }))
+})
+
+const activeVersionOption = computed(() => {
+  return versionOptions.value.find(item => item.value === activeVersionId.value) || null
+})
+
+const version = computed({
+  get: () => activeVersionId.value,
+  set: (versionId) => onVersionChange(versionId)
+})
+
 const defaultBookId = computed(() => {
-  const sortedBooks = [...(allBooks || [])]
+  const sortedBooks = [...activeBooks.value]
     .filter(book => book && typeof book.id === 'string' && book.id.length > 0)
     .sort((a, b) => {
       const orderA = Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER
@@ -52,13 +126,97 @@ const currentBookId = computed(() => {
   return defaultBookId.value
 })
 
+const normalizeRoutePath = (path) => {
+  const normalized = String(path || '').trim()
+  if (normalized === '' || normalized === '/') {
+    return '/'
+  }
+
+  const sanitized = normalized.replace(/\/+$/, '')
+  return sanitized === '' ? '/' : sanitized
+}
+
+const getTopRoutes = () => {
+  return ($router.options.routes || []).slice(0, -2)
+}
+
+const routeHasSubpage = (route, subpageName) => {
+  return (route.children || []).some(child => child.path === subpageName)
+}
+
+const routeToSubpagePath = (route, subpageName) => {
+  return `${route.path.replace(/\/$/, '')}/${subpageName}/`
+}
+
+const getCurrentSubpageName = () => {
+  return String(subpage.value || '/overview').replace(/^\/+|\/+$/g, '') || 'overview'
+}
+
+const getFirstRoutePathByVersion = (versionId, preferredBook = null) => {
+  const routes = getTopRoutes()
+
+  for (const preferBook of [preferredBook, null]) {
+    for (const route of routes) {
+      if (route?.meta?.version !== versionId) continue
+      if (preferBook && (route.meta?.book ?? route.meta?.type) !== preferBook) continue
+      if (!routeHasSubpage(route, 'overview')) continue
+
+      const hasInternalLink = typeof route.meta?.link?.to === 'string' && route.meta.link.to.trim().length > 0
+      if (hasInternalLink) continue
+
+      return routeToSubpagePath(route, 'overview')
+    }
+  }
+
+  return '/'
+}
+
+const getEquivalentRoutePath = (versionId) => {
+  const routeMeta = $route.matched?.[0]?.meta || {}
+  const book = routeMeta.book ?? routeMeta.type ?? currentBookId.value
+  const pagePath = routeMeta.pagePath
+  const subpageName = getCurrentSubpageName()
+
+  if (book && typeof pagePath === 'string') {
+    const equivalentRoute = getTopRoutes().find(route => {
+      return route?.meta?.version === versionId &&
+        (route.meta?.book ?? route.meta?.type) === book &&
+        route.meta?.pagePath === pagePath &&
+        routeHasSubpage(route, subpageName)
+    })
+
+    if (equivalentRoute) {
+      return routeToSubpagePath(equivalentRoute, subpageName)
+    }
+  }
+
+  return getFirstRoutePathByVersion(versionId, book)
+}
+
+function onVersionChange (versionId) {
+  if (!versionId || versionId === activeVersionId.value) return
+
+  const targetVersion = (versions || []).find(item => item.id === versionId)
+  if (!targetVersion) return
+
+  if (typeof targetVersion.url === 'string' && targetVersion.url.trim().length > 0) {
+    openURL(targetVersion.url)
+    return
+  }
+
+  const targetPath = getEquivalentRoutePath(versionId)
+  if (normalizeRoutePath($route.path) !== normalizeRoutePath(targetPath)) {
+    $router.push(targetPath)
+  }
+}
+
 const searchTerm = (term) => {
   if (term.length > 1) {
     term = term.toLowerCase()
     const locale = $q.localStorage.getItem('setting.language')
     founds.value = []
 
-    for (const [index, group] of items.value.entries()) {
+    for (const group of items.value) {
       searchTermIterate(group, term, locale)
     }
   } else {
@@ -74,13 +232,14 @@ const searchTermIterate = (items, term, locale) => {
   } else if (typeof items === 'object') {
     const item = items
     const path = item.path
+    const tagPath = item.meta?.unversionedPath || path
     founds.value[path] = false
 
     // @ search in i18n/tags.hjson
     if (tags[locale] && Object.keys(tags[locale]).length > 0) {
-      founds.value[path] = tags[locale][path]?.indexOf(term) !== -1
+      founds.value[path] = tags[locale][tagPath]?.indexOf(term) !== -1
       if (founds.value[path] === false && locale !== 'en-US') {
-        founds.value[path] = tags['en-US'][path]?.indexOf(term) !== -1
+        founds.value[path] = tags['en-US'][tagPath]?.indexOf(term) !== -1
       }
     }
 
@@ -181,11 +340,13 @@ onBeforeUnmount(() => {
 })
 
 const buildMenuItems = () => {
-  const routes = ($router.options.routes || []).slice(0, -2) // Delete last 2 routes
+  const routes = getTopRoutes()
   const activeBook = currentBookId.value
+  const activeVersion = activeVersionId.value
 
   const filteredRoutes = routes.filter(route => {
     const routeBook = route?.meta?.book ?? route?.meta?.type
+    if (activeVersion && route?.meta?.version !== activeVersion) return false
     if (!activeBook) return true
     return routeBook === activeBook
   })
@@ -201,7 +362,7 @@ const buildMenuItems = () => {
     })
 
     // # Route
-    const basepath = route.path.split('/')[2]
+  const basepath = route.meta?.menuGroupPath || route.path.split('/')[2]
     const header = route.meta?.menu?.header
 
     if (header !== undefined && basepath !== nodeBasepath) {
@@ -227,7 +388,7 @@ const rebuildItems = () => {
 }
 
 rebuildItems()
-watch(currentBookId, rebuildItems)
+watch([currentBookId, activeVersionId], rebuildItems)
 </script>
 
 <template>
@@ -254,10 +415,44 @@ watch(currentBookId, rebuildItems)
       <div class="text-weight-medium">{{ branding.name || 'Docsector' }}</div>
       <div class="text-caption q-pt-xs">{{ t('system.documentation') }}</div>
       <q-select class="q-mr-md"
-        v-model="version" :options="versions"
+        v-model="version" :options="versionOptions"
+        emit-value map-options
         dense options-dense
         behavior="menu"
-      />
+      >
+        <template v-slot:selected>
+          <div v-if="activeVersionOption" class="version-select-option">
+            <span class="version-select-label">{{ activeVersionOption.label }}</span>
+            <q-badge
+              v-if="activeVersionOption.badge"
+              class="version-select-badge"
+              :color="activeVersionOption.badge.color || 'warning'"
+              :text-color="activeVersionOption.badge.textColor || 'dark'"
+              :outline="activeVersionOption.badge.outline === true"
+            >
+              {{ activeVersionOption.badge.label }}
+            </q-badge>
+          </div>
+        </template>
+        <template v-slot:option="scope">
+          <q-item v-bind="scope.itemProps">
+            <q-item-section>
+              <div class="version-select-option">
+                <span class="version-select-label">{{ scope.opt.label }}</span>
+                <q-badge
+                  v-if="scope.opt.badge"
+                  class="version-select-badge"
+                  :color="scope.opt.badge.color || 'warning'"
+                  :text-color="scope.opt.badge.textColor || 'dark'"
+                  :outline="scope.opt.badge.outline === true"
+                >
+                  {{ scope.opt.badge.label }}
+                </q-badge>
+              </div>
+            </q-item-section>
+          </q-item>
+        </template>
+      </q-select>
     </div>
   </div>
 
@@ -469,6 +664,23 @@ body.body--light
       margin: 3px auto
       width: 30px
       height: 3px
+
+.version-select-option
+  display: flex
+  align-items: center
+  gap: 6px
+  min-width: 0
+  max-width: 100%
+
+.version-select-label
+  overflow: hidden
+  text-overflow: ellipsis
+  white-space: nowrap
+
+.version-select-badge
+  flex: 0 0 auto
+  font-size: 10px
+  line-height: 1
 
 // Search
 label[for="search"]

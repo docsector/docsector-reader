@@ -37,6 +37,11 @@ const subpage = computed(() => {
 })
 
 const fileKey = computed(() => {
+  const sourcePathBase = route.matched?.[0]?.meta?.sourcePathBase
+  if (typeof sourcePathBase === 'string' && sourcePathBase.length > 0) {
+    return `${sourcePathBase}.${subpage.value}.${locale.value}.md`
+  }
+
   const base = store.state.page.base
   if (!base) return ''
   return `${base}.${subpage.value}.${locale.value}.md`

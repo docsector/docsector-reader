@@ -67,19 +67,63 @@ function normalizePathForMatch (path) {
   return String(path || '').replace(/\\/g, '/')
 }
 
-/**
- * List top-level page registry definition files.
- *
- * Includes:
- * - src/pages/index.js (legacy)
- * - src/pages/*.book.js
- * - src/pages/*.index.js
- */
-function getPagesRegistryFiles (projectRoot) {
+const CURRENT_VERSION_KEY = '__current__'
+
+function trimSlashes (value) {
+  return String(value || '').replace(/^\/+|\/+$/g, '')
+}
+
+function normalizeVersionId (value) {
+  return String(value || '').trim()
+}
+
+function normalizeRoutePrefix (value) {
+  const normalized = trimSlashes(value)
+  return normalized ? `/${normalized}` : ''
+}
+
+function getVersionRoots (projectRoot) {
   const pagesDir = resolve(projectRoot, 'src', 'pages')
   if (!existsSync(pagesDir)) return []
 
-  const names = readdirSync(pagesDir, { withFileTypes: true })
+  const roots = [
+    {
+      versionId: CURRENT_VERSION_KEY,
+      current: true,
+      rootDir: pagesDir,
+      importPrefix: '',
+      sourceRoot: '',
+      routePrefix: ''
+    }
+  ]
+
+  const oldDir = resolve(pagesDir, '.old')
+  if (!existsSync(oldDir)) return roots
+
+  const oldVersionRoots = readdirSync(oldDir, { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .filter(name => normalizeVersionId(name).length > 0)
+    .sort()
+
+  for (const versionId of oldVersionRoots) {
+    roots.push({
+      versionId,
+      current: false,
+      rootDir: resolve(oldDir, versionId),
+      importPrefix: `.old/${versionId}/`,
+      sourceRoot: `.old/${versionId}`,
+      routePrefix: normalizeRoutePrefix(versionId)
+    })
+  }
+
+  return roots
+}
+
+function getPagesRegistryFilesForRoot (root) {
+  if (!root || !existsSync(root.rootDir)) return []
+
+  const names = readdirSync(root.rootDir, { withFileTypes: true })
     .filter(entry => entry.isFile())
     .map(entry => entry.name)
 
@@ -89,37 +133,80 @@ function getPagesRegistryFiles (projectRoot) {
       return /^[^/]+\.book\.js$/.test(name) || /^[^/]+\.index\.js$/.test(name)
     })
     .sort()
-    .map(name => resolve(pagesDir, name))
+    .map(name => resolve(root.rootDir, name))
+}
+
+function normalizeBookConfig (rawConfig = {}, fallbackId = 'manual', index = 0) {
+  const resolvedId = rawConfig.id || fallbackId || `book-${index + 1}`
+  const label = rawConfig.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
+
+  return {
+    ...rawConfig,
+    id: resolvedId,
+    label,
+    icon: rawConfig.icon || 'menu_book',
+    order: rawConfig.order ?? (index + 1),
+    color: normalizeBookColorConfig(rawConfig.color)
+  }
+}
+
+function buildPageRoutePath (entry, subpage, { leadingSlash = false } = {}) {
+  const versionPrefix = trimSlashes(entry?.versionPrefix || '')
+  const base = trimSlashes(`${entry?.book || 'manual'}${entry?.pagePath || ''}`)
+  const routePath = [versionPrefix, base, trimSlashes(subpage)].filter(Boolean).join('/')
+
+  return leadingSlash ? `/${routePath}` : routePath
+}
+
+function resolveMarkdownSourceFile (pagesDir, entry, subpage, lang) {
+  const sourceRoot = entry?.sourceRoot || ''
+  return resolve(pagesDir, sourceRoot, `${entry.book}${entry.pagePath}.${subpage}.${lang}.md`)
+}
+
+/**
+ * List top-level page registry definition files.
+ *
+ * Includes:
+ * - src/pages/index.js (legacy)
+ * - src/pages/*.book.js
+ * - src/pages/*.index.js
+ */
+function getPagesRegistryFiles (projectRoot) {
+  return getVersionRoots(projectRoot)
+    .flatMap(root => getPagesRegistryFilesForRoot(root))
 }
 
 /**
  * Discover configured books from src/pages/*.book.js paired with *.index.js.
  */
 function getBookRegistryEntries (projectRoot) {
-  const pagesDir = resolve(projectRoot, 'src', 'pages')
-  if (!existsSync(pagesDir)) return []
-
-  const names = readdirSync(pagesDir, { withFileTypes: true })
-    .filter(entry => entry.isFile())
-    .map(entry => entry.name)
-
-  const books = names
-    .filter(name => /^[^/]+\.book\.js$/.test(name))
-    .sort()
-
   const entries = []
-  for (const bookFile of books) {
-    const baseName = bookFile.slice(0, -'.book.js'.length)
-    const indexFile = `${baseName}.index.js`
-    if (!names.includes(indexFile)) continue
+  for (const root of getVersionRoots(projectRoot)) {
+    const names = readdirSync(root.rootDir, { withFileTypes: true })
+      .filter(entry => entry.isFile())
+      .map(entry => entry.name)
 
-    entries.push({
-      id: baseName,
-      bookFile,
-      indexFile,
-      bookPath: resolve(pagesDir, bookFile),
-      indexPath: resolve(pagesDir, indexFile)
-    })
+    const books = names
+      .filter(name => /^[^/]+\.book\.js$/.test(name))
+      .sort()
+
+    for (const bookFile of books) {
+      const baseName = bookFile.slice(0, -'.book.js'.length)
+      const indexFile = `${baseName}.index.js`
+      if (!names.includes(indexFile)) continue
+
+      entries.push({
+        versionId: root.versionId,
+        currentVersion: root.current,
+        routePrefix: root.routePrefix,
+        sourceRoot: root.sourceRoot,
+        id: baseName,
+        bookFile: `${root.importPrefix}${bookFile}`,
+        indexFile: `${root.importPrefix}${indexFile}`,
+        bookPath: resolve(root.rootDir, bookFile),
+        indexPath: resolve(root.rootDir, indexFile)
+      })
+    }
   }
 
   return entries
@@ -170,7 +257,93 @@ function buildVirtualBooksModule (projectRoot) {
 
   // Legacy fallback: support projects that still define src/pages/index.js only.
   if (bookEntries.length === 0) {
-    return `import legacyPages from 'pages'
+    return `import docsectorConfig from 'docsector.config.js'
+import legacyPages from 'pages'
+
+const CURRENT_VERSION_KEY = ${JSON.stringify(CURRENT_VERSION_KEY)}
+
+const normalizeVersionBadge = (rawBadge, { released, releaseStatus }) => {
+  const normalizedStatus = String(releaseStatus || '').toLowerCase()
+  const deprecated = normalizedStatus === 'deprecated'
+  const defaultColor = deprecated ? 'negative' : (released ? 'positive' : 'warning')
+  const defaultTextColor = (deprecated || released) ? 'white' : 'dark'
+
+  if (rawBadge === false || rawBadge === null) {
+    return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'string') {
+    return { label: rawBadge, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'object' && rawBadge !== null) {
+    const label = rawBadge.label || rawBadge.text || releaseStatus
+    if (!label) {
+      return null
+    }
+
+    return {
+      ...rawBadge,
+      label,
+      color: rawBadge.color || defaultColor,
+      textColor: rawBadge.textColor || defaultTextColor
+    }
+  }
+
+  return { label: releaseStatus || (released ? 'released' : 'draft'), color: defaultColor, textColor: defaultTextColor }
+}
+
+const normalizeVersionDescriptor = (raw, fallback = {}) => {
+  const value = typeof raw === 'string' ? { id: raw, label: raw } : (raw || {})
+  const current = value.current === true || fallback.current === true
+  const id = current
+    ? (value.id || docsectorConfig.branding?.version || fallback.id || 'current')
+    : (value.id || fallback.id || value.label || '')
+  const label = value.label || id
+  const normalizedPrefix = String(value.routePrefix || fallback.routePrefix || id || '').replace(/^\\/+|\\/+$/g, '')
+  const configuredStatus = value.deprecated === true || fallback.deprecated === true
+    ? 'deprecated'
+    : (value.releaseStatus || value.status || fallback.releaseStatus || fallback.status)
+  const explicitlyReleased = value.released !== undefined
+    ? value.released !== false
+    : (fallback.released !== undefined ? fallback.released !== false : null)
+  const released = configuredStatus === 'deprecated'
+    ? true
+    : (explicitlyReleased ?? !['draft', 'unreleased', 'preview', 'next'].includes(String(configuredStatus || '').toLowerCase()))
+  const releaseStatus = configuredStatus || (released ? 'released' : 'draft')
+  const badge = normalizeVersionBadge(value.badge ?? value.releaseBadge ?? fallback.badge ?? fallback.releaseBadge, { released, releaseStatus })
+
+  return {
+    ...fallback,
+    ...value,
+    id,
+    label,
+    released,
+    releaseStatus,
+    deprecated: releaseStatus === 'deprecated',
+    badge,
+    current,
+    routePrefix: current ? '' : (normalizedPrefix ? '/' + normalizedPrefix : ''),
+    sourceRoot: current ? '' : (value.sourceRoot || fallback.sourceRoot || (id ? '.old/' + id : ''))
+  }
+}
+
+const discoveredVersions = [
+  normalizeVersionDescriptor(null, { id: CURRENT_VERSION_KEY, current: true })
+]
+
+const configuredVersions = Array.isArray(docsectorConfig.branding?.versions) ? docsectorConfig.branding.versions : []
+const currentVersion = normalizeVersionDescriptor(
+  configuredVersions.find(version => typeof version === 'object' && version?.current === true),
+  { id: docsectorConfig.branding?.version || CURRENT_VERSION_KEY, current: true }
+)
+
+export const versions = [currentVersion]
+
+export const versionById = versions.reduce((accumulator, version) => {
+  accumulator[version.id] = version
+  return accumulator
+}, {})
 
 const defaultBook = {
   id: 'manual',
@@ -185,12 +358,32 @@ const defaultBook = {
 
 const normalizedPages = legacyPages || {}
 
-export const books = {
-  manual: {
-    config: defaultBook,
-    routes: normalizedPages
+export const booksByVersion = {
+  [currentVersion.id]: {
+    version: currentVersion,
+    books: {
+      manual: {
+        config: defaultBook,
+        routes: normalizedPages
+      }
+    },
+    allBooks: [defaultBook]
   }
 }
+
+export const books = booksByVersion[currentVersion.id].books
+
+export const pageEntries = Object.entries(normalizedPages).map(([pagePath, page]) => ({
+  version: currentVersion.id,
+  versionLabel: currentVersion.label,
+  versionCurrent: true,
+  versionPrefix: '',
+  sourceRoot: '',
+  book: page?.config?.book ?? page?.config?.type ?? 'manual',
+  bookConfig: defaultBook,
+  pagePath,
+  page
+}))
 
 export const allBooks = [defaultBook]
 export const allPages = normalizedPages
@@ -199,16 +392,29 @@ export default books
 `
   }
 
-  const imports = []
+  const imports = ['import docsectorConfig from \'docsector.config.js\'']
   const rows = []
+  const discoveredVersionIds = new Map()
 
   for (const [index, entry] of bookEntries.entries()) {
     imports.push(`import __book_${index} from 'pages/${entry.bookFile}'`)
     imports.push(`import __routes_${index} from 'pages/${entry.indexFile}'`)
-    rows.push(`  { fallbackId: ${JSON.stringify(entry.id)}, config: __book_${index}, routes: __routes_${index} }`)
+    rows.push(`  { versionId: ${JSON.stringify(entry.versionId)}, currentVersion: ${JSON.stringify(entry.currentVersion)}, routePrefix: ${JSON.stringify(entry.routePrefix)}, sourceRoot: ${JSON.stringify(entry.sourceRoot)}, fallbackId: ${JSON.stringify(entry.id)}, config: __book_${index}, routes: __routes_${index} }`)
+    discoveredVersionIds.set(entry.versionId, {
+      id: entry.versionId,
+      current: entry.currentVersion,
+      routePrefix: entry.routePrefix,
+      sourceRoot: entry.sourceRoot
+    })
   }
 
+  const discoveredVersions = Array.from(discoveredVersionIds.values())
+
   return `${imports.join('\n')}
+
+const CURRENT_VERSION_KEY = ${JSON.stringify(CURRENT_VERSION_KEY)}
+
+const discoveredVersions = ${JSON.stringify(discoveredVersions, null, 2)}
 
 const entries = [
 ${rows.join(',\n')}
@@ -218,6 +424,39 @@ const DEFAULT_BOOK_COLORS = Object.freeze({
   active: 'white',
   inactive: 'rgba(255, 255, 255, 0.72)'
 })
+
+const normalizeVersionBadge = (rawBadge, { released, releaseStatus }) => {
+  const normalizedStatus = String(releaseStatus || '').toLowerCase()
+  const deprecated = normalizedStatus === 'deprecated'
+  const defaultColor = deprecated ? 'negative' : (released ? 'positive' : 'warning')
+  const defaultTextColor = (deprecated || released) ? 'white' : 'dark'
+
+  if (rawBadge === false || rawBadge === null) {
+    return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'string') {
+    return { label: rawBadge, color: defaultColor, textColor: defaultTextColor }
+  }
+
+  if (typeof rawBadge === 'object' && rawBadge !== null) {
+    const label = rawBadge.label || rawBadge.text || releaseStatus
+    if (!label) {
+      return null
+    }
+
+    return {
+      ...rawBadge,
+      label,
+      color: rawBadge.color || defaultColor,
+      textColor: rawBadge.textColor || defaultTextColor
+    }
+  }
+
+  return { label: releaseStatus || (released ? 'released' : 'draft'), color: defaultColor, textColor: defaultTextColor }
+}
+
+const trimSlashes = (value) => String(value || '').replace(/^\\/+|\\/+$/g, '')
 
 const normalizeBookColor = (rawColor) => {
   if (typeof rawColor === 'object' && rawColor !== null && !Array.isArray(rawColor)) {
@@ -243,7 +482,93 @@ const normalizeBookColor = (rawColor) => {
   return { ...DEFAULT_BOOK_COLORS }
 }
 
-export const books = entries.reduce((accumulator, entry, index) => {
+const normalizeVersionDescriptor = (raw, fallback = {}) => {
+  const value = typeof raw === 'string' ? { id: raw, label: raw } : (raw || {})
+  const current = value.current === true || fallback.current === true
+  const id = current
+    ? (value.id || docsectorConfig.branding?.version || fallback.id || 'current')
+    : (value.id || fallback.id || value.label || '')
+  const label = value.label || id
+  const prefixSource = value.routePrefix ?? fallback.routePrefix ?? id
+  const normalizedPrefix = trimSlashes(prefixSource)
+  const configuredStatus = value.deprecated === true || fallback.deprecated === true
+    ? 'deprecated'
+    : (value.releaseStatus || value.status || fallback.releaseStatus || fallback.status)
+  const explicitlyReleased = value.released !== undefined
+    ? value.released !== false
+    : (fallback.released !== undefined ? fallback.released !== false : null)
+  const released = configuredStatus === 'deprecated'
+    ? true
+    : (explicitlyReleased ?? !['draft', 'unreleased', 'preview', 'next'].includes(String(configuredStatus || '').toLowerCase()))
+  const releaseStatus = configuredStatus || (released ? 'released' : 'draft')
+  const badge = normalizeVersionBadge(value.badge ?? value.releaseBadge ?? fallback.badge ?? fallback.releaseBadge, { released, releaseStatus })
+
+  return {
+    ...fallback,
+    ...value,
+    id,
+    label,
+    released,
+    releaseStatus,
+    deprecated: releaseStatus === 'deprecated',
+    badge,
+    current,
+    routePrefix: current ? '' : (normalizedPrefix ? '/' + normalizedPrefix : ''),
+    sourceRoot: current ? '' : (value.sourceRoot || fallback.sourceRoot || (id ? '.old/' + id : ''))
+  }
+}
+
+const configuredVersions = Array.isArray(docsectorConfig.branding?.versions) ? docsectorConfig.branding.versions : []
+const currentVersion = normalizeVersionDescriptor(
+  configuredVersions.find(version => typeof version === 'object' && version?.current === true),
+  { id: docsectorConfig.branding?.version || CURRENT_VERSION_KEY, current: true }
+)
+
+const configuredVersionDescriptors = configuredVersions
+  .filter(version => !(typeof version === 'object' && version?.current === true))
+  .map(version => {
+    const value = typeof version === 'string' ? { id: version, label: version } : version
+    const discovered = discoveredVersions.find(item => item.id === value?.id || item.id === value?.label) || {}
+    const isCurrent = value?.id === currentVersion.id || value?.label === currentVersion.id
+
+    return normalizeVersionDescriptor(value, isCurrent ? { ...currentVersion, current: true } : discovered)
+  })
+
+export const versions = [currentVersion]
+
+for (const version of configuredVersionDescriptors) {
+  if (!versions.some(item => item.id === version.id)) {
+    versions.push(version)
+  }
+}
+
+for (const discovered of discoveredVersions) {
+  if (discovered.current) continue
+  if (!versions.some(item => item.id === discovered.id)) {
+    versions.push(normalizeVersionDescriptor(null, discovered))
+  }
+}
+
+export const versionById = versions.reduce((accumulator, version) => {
+  accumulator[version.id] = version
+  return accumulator
+}, {})
+
+const resolveEntryVersion = (entry) => {
+  if (entry.currentVersion === true || entry.versionId === CURRENT_VERSION_KEY) {
+    return currentVersion
+  }
+
+  return versionById[entry.versionId] || normalizeVersionDescriptor(null, {
+    id: entry.versionId,
+    current: false,
+    routePrefix: entry.routePrefix,
+    sourceRoot: entry.sourceRoot
+  })
+}
+
+export const booksByVersion = entries.reduce((accumulator, entry, index) => {
+  const version = resolveEntryVersion(entry)
   const config = entry.config || {}
   const resolvedId = config.id || entry.fallbackId || ('book-' + (index + 1))
   const label = config.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
@@ -253,23 +578,64 @@ export const books = entries.reduce((accumulator, entry, index) => {
     label,
     icon: config.icon || 'menu_book',
     order: config.order ?? (index + 1),
-    color: normalizeBookColor(config.color)
+    color: normalizeBookColor(config.color),
+    version: version.id,
+    versionPrefix: version.routePrefix
   }
 
-  accumulator[resolvedId] = {
+  if (!accumulator[version.id]) {
+    accumulator[version.id] = {
+      version,
+      books: {},
+      allBooks: []
+    }
+  }
+
+  accumulator[version.id].books[resolvedId] = {
     config: normalizedConfig,
     routes: entry.routes || {}
   }
+  accumulator[version.id].allBooks = Object.values(accumulator[version.id].books).map(book => book.config)
   return accumulator
 }, {})
 
-export const allBooks = Object.values(books).map(book => book.config)
+export const books = booksByVersion[currentVersion.id]?.books || {}
+
+export const allBooks = booksByVersion[currentVersion.id]?.allBooks || []
 export const allPages = Object.values(books).reduce((accumulator, book) => {
   return {
     ...accumulator,
     ...(book.routes || {})
   }
 }, {})
+
+export const pageEntries = Object.entries(booksByVersion).flatMap(([versionId, versionBooks]) => {
+  const version = versionBooks.version
+
+  return Object.entries(versionBooks.books || {}).flatMap(([bookId, book]) => {
+    const fallbackBook = book?.config?.id || bookId || 'manual'
+
+    return Object.entries(book?.routes || {}).map(([pagePath, page]) => {
+      const bookName = page?.config?.book ?? page?.config?.type ?? fallbackBook
+      const pathSegments = String(pagePath || '').replace(/^\\//, '').split('/').filter(Boolean)
+      const i18nSegments = version.current ? [bookName, ...pathSegments] : [version.id, bookName, ...pathSegments]
+
+      return {
+        version: versionId,
+        versionLabel: version.label,
+        versionCurrent: version.current,
+        versionPrefix: version.routePrefix,
+        sourceRoot: version.sourceRoot || '',
+        book: bookName,
+        bookConfig: book.config,
+        pagePath,
+        page,
+        i18nSegments,
+        unversionedPath: '/' + bookName + pagePath
+      }
+    })
+  })
+})
 
 export default books
 `
@@ -283,6 +649,17 @@ async function loadBooksRegistry (projectRoot) {
 
   // Legacy fallback
   if (entries.length === 0) {
+    const configPath = resolve(projectRoot, 'docsector.config.js')
+    const { default: config = {} } = existsSync(configPath)
+      ? await import(pathToFileURL(configPath).href)
+      : { default: {} }
+    const currentVersion = {
+      id: config.branding?.version || 'current',
+      label: config.branding?.version || 'current',
+      current: true,
+      routePrefix: '',
+      sourceRoot: ''
+    }
     const legacyPath = resolve(projectRoot, 'src', 'pages', 'index.js')
     const pages = existsSync(legacyPath)
       ? ((await import(pathToFileURL(legacyPath).href)).default || {})
@@ -296,52 +673,203 @@ async function loadBooksRegistry (projectRoot) {
       color: {
         active: 'white',
         inactive: 'rgba(255, 255, 255, 0.72)'
+      },
+      version: currentVersion.id,
+      versionPrefix: ''
+    }
+
+    const books = {
+      manual: {
+        config: defaultBook,
+        routes: pages
       }
     }
 
+    const pageEntries = getBookPageEntries({
+      [currentVersion.id]: {
+        version: currentVersion,
+        books
+      }
+    })
+
     return {
-      books: {
-        manual: {
-          config: defaultBook,
-          routes: pages
+      versions: [currentVersion],
+      booksByVersion: {
+        [currentVersion.id]: {
+          version: currentVersion,
+          books,
+          allBooks: [defaultBook]
         }
       },
+      pageEntries,
+      books,
       allBooks: [defaultBook],
       allPages: pages
     }
   }
 
-  const books = {}
+  const configPath = resolve(projectRoot, 'docsector.config.js')
+  const { default: config = {} } = existsSync(configPath)
+    ? await import(pathToFileURL(configPath).href)
+    : { default: {} }
+
+  const discoveredVersions = Array.from(new Map(entries.map(entry => [entry.versionId, {
+    id: entry.versionId,
+    current: entry.currentVersion,
+    routePrefix: entry.routePrefix,
+    sourceRoot: entry.sourceRoot
+  }])).values())
+
+  const normalizeVersionBadge = (rawBadge, { released, releaseStatus }) => {
+    const normalizedStatus = String(releaseStatus || '').toLowerCase()
+    const deprecated = normalizedStatus === 'deprecated'
+    const defaultColor = deprecated ? 'negative' : (released ? 'positive' : 'warning')
+    const defaultTextColor = (deprecated || released) ? 'white' : 'dark'
+
+    if (rawBadge === false || rawBadge === null) {
+      return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+    }
+
+    if (typeof rawBadge === 'string') {
+      return { label: rawBadge, color: defaultColor, textColor: defaultTextColor }
+    }
+
+    if (typeof rawBadge === 'object' && rawBadge !== null) {
+      const label = rawBadge.label || rawBadge.text || releaseStatus
+      if (!label) {
+        return null
+      }
+
+      return {
+        ...rawBadge,
+        label,
+        color: rawBadge.color || defaultColor,
+        textColor: rawBadge.textColor || defaultTextColor
+      }
+    }
+
+    return { label: releaseStatus || (released ? 'released' : 'draft'), color: defaultColor, textColor: defaultTextColor }
+  }
+
+  const normalizeVersionDescriptor = (raw, fallback = {}) => {
+    const value = typeof raw === 'string' ? { id: raw, label: raw } : (raw || {})
+    const current = value.current === true || fallback.current === true
+    const id = current
+      ? (value.id || config.branding?.version || fallback.id || 'current')
+      : (value.id || fallback.id || value.label || '')
+    const label = value.label || id
+    const prefixSource = value.routePrefix ?? fallback.routePrefix ?? id
+    const normalizedPrefix = trimSlashes(prefixSource)
+    const configuredStatus = value.deprecated === true || fallback.deprecated === true
+      ? 'deprecated'
+      : (value.releaseStatus || value.status || fallback.releaseStatus || fallback.status)
+    const explicitlyReleased = value.released !== undefined
+      ? value.released !== false
+      : (fallback.released !== undefined ? fallback.released !== false : null)
+    const released = configuredStatus === 'deprecated'
+      ? true
+      : (explicitlyReleased ?? !['draft', 'unreleased', 'preview', 'next'].includes(String(configuredStatus || '').toLowerCase()))
+    const releaseStatus = configuredStatus || (released ? 'released' : 'draft')
+    const badge = normalizeVersionBadge(value.badge ?? value.releaseBadge ?? fallback.badge ?? fallback.releaseBadge, { released, releaseStatus })
+
+    return {
+      ...fallback,
+      ...value,
+      id,
+      label,
+      released,
+      releaseStatus,
+      deprecated: releaseStatus === 'deprecated',
+      badge,
+      current,
+      routePrefix: current ? '' : (normalizedPrefix ? `/${normalizedPrefix}` : ''),
+      sourceRoot: current ? '' : (value.sourceRoot || fallback.sourceRoot || (id ? `.old/${id}` : ''))
+    }
+  }
+
+  const configuredVersions = Array.isArray(config.branding?.versions) ? config.branding.versions : []
+  const currentVersion = normalizeVersionDescriptor(
+    configuredVersions.find(version => typeof version === 'object' && version?.current === true),
+    { id: config.branding?.version || CURRENT_VERSION_KEY, current: true }
+  )
+  const versions = [currentVersion]
+
+  for (const configured of configuredVersions) {
+    if (typeof configured === 'object' && configured?.current === true) continue
+
+    const value = typeof configured === 'string' ? { id: configured, label: configured } : configured
+    const discovered = discoveredVersions.find(item => item.id === value?.id || item.id === value?.label) || {}
+    const isCurrent = value?.id === currentVersion.id || value?.label === currentVersion.id
+    const version = normalizeVersionDescriptor(value, isCurrent ? { ...currentVersion, current: true } : discovered)
+
+    if (!versions.some(item => item.id === version.id)) {
+      versions.push(version)
+    }
+  }
+
+  for (const discovered of discoveredVersions) {
+    if (discovered.current) continue
+    if (!versions.some(item => item.id === discovered.id)) {
+      versions.push(normalizeVersionDescriptor(null, discovered))
+    }
+  }
+
+  const versionById = versions.reduce((accumulator, version) => {
+    accumulator[version.id] = version
+    return accumulator
+  }, {})
+
+  const booksByVersion = {}
+  const currentBooks = {}
   const allPages = {}
 
   for (const [index, entry] of entries.entries()) {
+    const rawVersion = entry.currentVersion || entry.versionId === CURRENT_VERSION_KEY
+      ? currentVersion
+      : (versionById[entry.versionId] || normalizeVersionDescriptor(null, entry))
     const { default: rawConfig = {} } = await import(pathToFileURL(entry.bookPath).href)
     const { default: routes = {} } = await import(pathToFileURL(entry.indexPath).href)
 
-    const resolvedId = rawConfig.id || entry.id || `book-${index + 1}`
-    const label = rawConfig.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
-
     const config = {
-      ...rawConfig,
-      id: resolvedId,
-      label,
-      icon: rawConfig.icon || 'menu_book',
-      order: rawConfig.order ?? (index + 1),
-      color: normalizeBookColorConfig(rawConfig.color)
+      ...normalizeBookConfig(rawConfig, entry.id, index),
+      version: rawVersion.id,
+      versionPrefix: rawVersion.routePrefix
     }
 
-    books[resolvedId] = {
+    if (!booksByVersion[rawVersion.id]) {
+      booksByVersion[rawVersion.id] = {
+        version: rawVersion,
+        books: {},
+        allBooks: []
+      }
+    }
+
+    booksByVersion[rawVersion.id].books[config.id] = {
       config,
       routes
     }
 
-    Object.assign(allPages, routes || {})
+    if (rawVersion.current) {
+      currentBooks[config.id] = {
+        config,
+        routes
+      }
+      Object.assign(allPages, routes || {})
+    }
   }
 
-  const allBooks = Object.values(books).map(book => book.config)
+  for (const versionBooks of Object.values(booksByVersion)) {
+    versionBooks.allBooks = Object.values(versionBooks.books).map(book => book.config)
+  }
+
+  const allBooks = Object.values(currentBooks).map(book => book.config)
+  const pageEntries = getBookPageEntries(booksByVersion)
 
   return {
-    books,
+    versions,
+    booksByVersion,
+    pageEntries,
+    books: currentBooks,
     allBooks,
     allPages
   }
@@ -355,18 +883,39 @@ async function loadBooksRegistry (projectRoot) {
  * `guide.index.js` and `manual.index.js`. Build artifacts that need concrete
  * URLs must iterate per book instead.
  */
-function getBookPageEntries (books = {}) {
+function getBookPageEntries (booksByVersion = {}) {
   const pageEntries = []
 
-  for (const [bookId, book] of Object.entries(books || {})) {
-    const fallbackBook = book?.config?.id || bookId || 'manual'
+  for (const [versionId, versionBooks] of Object.entries(booksByVersion || {})) {
+    const version = versionBooks?.version || {
+      id: versionId,
+      label: versionId,
+      current: true,
+      routePrefix: '',
+      sourceRoot: ''
+    }
 
-    for (const [pagePath, page] of Object.entries(book?.routes || {})) {
-      pageEntries.push({
-        book: resolvePageBook(page?.config, fallbackBook),
-        pagePath,
-        page
-      })
+    for (const [bookId, book] of Object.entries(versionBooks?.books || {})) {
+      const fallbackBook = book?.config?.id || bookId || 'manual'
+
+      for (const [pagePath, page] of Object.entries(book?.routes || {})) {
+        const bookName = resolvePageBook(page?.config, fallbackBook)
+        const pathSegments = String(pagePath || '').replace(/^\//, '').split('/').filter(Boolean)
+
+        pageEntries.push({
+          version: version.id,
+          versionLabel: version.label || version.id,
+          versionCurrent: version.current === true,
+          versionPrefix: version.routePrefix || '',
+          sourceRoot: version.sourceRoot || '',
+          book: bookName,
+          bookConfig: book.config,
+          pagePath,
+          page,
+          i18nSegments: version.current === true ? [bookName, ...pathSegments] : [version.id, bookName, ...pathSegments],
+          unversionedPath: `/${bookName}${pagePath}`
+        })
+      }
     }
   }
 
@@ -385,7 +934,11 @@ function isPagesRegistryFile (projectRoot, changedPath) {
   const relativePath = normalizedPath.slice(prefix.length)
 
   if (relativePath === 'index.js') return true
-  return /^[^/]+\.book\.js$/.test(relativePath) || /^[^/]+\.index\.js$/.test(relativePath)
+  if (/^[^/]+\.book\.js$/.test(relativePath) || /^[^/]+\.index\.js$/.test(relativePath)) {
+    return true
+  }
+
+  return /^\.old\/[^/]+\/(?:index\.js|[^/]+\.book\.js|[^/]+\.index\.js)$/.test(relativePath)
 }
 
 /**
@@ -489,8 +1042,7 @@ function createPrerenderMetaPlugin (projectRoot) {
       // Dynamic import books registry and docsector config
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
-      const { books } = await loadBooksRegistry(projectRoot)
-      const pageEntries = getBookPageEntries(books)
+      const { pageEntries } = await loadBooksRegistry(projectRoot)
       const { default: config } = await import(configUrl)
 
       const brandingName = config.branding?.name || ''
@@ -508,7 +1060,8 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       let count = 0
 
-      for (const { book, pagePath, page } of pageEntries) {
+      for (const entry of pageEntries) {
+        const { page } = entry
         if (page.config === null) continue
 
         const titleData = page.data?.[defaultLang] || page.data?.['*'] || page.data?.['en-US'] || Object.values(page.data || {})[0]
@@ -526,7 +1079,7 @@ function createPrerenderMetaPlugin (projectRoot) {
         if (page.config.subpages?.vs) subpages.push('vs')
 
         for (const subpage of subpages) {
-          const routePath = `${book}${pagePath}/${subpage}`
+          const routePath = buildPageRoutePath(entry, subpage)
 
           const html = baseHtml
             .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
@@ -1101,13 +1654,13 @@ function createMarkdownBuildPlugin (projectRoot) {
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
       const { default: config } = await import(configUrl)
-      const { books } = await loadBooksRegistry(projectRoot)
-      const pageEntries = getBookPageEntries(books)
+      const { pageEntries } = await loadBooksRegistry(projectRoot)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
       let count = 0
 
-      for (const { book, pagePath, page } of pageEntries) {
+      for (const entry of pageEntries) {
+        const { page } = entry
         if (page.config === null) continue
         if (page.config.status === 'empty') continue
 
@@ -1116,10 +1669,10 @@ function createMarkdownBuildPlugin (projectRoot) {
         if (page.config.subpages?.vs) subpages.push('vs')
 
         for (const subpage of subpages) {
-          const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
+          const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
           if (!existsSync(srcFile)) continue
 
-          const routePath = `${book}${pagePath}/${subpage}`
+          const routePath = buildPageRoutePath(entry, subpage)
           const destFile = resolve(distDir, `${routePath}.md`)
           const destDir = resolve(destFile, '..')
 
@@ -1154,7 +1707,8 @@ function createMarkdownBuildPlugin (projectRoot) {
         const today = new Date().toISOString().split('T')[0]
         let urls = ''
 
-        for (const { book, pagePath, page } of pageEntries) {
+        for (const entry of pageEntries) {
+          const { page } = entry
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
@@ -1163,10 +1717,10 @@ function createMarkdownBuildPlugin (projectRoot) {
           if (page.config.subpages?.vs) subpages.push('vs')
 
           for (const subpage of subpages) {
-            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
             if (!existsSync(srcFile)) continue
 
-            const routePath = `/${book}${pagePath}/${subpage}`
+            const routePath = buildPageRoutePath(entry, subpage, { leadingSlash: true })
             urls += `  <url>\n    <loc>${siteUrl}${routePath}</loc>\n    <lastmod>${today}</lastmod>\n  </url>\n`
           }
         }
@@ -1185,7 +1739,8 @@ function createMarkdownBuildPlugin (projectRoot) {
 
         const llmsSections = {}
 
-        for (const { book, pagePath, page } of pageEntries) {
+        for (const entry of pageEntries) {
+          const { book, pagePath, page } = entry
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
@@ -1200,10 +1755,10 @@ function createMarkdownBuildPlugin (projectRoot) {
           if (page.config.subpages?.vs) subpages.push('vs')
 
           for (const subpage of subpages) {
-            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
             if (!existsSync(srcFile)) continue
 
-            const routePath = `${book}${pagePath}/${subpage}`
+            const routePath = buildPageRoutePath(entry, subpage)
             const mdUrl = `${siteUrl}/${routePath}.md`
             const pageUrl = `${siteUrl}/${routePath}`
 
@@ -1805,7 +2360,8 @@ export async function onRequest (context) {
 
         // Collect page index for MCP
         const mcpPages = []
-        for (const { book, pagePath, page } of pageEntries) {
+        for (const entry of pageEntries) {
+          const { book, pagePath, page } = entry
           if (page.config === null) continue
           if (page.config.status === 'empty') continue
 
@@ -1820,13 +2376,14 @@ export async function onRequest (context) {
           if (page.config.subpages?.vs) subpageList.push('vs')
 
           for (const subpage of subpageList) {
-            const srcFile = resolve(pagesDir, `${book}${pagePath}.${subpage}.${defaultLang}.md`)
+            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
             if (!existsSync(srcFile)) continue
 
             mcpPages.push({
-              path: `${book}${pagePath}/${subpage}`,
+              path: buildPageRoutePath(entry, subpage),
               title: defaultTitle,
               book,
+              version: entry.version,
               type: book,
               subpage
             })

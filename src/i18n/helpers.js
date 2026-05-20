@@ -116,12 +116,13 @@ export function filter (source) {
  * @param {Object} options.mdModules - Result of recursively globbing markdown files under ../pages with eager raw imports
  * @param {Object} [options.pages] - Legacy merged page registry from virtual:docsector-books (allPages)
  * @param {Object} [options.books] - Book registry from virtual:docsector-books (preferred, avoids path collisions)
+ * @param {Array} [options.pageEntries] - Version-aware page entries from virtual:docsector-books
  * @param {Object} options.boot - Boot meta from pages/boot.js
  * @param {string[]} [options.langs] - Language codes to process (auto-detected from langModules if omitted)
  * @param {Object<string,string>} [options.homePageOverride] - Optional per-language Home markdown override
  * @returns {Object} Complete i18n messages object keyed by locale
  */
-export function buildMessages ({ langModules, mdModules, pages, books, boot, langs, homePageOverride = {} }) {
+export function buildMessages ({ langModules, mdModules, pages, books, pageEntries, boot, langs, homePageOverride = {} }) {
   // Auto-detect languages from HJSON files if not provided
   if (!langs) {
     langs = Object.keys(langModules).map(key => {
@@ -133,8 +134,9 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
 
   const i18n = {}
 
-  function load (topPage, path, subpage, lang) {
-    const key = `../pages/${topPage}/${path}.${subpage}.${lang}.md`
+  function load (topPage, path, subpage, lang, sourceRoot = '') {
+    const normalizedSourceRoot = String(sourceRoot || '').replace(/^\/+|\/+$/g, '')
+    const key = `../pages/${normalizedSourceRoot ? normalizedSourceRoot + '/' : ''}${topPage}/${path}.${subpage}.${lang}.md`
     const content = mdModules[key]
 
     if (!content) {
@@ -200,20 +202,30 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
     return match[1].trim()
   }
 
-  const pageEntries = []
+  const resolvedPageEntries = []
 
-  if (books && typeof books === 'object' && Object.keys(books).length > 0) {
+  if (Array.isArray(pageEntries) && pageEntries.length > 0) {
+    for (const entry of pageEntries) {
+      resolvedPageEntries.push({
+        key: entry.pagePath,
+        page: entry.page,
+        fallbackBook: entry.book,
+        sourceRoot: entry.sourceRoot || '',
+        i18nSegments: entry.i18nSegments
+      })
+    }
+  } else if (books && typeof books === 'object' && Object.keys(books).length > 0) {
     for (const [bookId, book] of Object.entries(books)) {
       const routes = book?.routes || {}
       const fallbackBook = book?.config?.id || bookId || 'manual'
 
       for (const [key, page] of Object.entries(routes)) {
-        pageEntries.push({ key, page, fallbackBook })
+        resolvedPageEntries.push({ key, page, fallbackBook })
       }
     }
   } else {
     for (const [key, page] of Object.entries(pages || {})) {
-      pageEntries.push({ key, page, fallbackBook: null })
+      resolvedPageEntries.push({ key, page, fallbackBook: null })
     }
   }
 
@@ -249,8 +261,8 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
     i18n[lang]._.home.overview.source = loadHomepage(lang)
 
     // @ Iterate pages
-    for (const entry of pageEntries) {
-      const { key, page, fallbackBook } = entry
+    for (const entry of resolvedPageEntries) {
+      const { key, page, fallbackBook, sourceRoot = '', i18nSegments: entryI18nSegments } = entry
       const path = key.startsWith('/') ? key.slice(1) : key
 
       const config = page.config
@@ -258,13 +270,13 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
       const meta = page.meta || boot.meta
 
       const topPage = config?.book ?? config?.type ?? fallbackBook ?? 'manual'
-      if (i18n[lang]._[topPage] === undefined) {
-        i18n[lang]._[topPage] = {}
-      }
+      const i18nSegments = Array.isArray(entryI18nSegments) && entryI18nSegments.length > 0
+        ? entryI18nSegments
+        : [topPage, ...path.split('/').filter(Boolean)]
 
       // ---
 
-      const _ = path.split('/').reduce((accumulator, current) => {
+      const _ = i18nSegments.reduce((accumulator, current, index) => {
         let node = accumulator[current]
 
         // Set object if not exists
@@ -275,11 +287,15 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
 
         // @ Set metadata
         // title
-        if (node._ === undefined) {
+        if (index === i18nSegments.length - 1 && node._ === undefined) {
           node._ = data?.[lang]?.title || data?.['*']?.title || data?.['en-US']?.title || ''
         }
 
         if (config === null) {
+          return node
+        }
+
+        if (index < i18nSegments.length - 1) {
           return node
         }
 
@@ -307,7 +323,7 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
         }
 
         return node
-      }, i18n[lang]._[topPage])
+      }, i18n[lang]._)
 
       // ---
 
@@ -322,14 +338,14 @@ export function buildMessages ({ langModules, mdModules, pages, books, boot, lan
 
       // @ Subpages
       // Overview
-      _.overview.source = load(topPage, path, 'overview', lang)
+      _.overview.source = load(topPage, path, 'overview', lang, sourceRoot)
       // showcase
       if (config.subpages?.showcase === true) {
-        _.showcase.source = load(topPage, path, 'showcase', lang)
+        _.showcase.source = load(topPage, path, 'showcase', lang, sourceRoot)
       }
       // Vs
       if (config.subpages?.vs === true) {
-        _.vs.source = load(topPage, path, 'vs', lang)
+        _.vs.source = load(topPage, path, 'vs', lang, sourceRoot)
       }
     }
   }

@@ -9,9 +9,16 @@ branding: &#123;
   logo: '/images/logo.png',   // Caminho do logo em public/
   name: 'Meu Projeto',        // Nome exibido na sidebar
   version: 'v1.0.0',          // Badge de versão atual
-  versions: ['v1.0.0']        // Opções do dropdown de versão
+  versions: [
+    &#123; id: 'v1.0.0', current: true, released: false &#125;,
+    &#123; id: 'v0.x', released: true, status: 'deprecated' &#125;
+  ] // Opções do dropdown de versão
 &#125;
 ```
+
+A versão atual mantém rotas sem prefixo, como `/guide/getting-started/overview/`. Versões major arquivadas podem ficar em `src/pages/.old/&#123;version&#125;/` usando o mesmo layout de book registry e Markdown, e são expostas em `/<version>/...`, por exemplo `/v0.x/guide/getting-started/overview/`.
+
+Toda versão mostra um badge de release ao lado da versão no seletor. Versões lançadas usam `released` por padrão; versões com `released: false` ou `status: 'draft'` usam `draft`; versões com `status: 'deprecated'` ou `deprecated: true` usam `deprecated` em vermelho. Use `badge: &#123; label, color, textColor &#125;` para customizar o badge.
 
 O caminho do `logo` é relativo à pasta `public/`. Tamanho recomendado: **85×85px**.
 
@@ -84,7 +91,11 @@ export default &#123;
     logo: '/images/logo.png',
     name: 'Acme Docs',
     version: 'v2.1.0',
-    versions: ['v2.1.0', 'v2.0.0', 'v1.0.0']
+    versions: [
+      &#123; id: 'v2.1.0', current: true, released: false &#125;,
+      &#123; id: 'v2.0.0', released: true &#125;,
+      &#123; id: 'v1.0.0', released: true, status: 'deprecated' &#125;
+    ]
   &#125;,
   links: &#123;
     github: 'https://github.com/acme/acme',

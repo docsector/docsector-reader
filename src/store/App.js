@@ -5,7 +5,7 @@ export default {
   getters: {},
   mutations: {},
   actions: {
-    configureLanguage ({ commit, state }, routeMatched) {
+    configureLanguage ({ commit }, routeMatched) {
       // Reset stale nodes before configuring new language state
       commit('page/resetAnchor', null, { root: true })
       commit('page/resetAnchors', null, { root: true })
@@ -14,6 +14,7 @@ export default {
       // Route
       const firstRoutePath = routeMatched[0]?.path || ''
       const secondRoutePath = routeMatched[1]?.path || ''
+      const routeMeta = routeMatched[0]?.meta || {}
 
       const base = firstRoutePath === '/' ? 'home' : firstRoutePath.substr(1)
       let relative = secondRoutePath.substr(firstRoutePath.length)
@@ -31,12 +32,21 @@ export default {
       commit('page/setAbsolute', base + relative, { root: true })
 
       if (firstRoutePath) {
-        const i18nBase = base.replace(/_$/, '').replace(/\//g, '.')
-        const i18nRelative = relative.replace(/_$/, '').replace(/\//g, '.')
+        const fallbackBaseSegments = base
+          .replace(/_$/, '')
+          .split('/')
+          .filter(Boolean)
+        const i18nBase = Array.isArray(routeMeta.i18nSegments) && routeMeta.i18nSegments.length > 0
+          ? routeMeta.i18nSegments
+          : fallbackBaseSegments
+        const i18nRelative = relative
+          .replace(/_$/, '')
+          .split('/')
+          .filter(Boolean)
 
         commit('i18n/setBase', i18nBase, { root: true })
-        commit('i18n/setRelative', i18nRelative.substr(1), { root: true })
-        commit('i18n/setAbsolute', i18nBase + i18nRelative, { root: true })
+        commit('i18n/setRelative', i18nRelative, { root: true })
+        commit('i18n/setAbsolute', [...i18nBase, ...i18nRelative], { root: true })
       } else {
         commit('i18n/setBase', '', { root: true })
         commit('i18n/setRelative', '', { root: true })

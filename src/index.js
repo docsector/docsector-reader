@@ -27,7 +27,7 @@
  * @param {string} config.branding.name - Project name displayed in sidebar
  * @param {string} config.branding.version - Version label
  * @param {string} [config.branding.description] - Project description (used in llms.txt)
- * @param {string[]} [config.branding.versions] - Available versions for dropdown
+ * @param {Array<string|Object>} [config.branding.versions] - Available versions for dropdown. Current docs keep unprefixed routes; archived versions can live in src/pages/.old/<version>/ and use /<version>/ route prefixes. Version objects may set released:false/status:'draft', status:'deprecated'/deprecated:true, or badge:{label,color,textColor} for selector badges.
  * @param {Object} config.links - External links
  * @param {string} [config.links.github] - GitHub repository URL
  * @param {string} [config.links.discussions] - GitHub discussions URL
@@ -111,7 +111,7 @@ export function createDocsector (config = {}) {
       logo: '/images/logo.png',
       name: 'My Project',
       version: 'v0.0.1',
-      versions: ['v0.0.1'],
+      versions: [{ id: 'v0.0.1', current: true, released: false }],
       ...config.branding
     },
 
