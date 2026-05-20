@@ -42,13 +42,15 @@ Conteúdo aninhado é acumulado em uma única string HTML e renderizado com `v-h
 
 ## Atributos Customizados
 
-O plugin `markdown-it-attrs` usa `:` e `;` como delimitadores. Atualmente, apenas o atributo `filename` é utilizado:
+O plugin `markdown-it-attrs` usa `:` e `;` como delimitadores. Blocos de código cercados suportam `filename`, `group`, `tab` e `breadcrumb`:
 
+````markdown
+```php :group="servidor"; :tab="servidor.php"; :breadcrumb="src > servidor.php";
+echo "Servidor pronto";
 ```
-:filename="servidor.php";
-```
+````
 
-Este atributo é extraído de blocos de código cercados e passado ao `DPageSourceCode` para exibição.
+`filename` aparece na barra de info em blocos simples. Fences consecutivos com o mesmo `group` viram abas. `tab` define o rótulo da aba, então labels que parecem arquivo recebem ícones dentro da aba. `breadcrumb` define os segmentos exibidos acima do bloco de código, e o segmento final que parece arquivo recebe o mesmo ícone.
 
 ## IDs de Âncora
 

@@ -81,13 +81,18 @@ Regular blockquotes (without `[!TYPE]`) continue to work as normal.
 
 ### Custom Attributes
 
-The `markdown-it-attrs` plugin enables custom attributes using `:attr;` syntax:
+The `markdown-it-attrs` plugin enables custom attributes using `:attr;` syntax. Code fences support `filename`, `group`, `tab`, and `breadcrumb`:
 
+````markdown
+```php :group="example"; :tab="example.php"; :breadcrumb="src > example.php";
+echo "Example";
 ```
-:filename="example.php";
+```bash :group="example"; :tab="example.sh"; :breadcrumb="scripts > example.sh";
+echo "Example"
 ```
+````
 
-This is used by `DPageSourceCode` to display filenames above code blocks.
+`filename` is shown in the info bar for single blocks. Consecutive fences with the same `group` are rendered as tabs. `tab` sets the tab label, so filename-like labels such as `example.php` receive file icons in the tab. `breadcrumb` sets the breadcrumb segments above the active code block, and the final filename-like segment receives the same file icon.
 
 ## Adding a New Language
 

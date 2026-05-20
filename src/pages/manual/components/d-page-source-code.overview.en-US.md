@@ -1,6 +1,6 @@
 ## Overview
 
-`DPageSourceCode` renders **fenced code blocks** with syntax highlighting, line numbers, copy-to-clipboard functionality, and optional filename display. It uses **Prism.js** for highlighting.
+`DPageSourceCode` renders **fenced code blocks** with syntax highlighting, line numbers, copy-to-clipboard functionality, optional filename display, tabs, and breadcrumbs. It uses **Prism.js** for highlighting.
 
 ## Props
 
@@ -8,8 +8,10 @@
 |------|------|----------|---------|-------------|
 | `index` | `Number` | Yes | — | Unique index for anchor generation |
 | `language` | `String` | No | `'html'` | Programming language for highlighting |
-| `text` | `String` | Yes | — | Raw code text to display |
+| `text` | `String` | No | `''` | Raw code text to display in simple mode |
 | `filename` | `String` | No | `''` | Optional filename shown in the info bar |
+| `breadcrumbs` | `Array` | No | `[]` | Breadcrumb segments shown above the code block |
+| `tabs` | `Array` | No | `[]` | Tab items with label, language, text, and breadcrumbs |
 
 ## Supported Languages
 
@@ -34,7 +36,19 @@ When the code block has more than 1 line, line numbers are displayed on the left
 
 ### Copy to Clipboard
 
-A copy button appears in the info bar. When clicked, it selects the code content and copies it to the clipboard using `document.execCommand('copy')`.
+A copy button appears in the info bar. When clicked, it selects the current code content and copies it to the clipboard using `document.execCommand('copy')`.
+
+### Tabs
+
+Consecutive fenced code blocks with the same `group` attribute are rendered as tabs. Each block can define its visible tab label with `tab`; use that label as the filename when the group should look like editor tabs.
+
+### Breadcrumbs
+
+When a `breadcrumb` attribute is provided, it is rendered above the code block. Use `>` between segments, such as `src > components > DPageSourceCode.vue`.
+
+### File Icons
+
+Tab labels that look like filenames, such as `App.vue`, receive a Material Icon Theme file icon inline before the text. Breadcrumbs add the same file icon only to the final segment when that segment looks like a filename.
 
 ### Filename Display
 

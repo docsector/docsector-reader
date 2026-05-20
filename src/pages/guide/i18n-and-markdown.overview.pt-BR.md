@@ -81,13 +81,18 @@ Blockquotes comuns (sem `[!TYPE]`) continuam funcionando normalmente.
 
 ### Atributos Customizados
 
-O plugin `markdown-it-attrs` permite atributos customizados usando sintaxe `:attr;`:
+O plugin `markdown-it-attrs` permite atributos customizados usando sintaxe `:attr;`. Blocos de código cercados suportam `filename`, `group`, `tab` e `breadcrumb`:
 
+````markdown
+```php :group="exemplo"; :tab="exemplo.php"; :breadcrumb="src > exemplo.php";
+echo "Exemplo";
 ```
-:filename="exemplo.php";
+```bash :group="exemplo"; :tab="exemplo.sh"; :breadcrumb="scripts > exemplo.sh";
+echo "Exemplo"
 ```
+````
 
-Isso é usado pelo `DPageSourceCode` para exibir nomes de arquivo acima dos blocos de código.
+`filename` aparece na barra de info em blocos simples. Fences consecutivos com o mesmo `group` são renderizados como abas. `tab` define o rótulo da aba, então labels que parecem arquivo, como `exemplo.php`, recebem ícones na aba. `breadcrumb` define os segmentos acima do bloco ativo, e o segmento final que parece arquivo recebe o mesmo ícone.
 
 ## Adicionando um Novo Idioma
 

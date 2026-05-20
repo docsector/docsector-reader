@@ -16,7 +16,7 @@ import DPageBlockquote from './DPageBlockquote.vue'
 import DQuickLinks from './DQuickLinks.vue'
 import { pageValueI18nPath } from '../i18n/path'
 
-const props = defineProps({
+defineProps({
   id: {
     type: Number,
     required: true
@@ -116,6 +116,120 @@ const extractQuickLinksBlocks = (source = '') => {
   }
 }
 
+const parseFenceAttributes = (raw = '') => {
+  const parsed = {}
+  const pattern = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s;]+))/g
+
+  let match = pattern.exec(String(raw))
+  while (match !== null) {
+    const key = match[1]
+    const value = match[2] || match[3] || match[4] || ''
+    parsed[key] = value
+    match = pattern.exec(String(raw))
+  }
+
+  return parsed
+}
+
+const parseTokenAttributes = (element) => {
+  const parsed = {}
+
+  ;(element.attrs || []).forEach(([key, value]) => {
+    parsed[key] = value || ''
+  })
+
+  return parsed
+}
+
+const parseFenceLanguage = (raw = '') => {
+  const cleaned = String(raw)
+    .replace(/:[^;]*;/g, ' ')
+    .replace(/[\w-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s;]+)/g, ' ')
+    .replace(/[;:]/g, ' ')
+    .trim()
+
+  return cleaned.split(/\s+/)[0] || ''
+}
+
+const parseFenceMeta = (element) => {
+  const rawInfo = String(element.info || '')
+  const meta = {
+    ...parseFenceAttributes(rawInfo),
+    ...parseTokenAttributes(element)
+  }
+
+  return {
+    ...meta,
+    language: parseFenceLanguage(rawInfo) || meta.language || 'html'
+  }
+}
+
+const parseBreadcrumb = (raw = '') => {
+  const value = String(raw).trim()
+
+  if (!value) {
+    return []
+  }
+
+  const separator = value.includes('>') ? '>' : '/'
+
+  return value
+    .split(separator)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+}
+
+const createSourceCodeTab = (element, meta) => ({
+  label: meta.tab || meta.filename || meta.language || 'Code',
+  language: meta.language || 'html',
+  text: element.content,
+  filename: meta.filename || '',
+  breadcrumbs: parseBreadcrumb(meta.breadcrumb)
+})
+
+const pushSourceCodeToken = (tokens, element) => {
+  const meta = parseFenceMeta(element)
+
+  if (meta.language === 'mermaid') {
+    tokens.push({
+      tag: 'mermaid',
+      content: element.content
+    })
+    return
+  }
+
+  const tab = createSourceCodeTab(element, meta)
+
+  if (meta.group) {
+    const previous = tokens[tokens.length - 1]
+
+    if (previous?.tag === 'code' && previous.group === meta.group && Array.isArray(previous.tabs)) {
+      previous.tabs.push(tab)
+      return
+    }
+
+    tokens.push({
+      tag: 'code',
+      group: meta.group,
+      content: tab.text,
+      info: tab.language,
+      filename: tab.filename,
+      breadcrumbs: tab.breadcrumbs,
+      tabs: [tab]
+    })
+    return
+  }
+
+  tokens.push({
+    tag: 'code',
+    content: tab.text,
+    info: tab.language,
+    filename: tab.filename,
+    breadcrumbs: tab.breadcrumbs,
+    tabs: []
+  })
+}
+
 const tokenized = computed(() => {
   const absolute = store.state.i18n.absolute
 
@@ -138,7 +252,7 @@ const tokenized = computed(() => {
   Markdown.use(attrs, {
     leftDelimiter: ':',
     rightDelimiter: ';',
-    allowedAttributes: ['filename']
+    allowedAttributes: ['filename', 'group', 'tab', 'breadcrumb']
   })
 
   // Keep inline rendering aligned with block parsing so raw HTML inline
@@ -238,8 +352,7 @@ const tokenized = computed(() => {
       }
 
       if (element.type === 'fence') {
-        const info = String(element.info || '').split(' ')
-        const language = info[0] || ''
+        const language = parseFenceLanguage(element.info)
         const escaped = String(element.content)
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
@@ -308,25 +421,7 @@ const tokenized = computed(() => {
 
           break
         case 'fence': {
-          const info = element.info.split(' ')
-          const language = info[0]
-
-          if (language === 'mermaid') {
-            tokens.push({
-              tag: 'mermaid',
-              content: element.content
-            })
-            break
-          }
-
-          const filename = info[1] ? info[1].replace('filename=', '').replace(/"/g, '') : ''
-
-          tokens.push({
-            tag: element.tag,
-            content: element.content,
-            info: language,
-            filename: filename
-          })
+          pushSourceCodeToken(tokens, element)
           break
         }
         case 'html_block':
@@ -489,6 +584,8 @@ const tokenized = computed(() => {
       :text="token.content"
       :language="token.info"
       :filename="token.filename"
+      :breadcrumbs="token.breadcrumbs"
+      :tabs="token.tabs"
     />
 
     <d-mermaid-diagram

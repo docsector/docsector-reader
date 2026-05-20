@@ -1,6 +1,6 @@
 ## Visão Geral
 
-`DPageSourceCode` renderiza **blocos de código cercados** com syntax highlighting, números de linha, funcionalidade de copiar para clipboard e exibição opcional de nome de arquivo. Usa **Prism.js** para highlighting.
+`DPageSourceCode` renderiza **blocos de código cercados** com syntax highlighting, números de linha, funcionalidade de copiar para clipboard, exibição opcional de nome de arquivo, abas e breadcrumbs. Usa **Prism.js** para highlighting.
 
 ## Props
 
@@ -8,8 +8,10 @@
 |------|------|-------------|--------|-----------|
 | `index` | `Number` | Sim | — | Índice único para geração de âncora |
 | `language` | `String` | Não | `'html'` | Linguagem de programação para highlighting |
-| `text` | `String` | Sim | — | Texto de código bruto para exibir |
+| `text` | `String` | Não | `''` | Texto de código bruto para exibir no modo simples |
 | `filename` | `String` | Não | `''` | Nome de arquivo opcional exibido na barra de info |
+| `breadcrumbs` | `Array` | Não | `[]` | Segmentos de breadcrumb exibidos acima do bloco de código |
+| `tabs` | `Array` | Não | `[]` | Itens de aba com label, linguagem, texto e breadcrumbs |
 
 ## Linguagens Suportadas
 
@@ -34,7 +36,19 @@ Quando o bloco de código tem mais de 1 linha, números de linha são exibidos n
 
 ### Copiar para Clipboard
 
-Um botão de cópia aparece na barra de info. Quando clicado, seleciona o conteúdo do código e copia para o clipboard usando `document.execCommand('copy')`.
+Um botão de cópia aparece na barra de info. Quando clicado, seleciona o conteúdo de código atual e copia para o clipboard usando `document.execCommand('copy')`.
+
+### Abas
+
+Blocos de código cercados consecutivos com o mesmo atributo `group` são renderizados como abas. Cada bloco pode definir seu rótulo visível com `tab`; use esse rótulo como nome do arquivo quando o grupo deve parecer abas de editor.
+
+### Breadcrumbs
+
+Quando um atributo `breadcrumb` é fornecido, ele é renderizado acima do bloco de código. Use `>` entre segmentos, como `src > components > DPageSourceCode.vue`.
+
+### Ícones de Arquivo
+
+Labels de abas que parecem nomes de arquivo, como `App.vue`, recebem um ícone do Material Icon Theme inline antes do texto. Breadcrumbs adicionam o mesmo ícone apenas ao segmento final quando esse segmento parece um nome de arquivo.
 
 ### Exibição de Nome de Arquivo
 

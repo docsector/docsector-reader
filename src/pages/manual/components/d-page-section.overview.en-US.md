@@ -42,13 +42,15 @@ Nested content is accumulated into a single HTML string and rendered with `v-htm
 
 ## Custom Attributes
 
-The `markdown-it-attrs` plugin uses `:` and `;` as delimiters. Currently, only the `filename` attribute is used:
+The `markdown-it-attrs` plugin uses `:` and `;` as delimiters. Code fences support `filename`, `group`, `tab`, and `breadcrumb`:
 
+````markdown
+```php :group="server"; :tab="server.php"; :breadcrumb="src > server.php";
+echo "Server ready";
 ```
-:filename="server.php";
-```
+````
 
-This attribute is extracted from fenced code blocks and passed to `DPageSourceCode` for display.
+`filename` is shown in the info bar for single blocks. Consecutive fences with the same `group` become tabs. `tab` sets the tab label, so filename-like labels receive file icons inside the tab. `breadcrumb` sets the breadcrumb segments above the code block, and the final filename-like segment receives the same icon.
 
 ## Anchor IDs
 
