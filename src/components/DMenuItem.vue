@@ -53,6 +53,10 @@ const getMenuItemSubheader = (meta = {}) => {
 }
 
 const getPageStatusText = (status) => {
+  if (status === 'new') {
+    return t('menu.status.new._')
+  }
+
   if (status === 'draft') {
     return t('menu.status.draft._')
   } else {
@@ -61,6 +65,10 @@ const getPageStatusText = (status) => {
 }
 
 const getPageStatusTextColor = (status) => {
+  if (status === 'new') {
+    return null
+  }
+
   if (status === 'draft') {
     return 'dark'
   } else {
@@ -68,7 +76,15 @@ const getPageStatusTextColor = (status) => {
   }
 }
 
+const getPageStatusStyle = (status) => {
+  return status === 'new' ? { color: '#151515' } : null
+}
+
 const getPageStatusColor = (status) => {
+  if (status === 'new') {
+    return 'positive'
+  }
+
   if (status === 'draft') {
     return 'orange'
   } else {
@@ -76,7 +92,13 @@ const getPageStatusColor = (status) => {
   }
 }
 
-const getPageStatusTooltip = (status) => {
+const getPageStatusTooltip = (status, pageVersion) => {
+  if (status === 'new') {
+    return pageVersion
+      ? t('menu.status.new.tooltipVersion', { version: pageVersion })
+      : t('menu.status.new.tooltip')
+  }
+
   if (status === 'draft') {
     return t('menu.status.draft.tooltip')
   } else {
@@ -148,8 +170,9 @@ const onMenuItemClick = (event, path, currentSubpage) => {
       :text-color="getPageStatusTextColor(subitem.meta.status)"
       :color="getPageStatusColor(subitem.meta.status)"
       :label="getPageStatusText(subitem.meta.status)"
+      :style="getPageStatusStyle(subitem.meta.status)"
     />
-    <q-tooltip :hide-delay="3">{{ getPageStatusTooltip(subitem.meta.status) }}</q-tooltip>
+    <q-tooltip :hide-delay="3">{{ getPageStatusTooltip(subitem.meta.status, subitem.meta.pageVersion) }}</q-tooltip>
   </q-item-section>
 </q-item>
 

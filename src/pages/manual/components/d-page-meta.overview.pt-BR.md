@@ -17,6 +17,7 @@ O label do botão muda baseado no status da página:
 | Status | Label | Cor |
 |--------|-------|-----|
 | `done` | "Edite esta página" | Branco |
+| `new` | "Edite esta página" | Branco |
 | `draft` | "Complete esta página" | Warning (laranja) |
 | `empty` | "Comece esta página" | Vermelho |
 

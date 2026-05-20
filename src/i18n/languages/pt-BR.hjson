@@ -31,6 +31,7 @@
       next: 'Próxima página'
     },
     lastUpdated: 'Última atualização',
+    newVersion: 'Novo em',
     copyPage: 'Copiar página',
     copyPageCaption: 'Copiar página como Markdown para LLMs',
     copied: 'Copiado!',
@@ -59,6 +60,19 @@
       draft: {
         _: 'rascunho',
         tooltip: 'Esta página está em construção.'
+      },
+      new: {
+        _: 'novo',
+        tooltip: 'Esta página é nova.',
+        tooltipVersion: 'Novo na {version}'
+      }
+    },
+
+    version: {
+      status: {
+        released: 'publicada',
+        draft: 'rascunho',
+        deprecated: 'obsoleta'
       }
     },
 

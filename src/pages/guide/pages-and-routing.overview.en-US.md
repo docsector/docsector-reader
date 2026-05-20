@@ -8,7 +8,8 @@ Documentation pages are defined in split registries such as `src/pages/guide.ind
 '/my-page': &#123;
   config: &#123;
     icon: 'description',
-    status: 'done',
+    status: 'new',
+    version: 'v2.1.0',
     book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
@@ -23,7 +24,8 @@ Documentation pages are defined in split registries such as `src/pages/guide.ind
 ## Config Properties
 
 - **book** — Route prefix: `'guide'`, `'manual'`, or `'API'` (legacy `type` is still supported)
-- **status** — Page status: `'done'`, `'draft'`, or `'empty'`
+- **status** — Page status: `'done'`, `'draft'`, `'empty'`, or `'new'`; `new` is shown in green
+- **version** — Optional version where the page was introduced, shown under the last updated date as `New in: ...` (for example, `'v2.1.0'`)
 - **icon** — Material Design icon name shown in the sidebar
 - **menu** — Object controlling menu display (header, subheader, separator)
 - **subpages** — Enable additional tabs: `showcase`, `vs`

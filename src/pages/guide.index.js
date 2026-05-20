@@ -30,6 +30,7 @@ export default {
     config: {
       icon: 'tune',
       status: 'done',
+      version: 'v2.1.0',
       meta: {
         description: {
           'en-US': 'Configuration — Documentation of Docsector Reader',
@@ -53,7 +54,8 @@ export default {
   '/pages-and-routing': {
     config: {
       icon: 'route',
-      status: 'done',
+      status: 'new',
+      version: 'v2.1.0',
       meta: {
         description: {
           'en-US': 'Pages & Routing — Documentation of Docsector Reader',

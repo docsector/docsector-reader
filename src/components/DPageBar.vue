@@ -61,6 +61,11 @@ const formattedDate = computed(() => {
   }).format(date)
 })
 
+const pageVersion = computed(() => {
+  const value = route.meta?.pageVersion
+  return typeof value === 'string' ? value.trim() : ''
+})
+
 const rawMarkdown = computed(() => {
   const absolute = store.state.i18n.absolute
   if (!absolute) return ''
@@ -192,10 +197,14 @@ const copyPage = () => {
 
 <template>
 <div class="d-page-bar">
-  <span v-if="formattedDate" class="d-page-bar__date">
-    {{ t('page.lastUpdated') }}: <br class="d-page-bar__date-break"> {{ formattedDate }}
-  </span>
-  <span v-else class="d-page-bar__date"></span>
+  <div class="d-page-bar__meta">
+    <span v-if="formattedDate" class="d-page-bar__date">
+      {{ t('page.lastUpdated') }}: <br class="d-page-bar__date-break"> {{ formattedDate }}
+    </span>
+    <span v-if="pageVersion" class="d-page-bar__new-in">
+      {{ t('page.newVersion') }}: {{ pageVersion }}
+    </span>
+  </div>
 
   <q-btn-dropdown
     class="d-page-bar__actions"
@@ -343,6 +352,18 @@ const copyPage = () => {
     font-size: 0.8rem
     opacity: 0.6
 
+  &__meta
+    display: flex
+    flex-direction: column
+    min-height: 1.5rem
+
+  &__new-in
+    font-size: 0.8rem
+    opacity: 0.6
+    margin-top: 8px
+    padding-top: 8px
+    border-top: 1px solid rgba(0, 0, 0, 0.12)
+
   &__date-break
     display: none
 
@@ -350,8 +371,12 @@ const copyPage = () => {
     font-size: 0.75rem
 
 body.body--dark
-  .d-page-bar__date
+  .d-page-bar__date,
+  .d-page-bar__new-in
     color: rgba(255, 255, 255, 0.7)
+
+  .d-page-bar__new-in
+    border-top-color: rgba(255, 255, 255, 0.18)
 
 @media (max-width: 376px)
   .d-page-bar__date-break

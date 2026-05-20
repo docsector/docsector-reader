@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '2.1.0'
+const VERSION = '2.2.0'
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -315,6 +315,7 @@ const TEMPLATE_I18N_HJSON = `\
       prev: 'Previous page'
       next: 'Next page'
     }
+    newVersion: 'New in'
   }
 
   // @ Menu
@@ -335,6 +336,19 @@ const TEMPLATE_I18N_HJSON = `\
       draft: {
         _: 'draft'
         tooltip: 'This page is under construction.'
+      }
+      new: {
+        _: 'new'
+        tooltip: 'This page is new.'
+        tooltipVersion: 'New in {version}'
+      }
+    }
+
+    version: {
+      status: {
+        released: 'released'
+        draft: 'draft'
+        deprecated: 'deprecated'
       }
     }
 
@@ -406,7 +420,8 @@ const TEMPLATE_PAGES_INDEX = `\
  * and each value configures the page's book, icon, status, and titles.
  *
  * config.book: top-level route prefix — 'guide', 'manual', etc.
- * config.status: 'done' | 'draft' | 'empty'
+ * config.status: 'done' | 'draft' | 'empty' | 'new'
+ * config.version: optional version where this page was introduced (e.g. 'v2.1.0')
  * config.meta.description: string or localized object for SEO/social description
  * config.icon: Material Design icon name
  * config.menu: menu display options (header, subheader, separator)
@@ -419,7 +434,8 @@ export default {
   '/getting-started': {
     config: {
       icon: 'flag',
-      status: 'done',
+      status: 'new',
+      version: 'v0.1.0',
       meta: {
         description: {
           'en-US': 'Get started quickly with setup and project structure.'

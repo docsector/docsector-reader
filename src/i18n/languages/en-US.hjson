@@ -32,6 +32,7 @@
       next: 'Next page'
     },
     lastUpdated: 'Last updated',
+    newVersion: 'New in',
     copyPage: 'Copy page',
     copyPageCaption: 'Copy page as Markdown for LLMs',
     copied: 'Copied!',
@@ -60,6 +61,19 @@
       draft: {
         _: 'draft',
         tooltip: 'This page is under constrution.'
+      },
+      new: {
+        _: 'new',
+        tooltip: 'This page is new.',
+        tooltipVersion: 'New in {version}'
+      }
+    },
+
+    version: {
+      status: {
+        released: 'released',
+        draft: 'draft',
+        deprecated: 'deprecated'
       }
     },
 

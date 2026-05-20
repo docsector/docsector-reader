@@ -98,6 +98,7 @@ for (const entry of pageEntries || []) {
   const status = typeof config.status === 'string'
     ? config.status
     : (typeof linkedConfig?.status === 'string' ? linkedConfig.status : 'done')
+  const pageVersion = config.version ?? config.pageVersion ?? config.since ?? null
 
   // @ Construct children
   const children = hasInternalLink
@@ -152,6 +153,7 @@ for (const entry of pageEntries || []) {
       ...config,
       icon,
       status,
+      pageVersion,
       menu,
       subpages,
       data: page.data,

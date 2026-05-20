@@ -44,6 +44,23 @@ const activeBooks = computed(() => {
 
 const draftReleaseStatuses = new Set(['draft', 'unreleased', 'preview', 'next'])
 
+const versionStatusLabel = (label, releaseStatus) => {
+  const normalizedStatus = String(releaseStatus || '').toLowerCase()
+  const normalizedLabel = String(label || normalizedStatus).toLowerCase()
+  const statusKey = normalizedStatus ? `menu.version.status.${normalizedStatus}` : null
+  const labelKey = normalizedLabel ? `menu.version.status.${normalizedLabel}` : null
+
+  if (statusKey && (!label || normalizedLabel === normalizedStatus) && te(statusKey)) {
+    return t(statusKey)
+  }
+
+  if (labelKey && te(labelKey)) {
+    return t(labelKey)
+  }
+
+  return label || releaseStatus
+}
+
 const normalizeVersionBadge = (item) => {
   const configuredStatus = item.deprecated === true
     ? 'deprecated'
@@ -59,11 +76,11 @@ const normalizeVersionBadge = (item) => {
   const defaultTextColor = (deprecated || released) ? 'white' : 'dark'
 
   if (rawBadge === false || rawBadge === null) {
-    return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+    return { label: versionStatusLabel(releaseStatus, releaseStatus), color: defaultColor, textColor: defaultTextColor }
   }
 
   if (typeof rawBadge === 'string') {
-    return { label: rawBadge, color: defaultColor, textColor: defaultTextColor }
+    return { label: versionStatusLabel(rawBadge, releaseStatus), color: defaultColor, textColor: defaultTextColor }
   }
 
   if (typeof rawBadge === 'object' && rawBadge !== null) {
@@ -74,13 +91,13 @@ const normalizeVersionBadge = (item) => {
 
     return {
       ...rawBadge,
-      label,
+      label: versionStatusLabel(label, releaseStatus),
       color: rawBadge.color || defaultColor,
       textColor: rawBadge.textColor || defaultTextColor
     }
   }
 
-  return { label: releaseStatus, color: defaultColor, textColor: defaultTextColor }
+  return { label: versionStatusLabel(releaseStatus, releaseStatus), color: defaultColor, textColor: defaultTextColor }
 }
 
 const versionOptions = computed(() => {

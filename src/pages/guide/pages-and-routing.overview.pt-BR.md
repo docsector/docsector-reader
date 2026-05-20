@@ -8,7 +8,8 @@ As páginas de documentação são definidas em registros separados, como `src/p
 '/minha-pagina': &#123;
   config: &#123;
     icon: 'description',
-    status: 'done',
+    status: 'new',
+    version: 'v2.1.0',
     book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
@@ -23,7 +24,8 @@ As páginas de documentação são definidas em registros separados, como `src/p
 ## Propriedades do Config
 
 - **book** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'` (compatível com `type` legado)
-- **status** — Status da página: `'done'`, `'draft'` ou `'empty'`
+- **status** — Status da página: `'done'`, `'draft'`, `'empty'` ou `'new'`; `new` é exibido em verde
+- **version** — Versão opcional em que a página foi introduzida, exibida abaixo da data de última atualização como `Novo em: ...` (por exemplo, `'v2.1.0'`)
 - **icon** — Nome do ícone Material Design exibido no menu lateral
 - **menu** — Objeto controlando exibição do menu (header, subheader, separator)
 - **subpages** — Ativar abas adicionais: `showcase`, `vs`

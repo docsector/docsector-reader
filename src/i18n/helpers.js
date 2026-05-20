@@ -25,6 +25,7 @@ const engineDefaults = {
   'en-US': {
     page: {
       lastUpdated: 'Last updated',
+      newVersion: 'New in',
       copyPage: 'Copy page',
       copyPageCaption: 'Copy page as Markdown for LLMs',
       copied: 'Copied!',
@@ -44,11 +45,36 @@ const engineDefaults = {
       connectClaudeCodeCaption: 'Use this MCP in Claude Code',
       connectCodex: 'Connect to Codex',
       connectCodexCaption: 'Use this MCP in Codex'
+    },
+    menu: {
+      status: {
+        empty: {
+          _: 'empty',
+          tooltip: 'This page is empty!'
+        },
+        draft: {
+          _: 'draft',
+          tooltip: 'This page is under construction.'
+        },
+        new: {
+          _: 'new',
+          tooltip: 'This page is new.',
+          tooltipVersion: 'New in {version}'
+        }
+      },
+      version: {
+        status: {
+          released: 'released',
+          draft: 'draft',
+          deprecated: 'deprecated'
+        }
+      }
     }
   },
   'pt-BR': {
     page: {
       lastUpdated: 'Última atualização',
+      newVersion: 'Novo em',
       copyPage: 'Copiar página',
       copyPageCaption: 'Copiar página como Markdown para LLMs',
       copied: 'Copiado!',
@@ -68,6 +94,30 @@ const engineDefaults = {
       connectClaudeCodeCaption: 'Use este MCP no Claude Code',
       connectCodex: 'Conectar ao Codex',
       connectCodexCaption: 'Use este MCP no Codex'
+    },
+    menu: {
+      status: {
+        empty: {
+          _: 'vazia',
+          tooltip: 'Esta página está vazia!'
+        },
+        draft: {
+          _: 'rascunho',
+          tooltip: 'Esta página está em construção.'
+        },
+        new: {
+          _: 'novo',
+          tooltip: 'Esta página é nova.',
+          tooltipVersion: 'Novo na {version}'
+        }
+      },
+      version: {
+        status: {
+          released: 'publicada',
+          draft: 'rascunho',
+          deprecated: 'obsoleta'
+        }
+      }
     }
   }
 }

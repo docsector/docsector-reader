@@ -17,6 +17,7 @@ The button label changes based on page status:
 | Status | Label | Color |
 |--------|-------|-------|
 | `done` | "Edit this page" | White |
+| `new` | "Edit this page" | White |
 | `draft` | "Complete this page" | Warning (orange) |
 | `empty` | "Start this page" | Red |
 

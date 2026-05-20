@@ -54,7 +54,7 @@ const URL = computed(() => {
   return `${base}${path}.${locale.value}.md`
 })
 const color = computed(() => {
-  if (status.value === 'done') {
+  if (status.value === 'done' || status.value === 'new') {
     return 'white'
   } else if (status.value === 'draft') {
     return 'warning'
@@ -63,7 +63,7 @@ const color = computed(() => {
   }
 })
 const icon = computed(() => {
-  if (status.value === 'done') {
+  if (status.value === 'done' || status.value === 'new') {
     return 'edit'
   } else if (status.value === 'draft') {
     return 'border_color'
@@ -194,7 +194,7 @@ const getRouteTitle = (path) => {
     <div id="d-page-edit" class="col">
       <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github">
         <q-icon class="q-mr-xs" name="fab fa-github" size="20px" />
-        <span class="hm" v-if="status === 'done'">{{ $t('page.edit.github.edit') }}</span>
+        <span class="hm" v-if="status === 'done' || status === 'new'">{{ $t('page.edit.github.edit') }}</span>
         <span class="hm" v-else-if="status === 'draft'">{{ $t('page.edit.github.complete') }}</span>
         <span class="hm" v-else-if="status === 'empty'">{{ $t('page.edit.github.start') }}</span>
       </q-btn>

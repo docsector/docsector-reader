@@ -183,7 +183,8 @@ export default {
   '/components/d-menu': {
     config: {
       icon: 'menu_open',
-      status: 'done',
+      status: 'new',
+      version: 'v2.1.0',
       meta: {
         description: {
           'en-US': 'DMenu — Documentation of Docsector Reader',
