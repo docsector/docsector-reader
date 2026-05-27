@@ -215,6 +215,97 @@ const parseTokenAttributes = (element) => {
   return parsed
 }
 
+const decodeHtmlEntities = (value = '') => {
+  return String(value)
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
+const escapeHtml = (value = '') => {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const extractTagAttributes = (html = '', tagName = '') => {
+  const match = String(html).match(new RegExp(`<${tagName}\\b([^>]*)\\/?>(?![\\s\\S]*<${tagName}\\b)`, 'i'))
+
+  if (!match) {
+    return {}
+  }
+
+  return parseCustomTagAttributes(match[1])
+}
+
+const createImageTokenData = (mediaHtml = '', options = {}) => {
+  const {
+    captionHtml = '',
+    fallbackCaptionFromAlt = false
+  } = options
+  const attrs = extractTagAttributes(mediaHtml, 'img')
+  const alt = decodeHtmlEntities(attrs.alt || '')
+  const title = decodeHtmlEntities(attrs.title || '')
+
+  return {
+    tag: 'image',
+    content: String(mediaHtml).trim(),
+    alt,
+    title,
+    captionHtml: captionHtml !== ''
+      ? captionHtml
+      : (fallbackCaptionFromAlt ? escapeHtml(alt) : '')
+  }
+}
+
+const parseStandaloneImageToken = (content = '') => {
+  const trimmed = String(content).trim()
+
+  if (!trimmed.match(/^<img\b[^>]*\/?>(?:\s*)$/i)) {
+    return null
+  }
+
+  return createImageTokenData(trimmed, {
+    fallbackCaptionFromAlt: true
+  })
+}
+
+const parseFigureImageToken = (content = '') => {
+  const trimmed = String(content).trim()
+
+  if (!trimmed.match(/^<figure\b[\s\S]*<\/figure>$/i)) {
+    return null
+  }
+
+  const figureBody = trimmed
+    .replace(/^<figure\b[^>]*>/i, '')
+    .replace(/<\/figure>$/i, '')
+    .trim()
+  const figcaptionMatch = figureBody.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/i)
+  const mediaBody = figcaptionMatch
+    ? figureBody.replace(figcaptionMatch[0], '').trim()
+    : figureBody
+  const pictureMatch = mediaBody.match(/^<picture\b[\s\S]*?<\/picture>$/i)
+  const imgMatch = pictureMatch
+    ? pictureMatch[0].match(/<img\b[^>]*\/?>/i)
+    : mediaBody.match(/^<img\b[^>]*\/?>$/i)
+
+  if (!imgMatch) {
+    return null
+  }
+
+  const mediaHtml = pictureMatch ? pictureMatch[0] : imgMatch[0]
+
+  return createImageTokenData(mediaHtml, {
+    captionHtml: figcaptionMatch ? figcaptionMatch[1].trim() : ''
+  })
+}
+
 const parseFenceLanguage = (raw = '') => {
   const cleaned = String(raw)
     .replace(/:[^;]*;/g, ' ')
@@ -520,7 +611,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
       }
 
       switch (element.type) {
-        case 'inline':
+        case 'inline': {
           const anchorId = getHeadingAnchorId(markdown, tag, element, markdownEnv, parserState)
 
           if (expandableMap.has(element.content.trim())) {
@@ -549,6 +640,18 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
             break
           }
 
+          if (tag === 'p') {
+            const imageToken = parseStandaloneImageToken(element.content)
+
+            if (imageToken !== null) {
+              tokens.push({
+                ...imageToken,
+                map: element.map
+              })
+              break
+            }
+          }
+
           tokens.push({
             tag,
             map: element.map,
@@ -557,6 +660,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
             info: element.info
           })
           break
+        }
 
         case 'fence':
           pushSourceCodeToken(tokens, element, parserState)
@@ -569,36 +673,59 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
           })
           break
 
-        case 'html_block':
+        case 'html_block': {
+          const figureImageToken = parseFigureImageToken(element.content)
+
+          if (figureImageToken !== null) {
+            tokens.push({
+              ...figureImageToken,
+              map: element.map
+            })
+            break
+          }
+
           tokens.push({
             tag: 'html',
             content: element.content
           })
           break
+        }
       }
-    } else if (level === 1) {
+    } else if (level > 0) {
       const parent = tokens[tokens.length - 1]
 
       switch (element.type) {
         case 'bullet_list_open':
-          tokens.push({
-            tag: 'ul',
-            content: ''
-          })
+          if (level === 1) {
+            tokens.push({
+              tag: 'ul',
+              content: ''
+            })
+          } else {
+            parent.content += '<ul>'
+          }
           break
 
         case 'ordered_list_open':
-          tokens.push({
-            tag: 'ol',
-            content: ''
-          })
+          if (level === 1) {
+            tokens.push({
+              tag: 'ol',
+              content: ''
+            })
+          } else {
+            parent.content += '<ol>'
+          }
           break
 
         case 'table_open':
-          tokens.push({
-            tag: 'table',
-            content: ''
-          })
+          if (level === 1) {
+            tokens.push({
+              tag: 'table',
+              content: ''
+            })
+          } else {
+            parent.content += '<table>'
+          }
           break
 
         case 'list_item_open':
@@ -634,6 +761,24 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
         case 'list_item_close':
           parent.content += '</li>'
+          break
+
+        case 'bullet_list_close':
+          if (level > 1) {
+            parent.content += '</ul>'
+          }
+          break
+
+        case 'ordered_list_close':
+          if (level > 1) {
+            parent.content += '</ol>'
+          }
+          break
+
+        case 'table_close':
+          if (level > 1) {
+            parent.content += '</table>'
+          }
           break
 
         case 'thead_close':

@@ -139,16 +139,88 @@ Body copy.
     ])
   })
 
-  it('renders markdown images inside paragraph output', () => {
-    const tokens = tokenizePageSectionSource('![Architecture overview](/images/architecture.png)')
+  it('promotes standalone markdown images to image tokens with caption metadata', () => {
+    const tokens = tokenizePageSectionSource('![Architecture overview](/images/architecture.png "System diagram")')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'image',
+      alt: 'Architecture overview',
+      captionHtml: 'Architecture overview',
+      title: 'System diagram'
+    })
+    expect(tokens[0].content).toContain('<img')
+    expect(tokens[0].content).toContain('src="/images/architecture.png"')
+    expect(tokens[0].content).toContain('alt="Architecture overview"')
+    expect(tokens[0].content).toContain('title="System diagram"')
+  })
+
+  it('keeps mixed paragraph content on the paragraph path when an image is inline with text', () => {
+    const tokens = tokenizePageSectionSource('Text before ![Architecture overview](/images/architecture.png) and after.')
 
     expect(tokens).toHaveLength(1)
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
+    expect(tokens[0].content).toContain('Text before')
     expect(tokens[0].content).toContain('<img')
-    expect(tokens[0].content).toContain('src="/images/architecture.png"')
-    expect(tokens[0].content).toContain('alt="Architecture overview"')
+    expect(tokens[0].content).toContain('and after.')
+  })
+
+  it('normalizes raw figure blocks with separate alt and caption values', () => {
+    const tokens = tokenizePageSectionSource(`
+<figure><img src="/images/gitbook.png" alt="The GitBook Logo"><figcaption><p>GitBook Logo</p></figcaption></figure>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'image',
+      alt: 'The GitBook Logo',
+      captionHtml: '<p>GitBook Logo</p>',
+      title: ''
+    })
+    expect(tokens[0].content).toContain('<img')
+    expect(tokens[0].content).toContain('src="/images/gitbook.png"')
+  })
+
+  it('normalizes raw figure blocks with picture content', () => {
+    const tokens = tokenizePageSectionSource(`
+<figure>
+  <picture>
+    <source srcset="/images/github-dark.png" media="(prefers-color-scheme: dark)">
+    <img src="/images/github-light.png" alt="GitHub logo">
+  </picture>
+  <figcaption>Caption text</figcaption>
+</figure>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'image',
+      alt: 'GitHub logo',
+      captionHtml: 'Caption text'
+    })
+    expect(tokens[0].content).toContain('<picture>')
+    expect(tokens[0].content).toContain('prefers-color-scheme: dark')
+    expect(tokens[0].content).toContain('<img src="/images/github-light.png" alt="GitHub logo">')
+  })
+
+  it('falls back to raw html for unsupported figure wrappers', () => {
+    const source = `
+<figure>
+  <div data-with-frame="true">
+    <img src="/images/gitbook.png" alt="The GitBook Logo">
+  </div>
+  <figcaption>GitBook Logo</figcaption>
+</figure>
+`
+    const tokens = tokenizePageSectionSource(source)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'html'
+    })
+    expect(tokens[0].content.trim()).toBe(source.trim())
   })
 
   it('generates GitHub-compatible heading anchors for markdown sections', () => {
@@ -185,6 +257,52 @@ Body copy.
       'install-1',
       'install-2'
     ])
+  })
+
+  it('preserves nested unordered list markup inside the root list token', () => {
+    const tokens = tokenizePageSectionSource(`
+- Documentation workflow
+  - Write the overview page
+  - Add the showcase page
+- Release workflow
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'ul'
+    })
+    expect(tokens[0].content).toContain('<li>Documentation workflow<ul><li>Write the overview page</li><li>Add the showcase page</li></ul></li>')
+    expect(tokens[0].content).toContain('<li>Release workflow</li>')
+  })
+
+  it('preserves nested ordered list markup inside the root list token', () => {
+    const tokens = tokenizePageSectionSource(`
+1. Prepare the change.
+   1. Confirm the route path.
+   2. Check the required markdown files.
+2. Validate the result.
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'ol'
+    })
+    expect(tokens[0].content).toContain('<li>Prepare the change.<ol><li>Confirm the route path.</li><li>Check the required markdown files.</li></ol></li>')
+    expect(tokens[0].content).toContain('<li>Validate the result.</li>')
+  })
+
+  it('supports three levels of nested unordered lists', () => {
+    const tokens = tokenizePageSectionSource(`
+- Level 1
+  - Level 2
+    - Level 3
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'ul'
+    })
+    expect(tokens[0].content).toContain('<li>Level 1<ul><li>Level 2<ul><li>Level 3</li></ul></li></ul></li>')
   })
 
   it('renders inline math inside paragraph tokens', () => {

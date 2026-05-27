@@ -6,14 +6,12 @@
 
 import {
   h,
+  Teleport,
   ref, computed,
   onMounted, onBeforeUnmount
 } from 'vue'
 
 import { useColorize } from 'q-colorize-mixin'
-
-import { dom } from 'quasar'
-const { offset } = dom
 
 import './QZoom.sass'
 
@@ -34,7 +32,12 @@ export default {
     initialScaleText: { type: Number, default: 100, validator: v => v >= 50 && v <= 500 },
     noCenter: Boolean,
     noWheelScale: Boolean,
-    noEscClose: Boolean
+    noEscClose: Boolean,
+    showCloseButton: Boolean,
+    closeButtonLabel: {
+      type: String,
+      default: 'Close zoom'
+    }
   },
 
   setup (props, { emit, slots }) {
@@ -183,13 +186,29 @@ export default {
       }
     }
 
+    const onOverlayClick = (e) => {
+      if (isZoomed.value) {
+        hide()
+
+        e.preventDefault()
+      }
+    }
+
+    const stopEvent = (e) => {
+      e.stopPropagation()
+    }
+
     const getPosition = () => {
-      const position = offset(vComponent.value)
+      const rect = vComponent.value.getBoundingClientRect()
+      const position = {
+        left: rect.left,
+        top: rect.top
+      }
 
       position.left = position.left + 'px'
       position.top = position.top + 'px'
-      position.width = vComponent.value.clientWidth + 'px'
-      position.height = vComponent.value.clientHeight + 'px'
+      position.width = rect.width + 'px'
+      position.height = rect.height + 'px'
 
       return position
     }
@@ -245,7 +264,34 @@ export default {
           fontSize: props.scaleText && !props.scale && `${scaleTextValue.value}%`
         }
       }), [
-        slot && slot({ zoomed: isZoomed.value })
+        h('div', {
+          class: 'q-zoom__content-inner',
+          onClick: stopEvent
+        }, [
+          slot && slot({ zoomed: isZoomed.value })
+        ])
+      ])
+    }
+
+    const __renderCloseButton = () => {
+      if (!props.showCloseButton) {
+        return null
+      }
+
+      return h('button', {
+        type: 'button',
+        class: 'q-zoom__close-button',
+        'aria-label': props.closeButtonLabel,
+        title: props.closeButtonLabel,
+        onClick: (e) => {
+          stopEvent(e)
+          hide()
+        }
+      }, [
+        h('span', {
+          class: 'q-zoom__close-icon',
+          'aria-hidden': 'true'
+        }, '×')
       ])
     }
 
@@ -256,13 +302,18 @@ export default {
 
       return h('div', Colorize.setBackgroundColor(bgColor.value, {
         class: 'q-zoom__overlay' +
-          (props.manual ? '' : ' q-zoom__zoom-out')
+          (props.manual ? '' : ' q-zoom__zoom-out'),
+        onClick: onOverlayClick
       }), [
+        __renderCloseButton(),
         __renderOverlayContent()
       ])
     }
 
-    return () => h('div', {
+    return () => {
+      const overlay = __renderOverlay()
+
+      return h('div', {
       class: 'q-zoom' +
         (props.manual ? '' : ' q-zoom__zoom-in'),
 
@@ -270,9 +321,12 @@ export default {
       onWheel: wheelEvent,
 
       ref: vComponent
-    }, [
-      slots.default && slots.default({ zoomed: isZoomed.value }),
-      __renderOverlay()
-    ])
+      }, [
+        slots.default && slots.default({ zoomed: isZoomed.value }),
+        overlay
+          ? h(Teleport, { to: 'body' }, overlay)
+          : null
+      ])
+    }
   }
 }

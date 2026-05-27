@@ -22,6 +22,7 @@ import DH6 from './DH6.vue'
 import DPageSourceCode from './DPageSourceCode.vue'
 import DMermaidDiagram from './DMermaidDiagram.vue'
 import DPageBlockquote from './DPageBlockquote.vue'
+import DPageImage from './DPageImage.vue'
 import DQuickLinks from './DQuickLinks.vue'
 import DPageExpandable from './DPageExpandable.vue'
 </script>
@@ -74,6 +75,12 @@ import DPageExpandable from './DPageExpandable.vue'
     v-else-if="token.tag === 'html'"
     v-html="token.content"
   ></div>
+
+  <d-page-image
+    v-else-if="token.tag === 'image'"
+    :content="token.content"
+    :caption-html="token.captionHtml"
+  />
 
   <p
     v-else-if="token.tag === 'p'"
