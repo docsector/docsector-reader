@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it'
 import attrs from 'markdown-it-attrs'
+import GithubSlugger from 'github-slugger'
 import katex from 'katex'
 import texmath from 'markdown-it-texmath'
 
@@ -346,10 +347,24 @@ const normalizePageSectionSource = (source = '') => {
     .replace(/&amp;/g, '&')
 }
 
+const createParserState = () => ({
+  codeIndex: 0,
+  headingSlugger: new GithubSlugger()
+})
+
+const getHeadingAnchorId = (markdown, currentTag, element, env, parserState) => {
+  if (!currentTag || !currentTag.match(/^h[2-6]$/)) {
+    return ''
+  }
+
+  const headingText = markdown.renderer.renderInlineAsText(element.children || [], markdown.options, env).trim()
+  return parserState.headingSlugger.slug(headingText)
+}
+
 export const tokenizePageSectionSource = (source = '', options = {}) => {
   const {
     allowHeadingTokens = true,
-    parserState = { codeIndex: 0 }
+    parserState = createParserState()
   } = options
   const normalizedSource = normalizePageSectionSource(source)
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
@@ -506,6 +521,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
       switch (element.type) {
         case 'inline':
+          const anchorId = getHeadingAnchorId(markdown, tag, element, markdownEnv, parserState)
+
           if (expandableMap.has(element.content.trim())) {
             const data = expandableMap.get(element.content.trim())
 
@@ -535,6 +552,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
           tokens.push({
             tag,
             map: element.map,
+            anchorId,
             content: element.content,
             info: element.info
           })

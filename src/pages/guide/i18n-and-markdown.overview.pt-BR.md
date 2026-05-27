@@ -49,7 +49,7 @@ Veja também as páginas dedicadas do manual para cada bloco:
 
 ### Títulos
 
-Use `##` até `######` para títulos de seção. Cada título se torna uma âncora de navegação na árvore de ToC.
+Use `##` até `######` para títulos de seção. Cada título se torna uma âncora de navegação na árvore de ToC usando slug compatível com GitHub, então fragmentos padrão de README como `#table-of-contents` também funcionam no Docsector.
 
 ### Blocos de Código
 

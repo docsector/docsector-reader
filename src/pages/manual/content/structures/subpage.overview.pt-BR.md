@@ -6,7 +6,7 @@ Na implementação, a documentação roteada usa `DSubpage` para essa composiç�
 
 ## Como Funciona
 
-A implementação gera um ID numérico determinístico a partir do caminho da rota atual usando uma função hash. Esse ID é passado ao `DPageSection` para garantir chaves de componente únicas entre navegações de página.
+A implementação gera um ID numérico determinístico a partir do caminho da rota atual usando uma função hash. Esse ID é passado ao `DPageSection` para manter estáveis os índices internos do renderer em cada página.
 
 ## Template
 
@@ -36,7 +36,7 @@ const id = computed(() => &#123;
 &#125;)
 ```
 
-Isso garante que cada página gere um conjunto único de IDs de âncora, prevenindo colisões ao navegar entre páginas.
+Isso mantém o estado interno do renderer isolado ao navegar entre páginas. Os headings Markdown em si usam slugs compatíveis com GitHub derivados do texto do título, então links de Table of Contents no estilo README continuam funcionando.
 
 ## Quando Usar
 

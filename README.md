@@ -50,7 +50,6 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking and auto-scroll to active section
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
-- 🌐 **WebMCP Browser Tools** — Registers in-page tools for browser agents with `registerTool` and optional `provideContext` fallback
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
@@ -67,6 +66,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Content Signals** — Injects `Content-Signal` policy in `robots.txt` with deterministic, idempotent build output
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
+- 🔗 **GitHub-Compatible Heading Anchors** — Markdown headings use GitHub-style slugs so standard README Table of Contents links work inside Docsector
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 📖 **Expandable Markdown Sections** — Use `<d-expandable title="...">...</d-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
@@ -356,6 +356,7 @@ You can configure Docsector Reader to use a remote README as homepage content.
 - Fetch happens at build-time.
 - The same README content is used for all configured languages.
 - If fetch fails, it falls back to local `src/pages/Homepage.{lang}.md` by default.
+- Standard GitHub-style heading links and README Table of Contents fragments keep working in the rendered homepage.
 
 ### Configure
 

@@ -150,11 +150,7 @@ const subroute = (to) => {
   }
 
   if (relative === to) {
-    if (to !== '/showcase') {
-      return router.push({ hash: '#0' })
-    } else {
-      return router.push({ hash: '#1' })
-    }
+    return router.push({ hash: '#0' })
   }
 
   router.push(path)
@@ -235,6 +231,30 @@ const handleMainScrollKeys = (event) => {
   }
 
   container.scrollTop = nextTop
+}
+
+const handleContentAnchorClick = (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return
+  }
+
+  const target = event.target
+  if (!(target instanceof Element)) {
+    return
+  }
+
+  const link = target.closest('a[href]')
+  if (!link) {
+    return
+  }
+
+  const href = link.getAttribute('href') || ''
+  if (!href.startsWith('#') || href === '#') {
+    return
+  }
+
+  event.preventDefault()
+  navigate(href)
 }
 
 const handlePageScroll = (scrollState) => {
@@ -327,7 +347,7 @@ watch(() => route.fullPath, () => {
 
   <q-page id="page">
     <q-scroll-area class="content" :class="main" ref="pageScrollArea">
-      <div id="scroll-container">
+      <div id="scroll-container" @click="handleContentAnchorClick">
         <slot />
       </div>
       <d-page-meta v-if="!disableNav" />

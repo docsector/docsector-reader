@@ -6,7 +6,7 @@ Under the hood, routed documentation uses `DSubpage` for this composition.
 
 ## How It Works
 
-The implementation generates a deterministic numeric ID from the current route path using a hash function. This ID is passed to `DPageSection` to ensure unique component keys across page navigations.
+The implementation generates a deterministic numeric ID from the current route path using a hash function. This ID is passed to `DPageSection` to keep per-page renderer indexes stable across page navigations.
 
 ## Template
 
@@ -36,7 +36,7 @@ const id = computed(() => &#123;
 &#125;)
 ```
 
-This ensures that each page generates a unique set of anchor IDs, preventing collisions when switching between pages.
+This keeps per-page renderer state isolated when switching between pages. Markdown section headings themselves use GitHub-compatible slugs derived from the heading text, so README-style Table of Contents links keep working.
 
 ## When to Use
 

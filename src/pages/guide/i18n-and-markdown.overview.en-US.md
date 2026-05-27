@@ -49,7 +49,7 @@ See the dedicated manual pages for block-by-block reference:
 
 ### Headings
 
-Use `##` through `######` for section headings. Each heading becomes a navigation anchor in the ToC tree.
+Use `##` through `######` for section headings. Each heading becomes a navigation anchor in the ToC tree using a GitHub-compatible slug, so standard README fragments such as `#table-of-contents` work in Docsector too.
 
 ### Code Blocks
 

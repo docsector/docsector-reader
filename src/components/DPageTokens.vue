@@ -30,27 +30,27 @@ import DPageExpandable from './DPageExpandable.vue'
 <template v-for="(token, index) in tokens" :key="`${token.tag}-${index}`">
   <d-h2
     v-if="token.tag === 'h2'"
-    :id="id + token.map[0]"
+    :id="token.anchorId"
     :value="token.content"
   />
   <d-h3
     v-else-if="token.tag === 'h3'"
-    :id="id + token.map[0]"
+    :id="token.anchorId"
     :value="token.content"
   />
   <d-h4
     v-else-if="token.tag === 'h4'"
-    :id="id + token.map[0]"
+    :id="token.anchorId"
     :value="token.content"
   />
   <d-h5
     v-else-if="token.tag === 'h5'"
-    :id="id + token.map[0]"
+    :id="token.anchorId"
     :value="token.content"
   />
   <d-h6
     v-else-if="token.tag === 'h6'"
-    :id="id + token.map[0]"
+    :id="token.anchorId"
     :value="token.content"
   />
 

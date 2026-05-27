@@ -2,7 +2,7 @@
 
 Headings organize the reading flow and power the right-side table of contents.
 
-In Docsector, each body heading becomes a navigable anchor automatically, so readers can jump through the page while the URL hash and ToC stay in sync.
+In Docsector, each body heading becomes a navigable anchor automatically using a GitHub-compatible slug, so readers can jump through the page while the URL hash and ToC stay in sync.
 
 ## Markdown Levels
 
@@ -19,11 +19,12 @@ In Docsector, each body heading becomes a navigable anchor automatically, so rea
 
 - In page content, the first heading you usually write is `##`, because the page title is already handled for you.
 - Keep heading levels in order whenever possible. Skipping levels makes the ToC harder to scan.
-- Use headings to break long pages into chunks that can be bookmarked and linked.
+- Use headings to break long pages into chunks that can be bookmarked, linked, and referenced from a standard Markdown Table of Contents.
 
 ## What Docsector Handles
 
 - Registers headings as anchors in the page ToC
+- Uses GitHub-compatible slugs for heading hashes
 - Keeps navigation hashes aligned with the selected heading
 - Builds the section tree automatically from the Markdown structure
 

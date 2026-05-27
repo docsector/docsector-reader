@@ -9,13 +9,34 @@ export default function useNavigator() {
   const route = useRoute()
   const selected = ref(null)
 
+  const normalizeDomAnchorId = (id) => {
+    if (id === null || id === undefined || id === false) {
+      return ''
+    }
+
+    let normalized = String(id).replace(/^#+/g, '')
+
+    try {
+      normalized = decodeURIComponent(normalized)
+    } catch {
+      // Keep the raw fragment when it is not valid percent-encoding.
+    }
+
+    return normalized
+  }
+
+  const normalizeStoreAnchorId = (id) => {
+    const normalized = normalizeDomAnchorId(id)
+    return normalized === '0' ? 0 : normalized
+  }
+
   const register = (id) => {
-    store.commit('page/pushAnchors', id)
+    store.commit('page/pushAnchors', normalizeStoreAnchorId(id))
   }
 
   const index = (id, child = false) => {
     store.commit('page/pushNodes', {
-      id,
+      id: normalizeStoreAnchorId(id),
       label: selected.value,
       child,
       children: []
@@ -23,15 +44,17 @@ export default function useNavigator() {
   }
 
   const select = (id) => {
-    store.commit('page/setAnchor', Number(id))
-    store.commit('page/pushNodesExpanded', Number(id))
+    const normalized = normalizeStoreAnchorId(id)
+
+    store.commit('page/setAnchor', normalized)
+    store.commit('page/pushNodesExpanded', normalized)
   }
 
   const anchor = (id, toSelect = true) => {
     store.commit('page/setScrolling', false)
 
-    id = '' + id
-    const Anchor = document.getElementById(id)
+    const anchorId = normalizeDomAnchorId(id)
+    const Anchor = document.getElementById(anchorId)
 
     if (Anchor !== null && typeof Anchor === 'object') {
       const ScrollTarget = scroll.getScrollTarget(Anchor)
@@ -45,7 +68,7 @@ export default function useNavigator() {
     }
 
     if (toSelect) {
-      select(id)
+      select(anchorId)
     }
   }
 
@@ -60,12 +83,13 @@ export default function useNavigator() {
 
     for (let i = 0; i < anchors.length; i++) {
       const anchorId = anchors[i]
+      const domAnchorId = normalizeDomAnchorId(anchorId)
 
-      if (anchorId === 0) {
+      if (domAnchorId === '0') {
         continue
       }
 
-      const Anchor = document.getElementById(anchorId)
+      const Anchor = document.getElementById(domAnchorId)
       let AnchorOffsetTop = 20
       if (Anchor !== null && typeof Anchor === 'object') {
         AnchorOffsetTop = Anchor.offsetTop
@@ -78,24 +102,30 @@ export default function useNavigator() {
   }
 
   const navigate = (value, toAnchor = true) => {
+    const domAnchorId = normalizeDomAnchorId(value)
+    const currentRouteAnchorId = normalizeDomAnchorId(route.hash)
+
     if (toAnchor) {
-      if (('#' + value) === route.hash) {
-        anchor(value)
+      if (domAnchorId !== '' && domAnchorId === currentRouteAnchorId) {
+        anchor(domAnchorId)
         return
       } else if (value === null) {
-        anchor(selected.value, false)
+        anchor(store.state.page.anchor, false)
         return
       }
     }
 
-    router.push(route.path + '#' + value)
+    router.push({
+      path: route.path,
+      hash: domAnchorId === '' ? '' : `#${domAnchorId}`
+    })
 
     if (toAnchor) {
       if (Platform.is.desktop) {
-        anchor(value)
+        anchor(domAnchorId)
       } else {
         setTimeout(() => {
-          anchor(value)
+          anchor(domAnchorId)
         }, 600)
       }
     }

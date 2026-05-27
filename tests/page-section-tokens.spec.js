@@ -151,6 +151,42 @@ Body copy.
     expect(tokens[0].content).toContain('alt="Architecture overview"')
   })
 
+  it('generates GitHub-compatible heading anchors for markdown sections', () => {
+    const tokens = tokenizePageSectionSource(`
+## Table of Contents
+
+### Próximos passos?
+`)
+
+    expect(tokens).toHaveLength(2)
+    expect(tokens[0]).toMatchObject({
+      tag: 'h2',
+      anchorId: 'table-of-contents',
+      content: 'Table of Contents'
+    })
+    expect(tokens[1]).toMatchObject({
+      tag: 'h3',
+      anchorId: 'próximos-passos',
+      content: 'Próximos passos?'
+    })
+  })
+
+  it('deduplicates repeated heading anchors in source order', () => {
+    const tokens = tokenizePageSectionSource(`
+## Install
+
+## Install
+
+### Install
+`)
+
+    expect(tokens.map((token) => token.anchorId)).toEqual([
+      'install',
+      'install-1',
+      'install-2'
+    ])
+  })
+
   it('renders inline math inside paragraph tokens', () => {
     const tokens = tokenizePageSectionSource('Einstein wrote $E = mc^2$ in prose.')
 

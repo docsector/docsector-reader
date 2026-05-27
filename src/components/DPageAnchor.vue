@@ -21,19 +21,13 @@ const expanded = computed({
   get() {
     return store.getters['page/nodesExpanded']
   },
-  set(value) {
+  set() {
     // console.log(value)
   }
 })
 const selected = computed({
   get() {
-    let anchor = store.state.page.anchor
-
-    if (store.state.page.relative !== '' && anchor === 0) {
-      anchor = anchor + 1
-    }
-
-    return anchor
+    return store.state.page.anchor
   },
   set(value) {
     navigate(value)
@@ -90,7 +84,7 @@ onMounted(() => {
   const id = route.hash.replace(/^#+/g, '')
   if (id) {
     setTimeout(() => {
-      anchor(id)
+      anchor(route.hash)
     }, 500)
   }
 })
