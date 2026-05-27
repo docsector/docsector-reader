@@ -66,6 +66,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
+- 📖 **Expandable Markdown Sections** — Use `<d-expandable title="...">...</d-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes

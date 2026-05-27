@@ -213,6 +213,36 @@ export default {
     }
   },
 
+  '/components/d-page-expandable': {
+    config: {
+      icon: 'unfold_more',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'DPageExpandable — Documentation of Docsector Reader',
+          'pt-BR': 'DPageExpandable — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {
+        separator: ' page'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'DPageExpandable' },
+      'pt-BR': { title: 'DPageExpandable' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'expandable collapsible accordion disclosure details markdown toggle',
+        'pt-BR': 'expansível colapsável acordeão detalhes markdown alternância'
+      }
+    }
+  },
+
   // =========================================================================
   // Components — Navigation
   // =========================================================================

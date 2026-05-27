@@ -94,6 +94,22 @@ echo "Exemplo"
 
 `filename` aparece na barra de info em blocos simples. Fences consecutivos com o mesmo `group` são renderizados como abas. `tab` define o rótulo da aba, então labels que parecem arquivo, como `exemplo.php`, recebem ícones na aba. `breadcrumb` define os segmentos acima do bloco ativo, e o segmento final que parece arquivo recebe o mesmo ícone.
 
+### Conteúdo Expansível
+
+Use `<d-expandable>` para esconder conteúdo secundário sem perder os recursos ricos de Markdown da página:
+
+```markdown
+<d-expandable title="Mais detalhes">
+
+Explicações opcionais, notas operacionais ou exemplos maiores.
+
+</d-expandable>
+```
+
+Defina `open="true"` quando o bloco precisar começar aberto.
+
+O corpo do expansível suporta parágrafos, listas, alertas, blocos de código, diagramas Mermaid, tabelas, HTML bruto e quick links. Nesta primeira versão, mantenha títulos fora do bloco expansível, porque títulos dentro do corpo viram parágrafos comuns para preservar o ToC da página.
+
 ## Adicionando um Novo Idioma
 
 1. Crie `src/i18n/languages/xx-XX.hjson` com todas as traduções de UI

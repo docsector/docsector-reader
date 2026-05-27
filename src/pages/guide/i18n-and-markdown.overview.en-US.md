@@ -94,6 +94,22 @@ echo "Example"
 
 `filename` is shown in the info bar for single blocks. Consecutive fences with the same `group` are rendered as tabs. `tab` sets the tab label, so filename-like labels such as `example.php` receive file icons in the tab. `breadcrumb` sets the breadcrumb segments above the active code block, and the final filename-like segment receives the same file icon.
 
+### Expandable Content
+
+Use `<d-expandable>` to hide secondary content without removing rich Markdown features from the page:
+
+```markdown
+<d-expandable title="More details">
+
+Optional explanations, operational notes, or longer examples.
+
+</d-expandable>
+```
+
+Set `open="true"` when the block should start expanded.
+
+The expandable body supports paragraphs, lists, alerts, code blocks, Mermaid diagrams, tables, raw HTML, and quick links. Keep headings outside the expandable block in this first version, because headings inside the body are flattened to regular paragraphs to preserve the page ToC.
+
 ## Adding a New Language
 
 1. Create `src/i18n/languages/xx-XX.hjson` with all UI translations
