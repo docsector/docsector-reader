@@ -852,18 +852,10 @@ my-docs/
 │   └── boot/                  # Consumer-specific boot files
 │       └── qmediaplayer.js    # Example: custom Quasar extension
 └── public/
-    ├── images/logo/           # Project logo
-    ├── images/flags/          # Locale flag images
+    ├── images/logo.png        # Project logo
+    ├── flags/                 # Locale flag images
     └── icons/                 # PWA icons
 ```
-
----
-
-## ⚠️ Migrating from 1.x to 2.0
-
-- Split the legacy `src/pages/index.js` registry into per-book files such as `src/pages/manual.book.js`, `src/pages/manual.index.js`, `src/pages/guide.book.js`, and `src/pages/guide.index.js`.
-- Update i18n wiring to import `books` from `virtual:docsector-books` and pass it to `buildMessages({ ... })`.
-- Rename `config.type` to `config.book` in page definitions. Legacy fallback still works, but `config.book` is the supported API moving forward.
 
 ---
 
