@@ -23,6 +23,7 @@ import DPageSourceCode from './DPageSourceCode.vue'
 import DMermaidDiagram from './DMermaidDiagram.vue'
 import DPageBlockquote from './DPageBlockquote.vue'
 import DPageImage from './DPageImage.vue'
+import DPageFile from './DPageFile.vue'
 import DQuickLinks from './DQuickLinks.vue'
 import DPageExpandable from './DPageExpandable.vue'
 </script>
@@ -93,6 +94,14 @@ import DPageExpandable from './DPageExpandable.vue'
   >
     <div v-html="token.content"></div>
   </d-page-blockquote>
+
+  <d-page-file
+    v-else-if="token.tag === 'file'"
+    :src="token.src"
+    :title="token.title"
+    :size="token.size"
+    :caption="token.caption"
+  />
 
   <d-page-source-code
     v-else-if="token.tag === 'code'"

@@ -1,0 +1,7 @@
+Docsector Reader Release Checklist
+=================================
+
+1. Confirm the target route and page registry entry.
+2. Update the overview and showcase markdown pages.
+3. Run the focused test suite for the touched parser or helper.
+4. Run a production build and inspect the published artifact.

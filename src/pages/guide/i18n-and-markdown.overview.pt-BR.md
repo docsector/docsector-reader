@@ -45,7 +45,7 @@ Veja também as páginas dedicadas do manual para cada bloco:
 
 - [Parágrafos](/manual/content/blocks/paragraphs/overview/), [Títulos](/manual/content/blocks/headings/overview/), [Listas não ordenadas](/manual/content/blocks/unordered-lists/overview/), [Listas ordenadas](/manual/content/blocks/ordered-lists/overview/)
 - [Hints](/manual/content/blocks/hints/overview/), [Citação](/manual/content/blocks/quotes/overview/), [Blocos de código](/manual/content/blocks/code-blocks/overview/), [Diagramas Mermaid](/manual/content/blocks/mermaid-diagrams/overview/)
-- [Imagens](/manual/content/blocks/images/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expansível](/manual/content/blocks/expandable/overview/), [Tabelas](/manual/content/blocks/tables/overview/), [HTML bruto](/manual/content/blocks/raw-html/overview/) e [Quick Links](/manual/content/blocks/quick-links/overview/)
+- [Imagens](/manual/content/blocks/images/overview/), [Arquivos](/manual/content/blocks/files/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expansível](/manual/content/blocks/expandable/overview/), [Tabelas](/manual/content/blocks/tables/overview/), [HTML bruto](/manual/content/blocks/raw-html/overview/) e [Quick Links](/manual/content/blocks/quick-links/overview/)
 
 ### Títulos
 
@@ -131,6 +131,20 @@ Explicações opcionais, notas operacionais ou exemplos maiores.
 Defina `open="true"` quando o bloco precisar começar aberto.
 
 O corpo do expansível suporta parágrafos, listas, alertas, blocos de código, diagramas Mermaid, tabelas, HTML bruto e quick links. Nesta primeira versão, mantenha títulos fora do bloco expansível, porque títulos dentro do corpo viram parágrafos comuns para preservar o ToC da página.
+
+### Blocos de Arquivo
+
+Use `<d-file>` para publicar anexos baixáveis a partir de arquivos versionados no repositório ou de storage externo sem sair do Markdown:
+
+```html
+<d-file src="/files/manual/release-checklist.txt" title="Checklist de release" size="1 KB">
+Baixe o anexo de exemplo usado neste manual.
+</d-file>
+```
+
+Guarde arquivos versionados no repositório em `public/files/` e prefira caminhos absolutos do site, como `/files/...`.
+
+`title` e `size` são opcionais. Quando `title` não é informado, a UI usa o nome do arquivo presente em `src`. O corpo do bloco funciona como legenda com Markdown inline, e a mesma sintaxe também aceita URLs externas caso você mova o storage para R2 ou outro CDN no futuro.
 
 ## Adicionando um Novo Idioma
 

@@ -37,6 +37,13 @@
     copied: 'Copiado!',
     viewAsMarkdown: 'Ver como Markdown',
     viewAsMarkdownCaption: 'Ver esta página como texto simples',
+    file: {
+      label: 'Arquivo',
+      defaultTitle: 'Baixar arquivo',
+      external: 'Arquivo externo',
+      download: 'Baixar',
+      open: 'Abrir'
+    },
     openInChatGPT: 'Abrir no ChatGPT',
     openInChatGPTCaption: 'Pergunte ao ChatGPT sobre esta página',
     openInClaude: 'Abrir no Claude',

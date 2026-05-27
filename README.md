@@ -71,6 +71,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔗 **GitHub-Compatible Heading Anchors** — Markdown headings use GitHub-style slugs so standard README Table of Contents links work inside Docsector
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 📖 **Expandable Markdown Sections** — Use `<d-expandable title="...">...</d-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
+- 📎 **File Attachment Blocks** — Use `<d-file src="/files/...">...</d-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
@@ -617,7 +618,7 @@ Docsector Reader works as a **rendering engine**: it provides the layout, compon
 │  ├── quasar.config.js      ← thin wrapper            │
 │  ├── src/pages/            ← Markdown + route defs    │
 │  ├── src/i18n/             ← language files + tags    │
-│  └── public/               ← logo, images, icons     │
+│  └── public/               ← logo, images, icons, files │
 │                                                       │
 │  ┌───────────────────────────────────────────────┐    │
 │  │  @docsector/docsector-reader (engine)         │    │
@@ -875,7 +876,8 @@ my-docs/
 └── public/
     ├── images/logo.png        # Project logo
     ├── flags/                 # Locale flag images
-    └── icons/                 # PWA icons
+    ├── icons/                 # PWA icons
+    └── files/                 # Downloadable attachments served as /files/...
 ```
 
   A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Translation Progress, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
@@ -1018,7 +1020,23 @@ Notes:
 Supported alert types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`.
 Regular blockquotes without `[!TYPE]` continue to work normally.
 
+### File Attachment Blocks
+
+```html
+<d-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
+Download the example file bundled with the docs.
+</d-file>
+```
+
+Notes:
+
+- Store small repo-tracked attachments in `public/files/` and link them with absolute paths such as `/files/manual/release-checklist.txt`.
+- `title` and `size` are optional. If `title` is omitted, the rendered card falls back to the filename from `src`.
+- The block body is rendered as an inline Markdown caption.
+- External URLs also work, so the same syntax can later point to R2 or another CDN without changing the page structure.
+
 ---
+
 
 ## 🖥️ CLI Commands
 

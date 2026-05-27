@@ -23,7 +23,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '3.2.2'
+const VERSION = '3.3.0'
 
 const HELP = `
   Docsector Reader v${VERSION}

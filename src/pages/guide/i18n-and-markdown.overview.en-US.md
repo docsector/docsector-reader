@@ -45,7 +45,7 @@ See the dedicated manual pages for block-by-block reference:
 
 - [Paragraphs](/manual/content/blocks/paragraphs/overview/), [Headings](/manual/content/blocks/headings/overview/), [Unordered lists](/manual/content/blocks/unordered-lists/overview/), [Ordered lists](/manual/content/blocks/ordered-lists/overview/)
 - [Hints](/manual/content/blocks/hints/overview/), [Quote](/manual/content/blocks/quotes/overview/), [Code blocks](/manual/content/blocks/code-blocks/overview/), [Mermaid diagrams](/manual/content/blocks/mermaid-diagrams/overview/)
-- [Images](/manual/content/blocks/images/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expandable](/manual/content/blocks/expandable/overview/), [Tables](/manual/content/blocks/tables/overview/), [Raw HTML](/manual/content/blocks/raw-html/overview/), and [Quick Links](/manual/content/blocks/quick-links/overview/)
+- [Images](/manual/content/blocks/images/overview/), [Files](/manual/content/blocks/files/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expandable](/manual/content/blocks/expandable/overview/), [Tables](/manual/content/blocks/tables/overview/), [Raw HTML](/manual/content/blocks/raw-html/overview/), and [Quick Links](/manual/content/blocks/quick-links/overview/)
 
 ### Headings
 
@@ -131,6 +131,20 @@ Optional explanations, operational notes, or longer examples.
 Set `open="true"` when the block should start expanded.
 
 The expandable body supports paragraphs, lists, alerts, code blocks, Mermaid diagrams, tables, raw HTML, and quick links. Keep headings outside the expandable block in this first version, because headings inside the body are flattened to regular paragraphs to preserve the page ToC.
+
+### File Blocks
+
+Use `<d-file>` to publish downloadable attachments from repo-tracked files or external storage without leaving Markdown:
+
+```html
+<d-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
+Download the example attachment used in this manual.
+</d-file>
+```
+
+Store repo-tracked files under `public/files/` and prefer absolute site paths such as `/files/...`.
+
+`title` and `size` are optional. When `title` is omitted, the UI falls back to the file name from `src`. The caption body supports inline Markdown, and the same syntax also works with external URLs if you later move storage to R2 or another CDN.
 
 ## Adding a New Language
 

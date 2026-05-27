@@ -139,6 +139,65 @@ Body copy.
     ])
   })
 
+  it('tokenizes file blocks with caption markdown', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-file src="/files/manual/cli-reference.pdf" title="CLI reference" size="2 MB">
+Download the *full* command reference.
+</d-file>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'file',
+      src: '/files/manual/cli-reference.pdf',
+      title: 'CLI reference',
+      size: '2 MB',
+      caption: 'Download the <em>full</em> command reference.'
+    })
+  })
+
+  it('falls back to the file name for self-closing file blocks', () => {
+    const tokens = tokenizePageSectionSource('<d-file src="/files/releases/docsector-reader.zip" />')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'file',
+      src: '/files/releases/docsector-reader.zip',
+      title: 'docsector-reader.zip',
+      size: '',
+      caption: ''
+    })
+  })
+
+  it('keeps a self-closing file block isolated from the next heading and file block', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-file src="/files/manual/release-checklist.txt" size="1 KB" />
+
+### External file
+
+<d-file src="https://example.com/example.pdf" title="Reference PDF" size="13 KB">
+External caption.
+</d-file>
+`)
+
+    expect(tokens).toHaveLength(3)
+    expect(tokens[0]).toMatchObject({
+      tag: 'file',
+      src: '/files/manual/release-checklist.txt',
+      title: 'release-checklist.txt'
+    })
+    expect(tokens[1]).toMatchObject({
+      tag: 'h3',
+      content: 'External file'
+    })
+    expect(tokens[2]).toMatchObject({
+      tag: 'file',
+      src: 'https://example.com/example.pdf',
+      title: 'Reference PDF',
+      caption: 'External caption.'
+    })
+  })
+
   it('promotes standalone markdown images to image tokens with caption metadata', () => {
     const tokens = tokenizePageSectionSource('![Architecture overview](/images/architecture.png "System diagram")')
 
@@ -401,5 +460,26 @@ $$
     })
     expect(tokens[1].content).toContain('$$')
     expect(tokens[1].content).toContain('\\int_0^1 x^2 dx')
+  })
+
+  it('keeps file block syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-file src="/files/manual/example.pdf" />\` in docs.
+
+~~~~html
+<d-file src="/files/manual/example.pdf" />
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'file')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-file src=&quot;/files/manual/example.pdf&quot; /&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-file src="/files/manual/example.pdf" />')
   })
 })

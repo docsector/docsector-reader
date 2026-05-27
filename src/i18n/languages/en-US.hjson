@@ -38,6 +38,13 @@
     copied: 'Copied!',
     viewAsMarkdown: 'View as Markdown',
     viewAsMarkdownCaption: 'View this page as plain text',
+    file: {
+      label: 'File',
+      defaultTitle: 'Download file',
+      external: 'External file',
+      download: 'Download',
+      open: 'Open'
+    },
     openInChatGPT: 'Open in ChatGPT',
     openInChatGPTCaption: 'Ask ChatGPT about this page',
     openInClaude: 'Open in Claude',

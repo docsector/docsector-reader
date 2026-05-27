@@ -542,6 +542,35 @@ export default {
     }
   },
 
+  '/content/blocks/files': {
+    config: {
+      icon: 'attach_file',
+      status: 'new',
+      version: 'v3.3.0',
+      meta: {
+        description: {
+          'en-US': 'Files — Documentation of Docsector Reader',
+          'pt-BR': 'Arquivos — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Files' },
+      'pt-BR': { title: 'Arquivos' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'files download attachments markdown assets public r2 cloudflare github',
+        'pt-BR': 'arquivos download anexos markdown assets public r2 cloudflare github'
+      }
+    }
+  },
+
   '/content/blocks/math-and-tex': {
     config: {
       icon: 'functions',

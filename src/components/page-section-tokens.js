@@ -14,6 +14,7 @@ const ALERT_MESSAGE_TYPES = new Set([
 
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
+const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
@@ -187,6 +188,62 @@ const extractExpandableBlocks = (source = '') => {
   return {
     source: replaced,
     expandableMap: map
+  }
+}
+
+const getFileTitleFromSrc = (src = '') => {
+  const normalized = String(src)
+    .split('#')[0]
+    .split('?')[0]
+  const rawSegment = normalized
+    .split('/')
+    .filter(Boolean)
+    .pop() || ''
+
+  if (!rawSegment) {
+    return 'Download file'
+  }
+
+  try {
+    return decodeURIComponent(rawSegment)
+  } catch {
+    return rawSegment
+  }
+}
+
+const extractFileBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const replaceBlock = (match, rawAttrs, rawCaption = '') => {
+    const attrs = parseCustomTagAttributes(rawAttrs)
+    const src = decodeHtmlEntities(attrs.src || attrs.href || '').trim()
+
+    if (!src) {
+      return match
+    }
+
+    const marker = `${FILE_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      src,
+      title: decodeHtmlEntities(attrs.title || attrs.name || '').trim(),
+      size: decodeHtmlEntities(attrs.size || '').trim(),
+      caption: String(rawCaption).trim()
+    })
+
+    return `\n${marker}\n`
+  }
+
+  const replacedSelfClosing = String(source).replace(/<d-file\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+  const replaced = replacedSelfClosing.replace(/<d-file\b([^>]*)>([\s\S]*?)<\/d-file>/gi, replaceBlock)
+
+  return {
+    source: replaced,
+    fileMap: map
   }
 }
 
@@ -469,10 +526,19 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   })
 
   const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(sourceWithExpandables)
+  const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
+
+  fileMap.forEach((data, marker) => {
+    fileMap.set(marker, {
+      ...data,
+      caption: restoreShieldedCodeSegments(data.caption, codeSegmentsMap)
+    })
+  })
+
   const markdown = createMarkdownBlockParser()
   const markdownInline = createMarkdownInlineParser()
   const markdownEnv = {}
-  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithQuickLinks, codeSegmentsMap), markdownEnv)
+  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithFiles, codeSegmentsMap), markdownEnv)
   const tokens = []
 
   let level = 0
@@ -636,6 +702,22 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               tag: 'quick-links',
               title: data.title,
               items: data.items
+            })
+            break
+          }
+
+          if (fileMap.has(element.content.trim())) {
+            const data = fileMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'file',
+              map: element.map,
+              src: data.src,
+              title: data.title || getFileTitleFromSrc(data.src),
+              size: data.size,
+              caption: data.caption !== ''
+                ? markdownInline.renderInline(data.caption, markdownEnv)
+                : ''
             })
             break
           }
