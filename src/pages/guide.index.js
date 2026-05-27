@@ -1,5 +1,3 @@
-export const tags = {}
-
 export default {
   '/getting-started': {
     config: {
