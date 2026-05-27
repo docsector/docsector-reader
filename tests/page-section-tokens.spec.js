@@ -138,4 +138,102 @@ Body copy.
       }
     ])
   })
+
+  it('renders inline math inside paragraph tokens', () => {
+    const tokens = tokenizePageSectionSource('Einstein wrote $E = mc^2$ in prose.')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('katex')
+    expect(tokens[0].content).not.toContain('$E = mc^2$')
+  })
+
+  it('renders display math as standalone html output', () => {
+    const tokens = tokenizePageSectionSource(`
+$$
+\\int_0^1 x^2 dx
+$$
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'html'
+    })
+    expect(tokens[0].content).toContain('katex-display')
+    expect(tokens[0].content).not.toContain('$$')
+  })
+
+  it('renders inline and display math inside alert blockquotes', () => {
+    const tokens = tokenizePageSectionSource(`
+> [!NOTE] Inline math $x^2$
+>
+> $$
+> \\int_0^1 x^2 dx
+> $$
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'blockquote',
+      alertType: 'note'
+    })
+    expect(tokens[0].content).toContain('katex')
+    expect(tokens[0].content).toContain('katex-display')
+  })
+
+  it('renders math inside expandable blocks', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-expandable title="Math details">
+
+Inline $a^2+b^2=c^2$.
+
+$$
+\\sum_{i=1}^{n} i
+$$
+
+</d-expandable>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'expandable',
+      title: 'Math details'
+    })
+    expect(tokens[0].tokens).toHaveLength(2)
+    expect(tokens[0].tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].tokens[0].content).toContain('katex')
+    expect(tokens[0].tokens[1]).toMatchObject({
+      tag: 'html'
+    })
+    expect(tokens[0].tokens[1].content).toContain('katex-display')
+  })
+
+  it('keeps math delimiters literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`$E = mc^2$\` literally.
+
+~~~markdown
+$$
+\\int_0^1 x^2 dx
+$$
+~~~
+`)
+
+    expect(tokens).toHaveLength(2)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('<code>$E = mc^2$</code>')
+    expect(tokens[0].content).not.toContain('katex')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'markdown'
+    })
+    expect(tokens[1].content).toContain('$$')
+    expect(tokens[1].content).toContain('\\int_0^1 x^2 dx')
+  })
 })

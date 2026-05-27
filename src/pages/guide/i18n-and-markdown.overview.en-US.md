@@ -61,6 +61,25 @@ You can render Mermaid diagrams using fenced blocks with the `mermaid` language 
 ```
 &#96;&#96;&#96;mermaid
 flowchart TD
+  A[Start] --> B[End]
+&#96;&#96;&#96;
+```
+
+### Math and TeX
+
+Docsector supports KaTeX-style math in standard Markdown flows, including paragraphs, alerts, and expandable content.
+
+Use single dollar delimiters for inline math such as $E = mc^2$.
+
+Use double dollar delimiters for display math:
+
+```markdown
+$$
+\int_0^1 x^2 dx
+$$
+```
+
+Math delimiters remain literal inside inline code and fenced code blocks, so syntax examples can be documented without rendering the equation.
 
 ### GitHub Alerts
 
@@ -75,9 +94,6 @@ Docsector also supports GitHub-style alert blockquotes:
 
 Supported types are `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`.
 Regular blockquotes (without `[!TYPE]`) continue to work as normal.
-  A[Start] --> B[End]
-&#96;&#96;&#96;
-```
 
 ### Custom Attributes
 

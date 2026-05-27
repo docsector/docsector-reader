@@ -65,6 +65,22 @@ flowchart TD
 &#96;&#96;&#96;
 ```
 
+### Math e TeX
+
+O Docsector suporta fórmulas com KaTeX nos fluxos normais de Markdown, incluindo parágrafos, alertas e conteúdo expansível.
+
+Use delimitadores com um dólar para fórmulas inline, como $E = mc^2$.
+
+Use delimitadores com dois dólares para fórmulas em bloco:
+
+```markdown
+$$
+\int_0^1 x^2 dx
+$$
+```
+
+Os delimitadores matemáticos permanecem literais dentro de código inline e fenced code, então exemplos de sintaxe podem ser documentados sem renderizar a equação.
+
 ### Alertas do GitHub
 
 O Docsector tambem suporta blockquotes de alerta no estilo do GitHub:

@@ -1,5 +1,7 @@
 import MarkdownIt from 'markdown-it'
 import attrs from 'markdown-it-attrs'
+import katex from 'katex'
+import texmath from 'markdown-it-texmath'
 
 const ALERT_MESSAGE_TYPES = new Set([
   'note',
@@ -12,6 +14,10 @@ const ALERT_MESSAGE_TYPES = new Set([
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
+const MATH_KATEX_OPTIONS = {
+  throwOnError: false,
+  strict: 'ignore'
+}
 
 const parseAlertMarker = (rawContent = '') => {
   const match = String(rawContent).trim().match(/^\[!\s*([A-Za-z]+)\s*\]\s*(.*)$/s)
@@ -100,7 +106,7 @@ const restoreShieldedCodeSegments = (source = '', codeSegmentsMap = new Map()) =
   let restored = String(source)
 
   codeSegmentsMap.forEach((content, marker) => {
-    restored = restored.replaceAll(marker, content)
+    restored = restored.replaceAll(marker, () => content)
   })
 
   return restored
@@ -299,10 +305,24 @@ const pushSourceCodeToken = (tokens, element, parserState) => {
   })
 }
 
-const createMarkdownBlockParser = () => {
-  const markdown = new MarkdownIt({
-    html: true
+const installMathSupport = (markdown) => {
+  markdown.use(texmath, {
+    engine: katex,
+    delimiters: 'dollars',
+    katexOptions: MATH_KATEX_OPTIONS
   })
+
+  return markdown
+}
+
+const renderBlockToken = (markdown, element, env) => {
+  return markdown.renderer.render([element], markdown.options, env).trim()
+}
+
+const createMarkdownBlockParser = () => {
+  const markdown = installMathSupport(new MarkdownIt({
+    html: true
+  }))
 
   markdown.use(attrs, {
     leftDelimiter: ':',
@@ -314,9 +334,9 @@ const createMarkdownBlockParser = () => {
 }
 
 const createMarkdownInlineParser = () => {
-  return new MarkdownIt({
+  return installMathSupport(new MarkdownIt({
     html: true
-  })
+  }))
 }
 
 const normalizePageSectionSource = (source = '') => {
@@ -444,6 +464,11 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
         return
       }
 
+      if (element.type === 'math_block') {
+        blockquote.content += renderBlockToken(markdown, element, markdownEnv)
+        return
+      }
+
       if (element.type.endsWith('_open')) {
         appendBlockquoteTag(element, true)
         return
@@ -519,6 +544,13 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
           pushSourceCodeToken(tokens, element, parserState)
           break
 
+        case 'math_block':
+          tokens.push({
+            tag: 'html',
+            content: renderBlockToken(markdown, element, markdownEnv)
+          })
+          break
+
         case 'html_block':
           tokens.push({
             tag: 'html',
@@ -573,6 +605,9 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
         case 'inline':
           parent.content += element.content
+          break
+        case 'math_block':
+          parent.content += renderBlockToken(markdown, element, markdownEnv)
           break
         case 'html_inline':
         case 'html_block':

@@ -1,3 +1,5 @@
+@import 'katex/dist/katex.min.css'
+
 /* --- Docsector Reader --- */
 @font-face
   font-family: "Fira Code Nerd Font"
@@ -186,6 +188,16 @@ body.body--dark
     word-break: break-word
     display: inline
     line-height: 0.85em
+
+  .katex
+    color: inherit
+    max-width: 100%
+
+  .katex-display
+    max-width: 100%
+    overflow-x: auto
+    overflow-y: hidden
+    padding: 0.35rem 0.1rem
 
   a
     text-decoration: none

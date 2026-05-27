@@ -43,6 +43,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
 - 🧱 **Raw HTML in Markdown** — Renders inline and block HTML tags inside markdown sections (including homepage remote README content)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
+- ➗ **Math & KaTeX** — Native support for inline `$...$` and display `$$...$$` formulas rendered with KaTeX
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
