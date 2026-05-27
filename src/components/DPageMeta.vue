@@ -156,6 +156,7 @@ const getVersionSiblingPath = (offset) => {
   const currentPath = normalizeRoutePath(route.matched?.[0]?.path || `/${store.state.page.base}`)
   const routes = router.options.routes
     .slice(0, -2)
+    .filter(item => item?.meta?.menu?.hidden !== true)
     .filter(item => !versionId || item?.meta?.version === versionId)
 
   const index = routes.findIndex(item => normalizeRoutePath(item.path) === currentPath)

@@ -856,7 +856,12 @@ my-docs/
 │   │   ├── guide.index.js     # Guide page registry (routes + metadata)
 │   │   ├── boot.js            # Boot page data
 │   │   ├── guide/             # Guide pages (.md files)
-│   │   └── manual/            # Manual pages (.md files)
+│   │   └── manual/
+│   │       ├── basic/         # Core UI docs exposed in the main manual nav
+│   │       ├── content/
+│   │       │   ├── blocks/    # User-facing Markdown block docs
+│   │       │   └── structures/ # User-facing page structure docs
+│   │       └── components/    # Legacy/internal engine-facing manual docs
 │   ├── i18n/
 │   │   ├── index.js           # Uses buildMessages() from engine
 │   │   └── languages/         # HJSON locale files
@@ -869,6 +874,10 @@ my-docs/
     ├── flags/                 # Locale flag images
     └── icons/                 # PWA icons
 ```
+
+  A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Translation Progress, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
+
+  Blocks in `src/pages/manual/content/blocks/` should normally provide both `overview` and `showcase` markdown pages, while structural topics can stay overview-only when a visual demo adds little value.
 
 ---
 

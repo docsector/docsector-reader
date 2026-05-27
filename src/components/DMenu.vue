@@ -162,7 +162,7 @@ const normalizeRoutePath = (path) => {
 }
 
 const getTopRoutes = () => {
-  return ($router.options.routes || []).slice(0, -2)
+  return ($router.options.routes || []).slice(0, -2).filter(route => route?.meta?.menu?.hidden !== true)
 }
 
 const routeHasSubpage = (route, subpageName) => {

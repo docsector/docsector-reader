@@ -41,6 +41,12 @@ O objeto `_` é o namespace raiz para páginas. Títulos e conteúdo das página
 
 O conteúdo da documentação é escrito em Markdown padrão com algumas convenções:
 
+Veja também as páginas dedicadas do manual para cada bloco:
+
+- [Parágrafos](/manual/content/blocks/paragraphs/overview/), [Títulos](/manual/content/blocks/headings/overview/), [Listas não ordenadas](/manual/content/blocks/unordered-lists/overview/), [Listas ordenadas](/manual/content/blocks/ordered-lists/overview/)
+- [Hints](/manual/content/blocks/hints/overview/), [Citação](/manual/content/blocks/quotes/overview/), [Blocos de código](/manual/content/blocks/code-blocks/overview/), [Diagramas Mermaid](/manual/content/blocks/mermaid-diagrams/overview/)
+- [Imagens](/manual/content/blocks/images/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expansível](/manual/content/blocks/expandable/overview/), [Tabelas](/manual/content/blocks/tables/overview/), [HTML bruto](/manual/content/blocks/raw-html/overview/) e [Quick Links](/manual/content/blocks/quick-links/overview/)
+
 ### Títulos
 
 Use `##` até `######` para títulos de seção. Cada título se torna uma âncora de navegação na árvore de ToC.

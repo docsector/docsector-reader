@@ -220,7 +220,7 @@ const routes = [
   },
 
   {
-    path: '/(.*)*',
+    path: '/:catchAll(.*)*',
     component: () => import('layouts/SystemLayout.vue'),
     meta: {
       menu: {}

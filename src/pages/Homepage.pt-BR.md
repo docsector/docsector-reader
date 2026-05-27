@@ -7,9 +7,9 @@ Docsector Reader e um motor de documentacao construído com Vue 3, Quasar v2 e V
 - [Comecando](/guide/getting-started/overview/)
 - [Configuracao](/guide/configuration/overview/)
 - [Paginas e Rotas](/guide/pages-and-routing/overview/)
-- [Componentes](/manual/components/d-page/overview/)
-- [Composables](/manual/composables/use-navigator/overview/)
-- [Modulos de Store](/manual/store/modules/overview/)
+- [Básico](/manual/basic/d-menu/overview/)
+- [Conteúdo](/manual/content/blocks/paragraphs/overview/)
+- [Estruturas](/manual/content/structures/books/overview/)
 
 ## Sobre
 

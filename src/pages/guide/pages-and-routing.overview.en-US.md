@@ -2,6 +2,8 @@
 
 Documentation pages are defined in split registries such as `src/pages/guide.index.js` and `src/pages/manual.index.js`. Each entry maps a URL path to its configuration, translatable data, and optional metadata.
 
+In the current manual, it is common to keep core UI references under `/basic`, end-user content blocks under `/content/blocks`, structural concepts under `/content/structures`, and legacy engine-facing aliases under `/components`.
+
 ## Page Entry Structure
 
 ```javascript
@@ -35,11 +37,11 @@ Documentation pages are defined in split registries such as `src/pages/guide.ind
 Set `config: null` to create a non-navigable grouping node. This is useful for creating section titles in the sidebar menu:
 
 ```javascript
-'/components': &#123;
+'/content/blocks': &#123;
   config: null,
   data: &#123;
-    'en-US': &#123; title: 'Components' &#125;,
-    'pt-BR': &#123; title: 'Componentes' &#125;
+    'en-US': &#123; title: 'Blocks' &#125;,
+    'pt-BR': &#123; title: 'Blocos' &#125;
   &#125;
 &#125;
 ```
@@ -51,8 +53,8 @@ Pages are grouped in the sidebar by their **basepath** (second URL segment). The
 ```javascript
 menu: &#123;
   header: &#123;
-    icon: 'widgets',
-    label: 'Components'
+    icon: 'notes',
+    label: 'Content'
   &#125;
 &#125;
 ```
@@ -72,11 +74,11 @@ Each page requires Markdown files following this naming pattern:
 
 `src/pages/&#123;book&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
 
-For example, a page at `/components/d-page` with book `manual`:
+For example, a page at `/content/blocks/headings` with book `manual`:
 
-- `src/pages/manual/components/d-page.overview.en-US.md`
-- `src/pages/manual/components/d-page.overview.pt-BR.md`
-- `src/pages/manual/components/d-page.showcase.en-US.md` (if showcase enabled)
+- `src/pages/manual/content/blocks/headings.overview.en-US.md`
+- `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
+- `src/pages/manual/content/blocks/headings.showcase.en-US.md` (if showcase enabled)
 
 ## Route Generation
 

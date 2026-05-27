@@ -139,6 +139,18 @@ Body copy.
     ])
   })
 
+  it('renders markdown images inside paragraph output', () => {
+    const tokens = tokenizePageSectionSource('![Architecture overview](/images/architecture.png)')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('<img')
+    expect(tokens[0].content).toContain('src="/images/architecture.png"')
+    expect(tokens[0].content).toContain('alt="Architecture overview"')
+  })
+
   it('renders inline math inside paragraph tokens', () => {
     const tokens = tokenizePageSectionSource('Einstein wrote $E = mc^2$ in prose.')
 

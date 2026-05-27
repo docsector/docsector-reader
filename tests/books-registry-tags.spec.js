@@ -16,7 +16,8 @@ describe('book registry tags migration', () => {
     const currentTags = registry.bookTagsByVersion[currentVersionId]
 
     expect(currentTags.guide['en-US']['/guide/getting-started']).toContain('install')
-    expect(currentTags.manual['pt-BR']['/manual/components/d-menu']).toContain('busca')
+    expect(currentTags.manual['pt-BR']['/manual/basic/d-menu']).toContain('busca')
+    expect(currentTags.manual['en-US']['/manual/content/blocks/headings']).toContain('heading')
   })
 
   it('keeps tags scoped by book prefix', async () => {

@@ -2,6 +2,8 @@
 
 As páginas de documentação são definidas em registros separados, como `src/pages/guide.index.js` e `src/pages/manual.index.js`. Cada entrada mapeia um caminho URL para sua configuração, dados traduzíveis e metadata opcional.
 
+No manual atual, é comum manter referências centrais de UI sob `/basic`, blocos de conteúdo voltados ao usuário final sob `/content/blocks`, conceitos estruturais sob `/content/structures` e aliases legados voltados à engine sob `/components`.
+
 ## Estrutura de uma Entrada
 
 ```javascript
@@ -35,11 +37,11 @@ As páginas de documentação são definidas em registros separados, como `src/p
 Defina `config: null` para criar um nó de agrupamento não-navegável. Útil para criar títulos de seção no menu lateral:
 
 ```javascript
-'/components': &#123;
+'/content/blocks': &#123;
   config: null,
   data: &#123;
-    'en-US': &#123; title: 'Components' &#125;,
-    'pt-BR': &#123; title: 'Componentes' &#125;
+    'en-US': &#123; title: 'Blocks' &#125;,
+    'pt-BR': &#123; title: 'Blocos' &#125;
   &#125;
 &#125;
 ```
@@ -51,8 +53,8 @@ Páginas são agrupadas no menu lateral pelo seu **basepath** (segundo segmento 
 ```javascript
 menu: &#123;
   header: &#123;
-    icon: 'widgets',
-    label: 'Components'
+    icon: 'notes',
+    label: 'Conteúdo'
   &#125;
 &#125;
 ```
@@ -72,11 +74,11 @@ Cada página requer arquivos Markdown seguindo este padrão de nomenclatura:
 
 `src/pages/&#123;book&#125;/&#123;path&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`
 
-Por exemplo, uma página em `/components/d-page` com book `manual`:
+Por exemplo, uma página em `/content/blocks/headings` com book `manual`:
 
-- `src/pages/manual/components/d-page.overview.en-US.md`
-- `src/pages/manual/components/d-page.overview.pt-BR.md`
-- `src/pages/manual/components/d-page.showcase.en-US.md` (se showcase habilitado)
+- `src/pages/manual/content/blocks/headings.overview.en-US.md`
+- `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
+- `src/pages/manual/content/blocks/headings.showcase.en-US.md` (se showcase habilitado)
 
 ## Geração de Rotas
 

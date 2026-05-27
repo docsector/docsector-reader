@@ -41,6 +41,12 @@ The `_` object is the root namespace for pages. Page titles and content are **au
 
 Documentation content is written in standard Markdown with some conventions:
 
+See the dedicated manual pages for block-by-block reference:
+
+- [Paragraphs](/manual/content/blocks/paragraphs/overview/), [Headings](/manual/content/blocks/headings/overview/), [Unordered lists](/manual/content/blocks/unordered-lists/overview/), [Ordered lists](/manual/content/blocks/ordered-lists/overview/)
+- [Hints](/manual/content/blocks/hints/overview/), [Quote](/manual/content/blocks/quotes/overview/), [Code blocks](/manual/content/blocks/code-blocks/overview/), [Mermaid diagrams](/manual/content/blocks/mermaid-diagrams/overview/)
+- [Images](/manual/content/blocks/images/overview/), [Math & TeX](/manual/content/blocks/math-and-tex/overview/), [Expandable](/manual/content/blocks/expandable/overview/), [Tables](/manual/content/blocks/tables/overview/), [Raw HTML](/manual/content/blocks/raw-html/overview/), and [Quick Links](/manual/content/blocks/quick-links/overview/)
+
 ### Headings
 
 Use `##` through `######` for section headings. Each heading becomes a navigation anchor in the ToC tree.

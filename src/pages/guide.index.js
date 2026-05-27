@@ -120,34 +120,6 @@ export default {
     }
   },
 
-  '/alerts-and-blockquotes': {
-    config: {
-      icon: 'notification_important',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Alerts & Blockquotes — Documentation of Docsector Reader',
-          'pt-BR': 'Alertas & Blockquotes — Documentacao do Docsector Reader'
-        }
-      },
-      book: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': { title: 'Alerts & Blockquotes' },
-      'pt-BR': { title: 'Alertas & Blockquotes' }
-    },
-    metadata: {
-      tags: {
-        'en-US': 'alerts blockquotes github note tip important warning caution markdown quote admonition',
-        'pt-BR': 'alertas blockquotes github note tip important warning caution markdown citação admonition'
-      }
-    }
-  },
-
   '/theming': {
     config: {
       icon: 'palette',
