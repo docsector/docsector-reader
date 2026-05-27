@@ -64,7 +64,7 @@ After `init`, your project will have this structure:
 - `src/pages/guide/` — Guide-type pages (Markdown files)
 - `src/pages/manual/` — Manual-type pages (Markdown files)
 - `src/i18n/index.js` — i18n loader using `buildMessages()` from the package
-- `src/i18n/tags.hjson` — Search keywords per route and locale
+- `src/pages/*.index.js` — Page registry plus per-page `metadata.tags` for menu search
 - `public/` — Static assets (logo, favicon, images)
 
 The rendering engine (components, layouts, router, store, composables) lives inside the `@docsector/docsector-reader` package — you only maintain your content and configuration.
@@ -74,5 +74,5 @@ The rendering engine (components, layouts, router, store, composables) lives ins
 - Configure your project branding in **docsector.config.js**
 - Define your pages in **src/pages/guide.index.js** (and other `*.index.js` registries)
 - Write your documentation in **Markdown**
-- Add search keywords in **src/i18n/tags.hjson**
+- Add search keywords via **metadata.tags** in each page entry of **src/pages/*.index.js**
 - Customize themes and appearance

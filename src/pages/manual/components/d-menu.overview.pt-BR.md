@@ -14,7 +14,7 @@
 
 O input de busca no topo do menu filtra páginas comparando o termo de busca com:
 
-1. **Tags** — Definidas em `src/i18n/tags.hjson`
+1. **Tags** — Definidas por página em `src/pages/*.index.js` em `metadata.tags`
 2. **Conteúdo da página** — O source Markdown de cada sub-página overview, showcase e vs
 
 A busca tem debounce de 300ms e suporta o locale atual com fallback para en-US.

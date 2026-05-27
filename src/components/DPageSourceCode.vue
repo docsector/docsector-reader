@@ -471,7 +471,7 @@ function printToLetter(number) {
       user-select: none
 
       button
-        padding: 7px 8px 5px
+        padding: 7px 8px 6px
         position: relative
 
     .filename

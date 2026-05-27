@@ -14,7 +14,7 @@
 
 The search input at the top of the menu filters pages by matching the search term against:
 
-1. **Tags** — Defined in `src/i18n/tags.hjson`
+1. **Tags** — Defined per page in `src/pages/*.index.js` under `metadata.tags`
 2. **Page content** — The Markdown source of each page's overview, showcase, and vs subpages
 
 Search is debounced by 300ms and supports the current locale with en-US fallback.

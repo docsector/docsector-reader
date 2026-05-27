@@ -4,11 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
-import tags from '@docsector/tags'
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
-import { allBooks, booksByVersion, versions } from 'virtual:docsector-books'
+import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
 import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
+import { matchesBookSearchTerm } from '../search/book-search'
 
 const $q = useQuasar()
 const $route = useRoute()
@@ -40,6 +40,14 @@ const activeBooks = computed(() => {
   }
 
   return allBooks || []
+})
+
+const activeBookTags = computed(() => {
+  if (activeVersionId.value && bookTagsByVersion?.[activeVersionId.value]) {
+    return bookTagsByVersion[activeVersionId.value]
+  }
+
+  return {}
 })
 
 const draftReleaseStatuses = new Set(['draft', 'unreleased', 'preview', 'next'])
@@ -249,15 +257,14 @@ const searchTermIterate = (items, term, locale) => {
   } else if (typeof items === 'object') {
     const item = items
     const path = item.path
+    const routeBook = item.meta?.book ?? item.meta?.type ?? null
     const tagPath = item.meta?.unversionedPath || path
     founds.value[path] = false
 
-    // @ search in i18n/tags.hjson
-    if (tags[locale] && Object.keys(tags[locale]).length > 0) {
-      founds.value[path] = tags[locale][tagPath]?.indexOf(term) !== -1
-      if (founds.value[path] === false && locale !== 'en-US') {
-        founds.value[path] = tags['en-US'][tagPath]?.indexOf(term) !== -1
-      }
+    // @ search in tags declared by active book index
+    if (routeBook) {
+      const tagsByLocale = activeBookTags.value?.[routeBook] || {}
+      founds.value[path] = matchesBookSearchTerm(tagsByLocale, locale, tagPath, term)
     }
 
     // @ search in Page content

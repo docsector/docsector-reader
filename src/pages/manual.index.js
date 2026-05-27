@@ -1,3 +1,5 @@
+export const tags = {}
+
 export default {
   // =========================================================================
   // Components — Layout
@@ -35,6 +37,12 @@ export default {
     data: {
       'en-US': { title: 'DPage' },
       'pt-BR': { title: 'DPage' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'page container scroll toolbar drawer layout subpage tabs',
+        'pt-BR': 'página container scroll toolbar drawer layout subpágina abas'
+      }
     }
   },
 
@@ -57,6 +65,12 @@ export default {
     data: {
       'en-US': { title: 'DSubpage' },
       'pt-BR': { title: 'DSubpage' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'subpage wrapper composition dh1 section hash',
+        'pt-BR': 'subpágina wrapper composição dh1 seção hash'
+      }
     }
   },
 
@@ -81,6 +95,12 @@ export default {
     data: {
       'en-US': { title: 'DPageSection' },
       'pt-BR': { title: 'DPageSection' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'section markdown renderer tokenizer parser heading paragraph list table code',
+        'pt-BR': 'seção markdown renderizador tokenizador parser título parágrafo lista tabela código'
+      }
     }
   },
 
@@ -106,6 +126,12 @@ export default {
     data: {
       'en-US': { title: 'DH1 – DH6 (Headings)' },
       'pt-BR': { title: 'DH1 – DH6 (Títulos)' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'h1 h2 h3 h4 h5 h6 heading title anchor navigation toc',
+        'pt-BR': 'h1 h2 h3 h4 h5 h6 título heading âncora navegação toc'
+      }
     }
   },
 
@@ -128,6 +154,12 @@ export default {
     data: {
       'en-US': { title: 'DPageSourceCode' },
       'pt-BR': { title: 'DPageSourceCode' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'code syntax highlight prism php bash html copy clipboard line numbers',
+        'pt-BR': 'código sintaxe highlight prism php bash html copiar clipboard números linha'
+      }
     }
   },
 
@@ -174,6 +206,12 @@ export default {
     data: {
       'en-US': { title: 'DPageBlockquote' },
       'pt-BR': { title: 'DPageBlockquote' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'blockquote important warning note quote',
+        'pt-BR': 'blockquote importante aviso nota citação'
+      }
     }
   },
 
@@ -200,6 +238,12 @@ export default {
     data: {
       'en-US': { title: 'DMenu' },
       'pt-BR': { title: 'DMenu' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'menu sidebar navigation search branding links tree expansion',
+        'pt-BR': 'menu lateral navegação busca branding links árvore expansão'
+      }
     }
   },
 
@@ -222,6 +266,12 @@ export default {
     data: {
       'en-US': { title: 'DPageAnchor' },
       'pt-BR': { title: 'DPageAnchor' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'anchor toc table contents tree drawer navigation scroll',
+        'pt-BR': 'âncora toc índice conteúdo árvore drawer navegação scroll'
+      }
     }
   },
 
@@ -244,6 +294,12 @@ export default {
     data: {
       'en-US': { title: 'DPageMeta' },
       'pt-BR': { title: 'DPageMeta' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'meta footer edit github translation progress prev next navigation',
+        'pt-BR': 'meta rodapé editar github tradução progresso anterior próximo navegação'
+      }
     }
   },
 
@@ -271,6 +327,12 @@ export default {
     data: {
       'en-US': { title: 'QZoom' },
       'pt-BR': { title: 'QZoom' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'zoom overlay fullscreen scale mouse wheel escape',
+        'pt-BR': 'zoom overlay tela cheia escala roda mouse escape'
+      }
     }
   },
 
@@ -304,6 +366,12 @@ export default {
     data: {
       'en-US': { title: 'useNavigator' },
       'pt-BR': { title: 'useNavigator' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'navigator composable anchor scroll register navigate toc',
+        'pt-BR': 'navegador composable âncora scroll registro navegar toc'
+      }
     }
   },
 
@@ -337,6 +405,12 @@ export default {
     data: {
       'en-US': { title: 'Vuex Modules' },
       'pt-BR': { title: 'Módulos Vuex' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'vuex store state mutations getters actions app i18n page layout settings',
+        'pt-BR': 'vuex store estado mutations getters actions app i18n page layout settings'
+      }
     }
   }
 }

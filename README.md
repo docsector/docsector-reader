@@ -668,7 +668,6 @@ export default configure(() => {
 | `pages` | project `src/pages/` | consumer `src/pages/` |
 | `src/i18n` | project `src/i18n/` | consumer `src/i18n/` |
 | `docsector.config.js` | project root | consumer root |
-| `@docsector/tags` | project `src/i18n/tags.hjson` | consumer `src/i18n/tags.hjson` |
 
 ---
 
@@ -810,17 +809,29 @@ src/i18n/languages/en-US.hjson
 src/i18n/languages/pt-BR.hjson
 ```
 
-### Search tags (`src/i18n/tags.hjson`)
+### Search tags (`src/pages/*.index.js`)
 
-Provide search keywords per route and locale for menu search:
+Define search keywords per page using `metadata.tags` in each book registry file:
 
-```hjson
-{
-  "en-US": {
-    "/manual/my-section/my-page": "keyword1 keyword2 keyword3"
-  }
-  "pt-BR": {
-    "/manual/my-section/my-page": "palavra1 palavra2 palavra3"
+```javascript
+export default {
+  '/my-section/my-page': {
+    config: {
+      icon: 'description',
+      book: 'manual',
+      status: 'done',
+      subpages: { showcase: false }
+    },
+    data: {
+      'en-US': { title: 'My Page' },
+      'pt-BR': { title: 'Minha Página' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'keyword1 keyword2 keyword3',
+        'pt-BR': 'palavra1 palavra2 palavra3'
+      }
+    }
   }
 }
 ```
@@ -845,7 +856,6 @@ my-docs/
 │   │   └── manual/            # Manual pages (.md files)
 │   ├── i18n/
 │   │   ├── index.js           # Uses buildMessages() from engine
-│   │   ├── tags.hjson         # Search keywords per route/locale
 │   │   └── languages/         # HJSON locale files
 │   ├── css/
 │   │   └── app.sass           # Optional overrides (imports engine CSS)
@@ -876,6 +886,31 @@ export default defineBook({
     inactive: 'secondary'
   }
 })
+```
+
+Declare menu search tags in each page entry under `metadata.tags`:
+
+```javascript
+export default {
+  '/getting-started': {
+    config: {
+      icon: 'flag',
+      book: 'guide',
+      status: 'done',
+      subpages: { showcase: false }
+    },
+    data: {
+      'en-US': { title: 'Getting Started' },
+      'pt-BR': { title: 'Começando' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'install setup start begin quick project structure',
+        'pt-BR': 'instalar configurar iniciar começar rápido projeto estrutura'
+      }
+    }
+  }
+}
 ```
 
 Notes:

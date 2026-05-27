@@ -220,6 +220,59 @@ function resolvePageBook (config, fallbackBook = 'manual') {
   return config.book ?? config.type ?? fallbackBook
 }
 
+function normalizePagePath (pagePath) {
+  const normalized = String(pagePath || '').trim()
+  if (normalized === '') return ''
+  return normalized.startsWith('/') ? normalized : `/${normalized}`
+}
+
+function extractTagsFromRoutes (routes = {}, fallbackBook = 'manual') {
+  const extracted = {}
+
+  for (const [pagePath, page] of Object.entries(routes || {})) {
+    if (!page || typeof page !== 'object') continue
+
+    const metadata = page.metadata
+    if (!metadata || typeof metadata !== 'object') continue
+
+    const pageTags = metadata.tags
+    if (!pageTags || typeof pageTags !== 'object' || Array.isArray(pageTags)) continue
+
+    const bookName = resolvePageBook(page.config, fallbackBook)
+    const normalizedPath = normalizePagePath(pagePath)
+    const unversionedPath = `/${bookName}${normalizedPath}`
+
+    for (const [locale, terms] of Object.entries(pageTags)) {
+      if (typeof terms !== 'string' || terms.trim().length === 0) continue
+
+      if (!extracted[locale]) {
+        extracted[locale] = {}
+      }
+
+      extracted[locale][unversionedPath] = terms
+    }
+  }
+
+  return extracted
+}
+
+function mergeBookTags (legacyTags = {}, metadataTags = {}) {
+  const merged = {}
+  const locales = new Set([
+    ...Object.keys(legacyTags || {}),
+    ...Object.keys(metadataTags || {})
+  ])
+
+  for (const locale of locales) {
+    merged[locale] = {
+      ...(legacyTags?.[locale] || {}),
+      ...(metadataTags?.[locale] || {})
+    }
+  }
+
+  return merged
+}
+
 const DEFAULT_BOOK_COLORS = Object.freeze({
   active: 'white',
   inactive: 'rgba(255, 255, 255, 0.72)'
@@ -364,7 +417,8 @@ export const booksByVersion = {
     books: {
       manual: {
         config: defaultBook,
-        routes: normalizedPages
+        routes: normalizedPages,
+        tags: {}
       }
     },
     allBooks: [defaultBook]
@@ -372,6 +426,12 @@ export const booksByVersion = {
 }
 
 export const books = booksByVersion[currentVersion.id].books
+export const bookTagsByVersion = {
+  [currentVersion.id]: {
+    manual: {}
+  }
+}
+export const bookTags = bookTagsByVersion[currentVersion.id]
 
 export const pageEntries = Object.entries(normalizedPages).map(([pagePath, page]) => ({
   version: currentVersion.id,
@@ -398,8 +458,8 @@ export default books
 
   for (const [index, entry] of bookEntries.entries()) {
     imports.push(`import __book_${index} from 'pages/${entry.bookFile}'`)
-    imports.push(`import __routes_${index} from 'pages/${entry.indexFile}'`)
-    rows.push(`  { versionId: ${JSON.stringify(entry.versionId)}, currentVersion: ${JSON.stringify(entry.currentVersion)}, routePrefix: ${JSON.stringify(entry.routePrefix)}, sourceRoot: ${JSON.stringify(entry.sourceRoot)}, fallbackId: ${JSON.stringify(entry.id)}, config: __book_${index}, routes: __routes_${index} }`)
+    imports.push(`import * as __index_${index} from 'pages/${entry.indexFile}'`)
+    rows.push(`  { versionId: ${JSON.stringify(entry.versionId)}, currentVersion: ${JSON.stringify(entry.currentVersion)}, routePrefix: ${JSON.stringify(entry.routePrefix)}, sourceRoot: ${JSON.stringify(entry.sourceRoot)}, fallbackId: ${JSON.stringify(entry.id)}, config: __book_${index}, routes: __index_${index}.default || {}, legacyTags: __index_${index}.tags || {} }`)
     discoveredVersionIds.set(entry.versionId, {
       id: entry.versionId,
       current: entry.currentVersion,
@@ -480,6 +540,64 @@ const normalizeBookColor = (rawColor) => {
   }
 
   return { ...DEFAULT_BOOK_COLORS }
+}
+
+const resolvePageBook = (config, fallbackBook = 'manual') => {
+  if (!config || typeof config !== 'object') return fallbackBook
+  return config.book ?? config.type ?? fallbackBook
+}
+
+const normalizePagePath = (pagePath) => {
+  const normalized = String(pagePath || '').trim()
+  if (normalized === '') return ''
+  return normalized.startsWith('/') ? normalized : '/' + normalized
+}
+
+const extractTagsFromRoutes = (routes = {}, fallbackBook = 'manual') => {
+  const extracted = {}
+
+  for (const [pagePath, page] of Object.entries(routes || {})) {
+    if (!page || typeof page !== 'object') continue
+
+    const metadata = page.metadata
+    if (!metadata || typeof metadata !== 'object') continue
+
+    const pageTags = metadata.tags
+    if (!pageTags || typeof pageTags !== 'object' || Array.isArray(pageTags)) continue
+
+    const bookName = resolvePageBook(page.config, fallbackBook)
+    const normalizedPath = normalizePagePath(pagePath)
+    const unversionedPath = '/' + bookName + normalizedPath
+
+    for (const [locale, terms] of Object.entries(pageTags)) {
+      if (typeof terms !== 'string' || terms.trim().length === 0) continue
+
+      if (!extracted[locale]) {
+        extracted[locale] = {}
+      }
+
+      extracted[locale][unversionedPath] = terms
+    }
+  }
+
+  return extracted
+}
+
+const mergeBookTags = (legacyTags = {}, metadataTags = {}) => {
+  const merged = {}
+  const locales = new Set([
+    ...Object.keys(legacyTags || {}),
+    ...Object.keys(metadataTags || {})
+  ])
+
+  for (const locale of locales) {
+    merged[locale] = {
+      ...(legacyTags?.[locale] || {}),
+      ...(metadataTags?.[locale] || {})
+    }
+  }
+
+  return merged
 }
 
 const normalizeVersionDescriptor = (raw, fallback = {}) => {
@@ -571,6 +689,8 @@ export const booksByVersion = entries.reduce((accumulator, entry, index) => {
   const version = resolveEntryVersion(entry)
   const config = entry.config || {}
   const resolvedId = config.id || entry.fallbackId || ('book-' + (index + 1))
+  const metadataTags = extractTagsFromRoutes(entry.routes || {}, resolvedId)
+  const tags = mergeBookTags(entry.legacyTags || {}, metadataTags)
   const label = config.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
   const normalizedConfig = {
     ...config,
@@ -593,7 +713,8 @@ export const booksByVersion = entries.reduce((accumulator, entry, index) => {
 
   accumulator[version.id].books[resolvedId] = {
     config: normalizedConfig,
-    routes: entry.routes || {}
+    routes: entry.routes || {},
+    tags
   }
   accumulator[version.id].allBooks = Object.values(accumulator[version.id].books).map(book => book.config)
   return accumulator
@@ -608,6 +729,16 @@ export const allPages = Object.values(books).reduce((accumulator, book) => {
     ...(book.routes || {})
   }
 }, {})
+
+export const bookTagsByVersion = Object.entries(booksByVersion).reduce((accumulator, [versionId, versionBooks]) => {
+  accumulator[versionId] = Object.entries(versionBooks?.books || {}).reduce((bookAccumulator, [bookId, book]) => {
+    bookAccumulator[bookId] = book?.tags || {}
+    return bookAccumulator
+  }, {})
+  return accumulator
+}, {})
+
+export const bookTags = bookTagsByVersion[currentVersion.id] || {}
 
 export const pageEntries = Object.entries(booksByVersion).flatMap(([versionId, versionBooks]) => {
   const version = versionBooks.version
@@ -644,7 +775,7 @@ export default books
 /**
  * Load books and merged pages for build-time plugins (Node context).
  */
-async function loadBooksRegistry (projectRoot) {
+export async function loadBooksRegistry (projectRoot) {
   const entries = getBookRegistryEntries(projectRoot)
 
   // Legacy fallback
@@ -700,6 +831,14 @@ async function loadBooksRegistry (projectRoot) {
           books,
           allBooks: [defaultBook]
         }
+      },
+      bookTagsByVersion: {
+        [currentVersion.id]: {
+          manual: {}
+        }
+      },
+      bookTags: {
+        manual: {}
       },
       pageEntries,
       books,
@@ -822,19 +961,21 @@ async function loadBooksRegistry (projectRoot) {
   const booksByVersion = {}
   const currentBooks = {}
   const allPages = {}
+  const bookTagsByVersion = {}
 
   for (const [index, entry] of entries.entries()) {
     const rawVersion = entry.currentVersion || entry.versionId === CURRENT_VERSION_KEY
       ? currentVersion
       : (versionById[entry.versionId] || normalizeVersionDescriptor(null, entry))
     const { default: rawConfig = {} } = await import(pathToFileURL(entry.bookPath).href)
-    const { default: routes = {} } = await import(pathToFileURL(entry.indexPath).href)
+    const { default: routes = {}, tags: legacyTags = {} } = await import(pathToFileURL(entry.indexPath).href)
 
     const config = {
       ...normalizeBookConfig(rawConfig, entry.id, index),
       version: rawVersion.id,
       versionPrefix: rawVersion.routePrefix
     }
+    const tags = mergeBookTags(legacyTags, extractTagsFromRoutes(routes, config.id))
 
     if (!booksByVersion[rawVersion.id]) {
       booksByVersion[rawVersion.id] = {
@@ -846,13 +987,20 @@ async function loadBooksRegistry (projectRoot) {
 
     booksByVersion[rawVersion.id].books[config.id] = {
       config,
-      routes
+      routes,
+      tags
     }
+
+    if (!bookTagsByVersion[rawVersion.id]) {
+      bookTagsByVersion[rawVersion.id] = {}
+    }
+    bookTagsByVersion[rawVersion.id][config.id] = tags || {}
 
     if (rawVersion.current) {
       currentBooks[config.id] = {
         config,
-        routes
+        routes,
+        tags
       }
       Object.assign(allPages, routes || {})
     }
@@ -868,6 +1016,8 @@ async function loadBooksRegistry (projectRoot) {
   return {
     versions,
     booksByVersion,
+    bookTagsByVersion,
+    bookTags: bookTagsByVersion[currentVersion.id] || {},
     pageEntries,
     books: currentBooks,
     allBooks,
@@ -2886,11 +3036,6 @@ export function createQuasarConfig (options = {}) {
           // Content from the consumer project:
           viteConf.resolve.alias.pages = resolve(projectRoot, 'src/pages')
         }
-
-        // Tags for menu search — consumer's tags if available, else package's
-        const consumerTags = resolve(projectRoot, 'src/i18n/tags.hjson')
-        const packageTags = resolve(packageRoot, 'src/i18n/tags.hjson')
-        viteConf.resolve.alias['@docsector/tags'] = existsSync(consumerTags) ? consumerTags : packageTags
 
         // docsector.config.js — always from consumer/project root
         viteConf.resolve.alias['docsector.config.js'] = resolve(projectRoot, 'docsector.config.js')

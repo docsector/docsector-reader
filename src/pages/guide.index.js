@@ -1,3 +1,5 @@
+export const tags = {}
+
 export default {
   '/getting-started': {
     config: {
@@ -23,6 +25,12 @@ export default {
     data: {
       'en-US': { title: 'Getting Started' },
       'pt-BR': { title: 'Começando' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'install setup start begin quick project structure',
+        'pt-BR': 'instalar configurar iniciar começar rápido projeto estrutura'
+      }
     }
   },
 
@@ -48,6 +56,12 @@ export default {
     data: {
       'en-US': { title: 'Configuration' },
       'pt-BR': { title: 'Configuração' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'config branding logo name version language links github docsector.config.js',
+        'pt-BR': 'config branding logo nome versão idioma links github docsector.config.js'
+      }
     }
   },
 
@@ -71,6 +85,12 @@ export default {
     data: {
       'en-US': { title: 'Pages & Routing' },
       'pt-BR': { title: 'Páginas & Rotas' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'pages routes routing registry menu navigation path type status subpages',
+        'pt-BR': 'páginas rotas roteamento registro menu navegação caminho tipo status subpages'
+      }
     }
   },
 
@@ -93,6 +113,12 @@ export default {
     data: {
       'en-US': { title: 'i18n & Markdown' },
       'pt-BR': { title: 'i18n & Markdown' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'i18n internationalization language locale hjson markdown content translation',
+        'pt-BR': 'i18n internacionalização idioma locale hjson markdown conteúdo tradução'
+      }
     }
   },
 
@@ -115,6 +141,12 @@ export default {
     data: {
       'en-US': { title: 'Alerts & Blockquotes' },
       'pt-BR': { title: 'Alertas & Blockquotes' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'alerts blockquotes github note tip important warning caution markdown quote admonition',
+        'pt-BR': 'alertas blockquotes github note tip important warning caution markdown citação admonition'
+      }
     }
   },
 
@@ -137,6 +169,12 @@ export default {
     data: {
       'en-US': { title: 'Theming' },
       'pt-BR': { title: 'Temas' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'theme dark light mode color css sass variables styling',
+        'pt-BR': 'tema escuro claro modo cor css sass variáveis estilização'
+      }
     }
   },
 
@@ -159,6 +197,12 @@ export default {
     data: {
       'en-US': { title: 'Deployment' },
       'pt-BR': { title: 'Deploy' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'deploy hosting production build static nginx netlify vercel github pages',
+        'pt-BR': 'deploy hospedagem produção build estático nginx netlify vercel github pages'
+      }
     }
   },
 
@@ -181,6 +225,12 @@ export default {
     data: {
       'en-US': { title: 'Plugins' },
       'pt-BR': { title: 'Plugins' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'plugins extensions addons customize',
+        'pt-BR': 'plugins extensões complementos customizar'
+      }
     }
   }
 }

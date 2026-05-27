@@ -64,7 +64,7 @@ Após o `init`, seu projeto terá esta estrutura:
 - `src/pages/guide/` — Páginas tipo guia (arquivos Markdown)
 - `src/pages/manual/` — Páginas tipo manual (arquivos Markdown)
 - `src/i18n/index.js` — Loader i18n usando `buildMessages()` do pacote
-- `src/i18n/tags.hjson` — Palavras-chave de busca por rota e idioma
+- `src/pages/*.index.js` — Registro de páginas com `metadata.tags` por página para busca no menu
 - `public/` — Assets estáticos (logo, favicon, imagens)
 
 O motor de renderização (componentes, layouts, router, store, composables) fica dentro do pacote `@docsector/docsector-reader` — você só mantém seu conteúdo e configuração.
@@ -74,5 +74,5 @@ O motor de renderização (componentes, layouts, router, store, composables) fic
 - Configure o branding do seu projeto em **docsector.config.js**
 - Defina suas páginas em **src/pages/guide.index.js** (e outros registros `*.index.js`)
 - Escreva sua documentação em **Markdown**
-- Adicione palavras-chave de busca em **src/i18n/tags.hjson**
+- Adicione palavras-chave de busca via **metadata.tags** em cada entrada de página em **src/pages/*.index.js**
 - Personalize temas e aparência
