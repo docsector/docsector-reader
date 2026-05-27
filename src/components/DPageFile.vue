@@ -293,6 +293,8 @@ body.body--light
   --d-page-file-bg: linear-gradient(180deg, #faf8f2 0%, #ffffff 100%)
   --d-page-file-border: rgba(101, 85, 41, 0.18)
   --d-page-file-shadow: rgba(101, 85, 41, 0.08)
+  --d-page-file-media-bg: rgba(255, 255, 255, 0.82)
+  --d-page-file-media-border: rgba(101, 85, 41, 0.1)
   --d-page-file-meta: #665f4f
   --d-page-file-caption: #4d5563
   --d-page-file-accent: #655529
@@ -304,6 +306,8 @@ body.body--dark
   --d-page-file-bg: linear-gradient(180deg, rgba(255, 248, 235, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)
   --d-page-file-border: rgba(255, 235, 194, 0.14)
   --d-page-file-shadow: rgba(0, 0, 0, 0.28)
+  --d-page-file-media-bg: rgba(255, 255, 255, 0.94)
+  --d-page-file-media-border: rgba(255, 255, 255, 0.18)
   --d-page-file-meta: rgba(255, 255, 255, 0.7)
   --d-page-file-caption: rgba(255, 255, 255, 0.9)
   --d-page-file-accent: #d7bc7e
@@ -339,7 +343,9 @@ body.body--dark
   align-items: center
   justify-content: center
   border-radius: 16px
-  background: rgba(255, 255, 255, 0.35)
+  background: var(--d-page-file-media-bg)
+  box-shadow: inset 0 0 0 1px var(--d-page-file-media-border)
+  color: var(--d-page-file-accent)
 
 .d-page-file__size
   width: 100%
