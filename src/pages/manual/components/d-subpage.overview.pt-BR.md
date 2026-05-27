@@ -9,7 +9,7 @@ DSubpage gera um ID numérico determinístico a partir do caminho da rota atual 
 ## Template
 
 ```html
-<d-page>
+<d-page show-back-to-top-control>
   <header>
     <d-h1 :id="0" />
   </header>
@@ -54,3 +54,7 @@ DSubpage é usado automaticamente pelo roteador para todas as páginas de docume
 - `DSubpage` **usa** `DPage` como container
 - `DPage` cuida do layout (scroll, toolbar, drawer)
 - `DSubpage` cuida da composição de conteúdo (H1 + seções)
+
+## Controle Integrado de Voltar ao Topo
+
+As sub-páginas de documentação roteadas habilitam automaticamente o controle flutuante de voltar ao topo do DPage. O controle só é exibido quando o conteúdo realmente tem overflow, fica visível após uma pequena rolagem do leitor e mostra o progresso atual de leitura com um indicador circular.

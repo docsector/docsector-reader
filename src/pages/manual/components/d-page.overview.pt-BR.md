@@ -9,6 +9,7 @@ Toda página de documentação é renderizada dentro de uma instância de `DPage
 | Prop | Tipo | Padrão | Descrição |
 |------|------|--------|-----------|
 | `disableNav` | `Boolean` | `false` | Oculta o rodapé de navegação DPageMeta |
+| `showBackToTopControl` | `Boolean` | `false` | Habilita o controle flutuante de voltar ao topo com progresso circular de leitura |
 
 ## Estrutura do Template
 
@@ -45,6 +46,8 @@ DPage lê a configuração `meta.subpages` da rota para determinar quais abas ex
 ## Comportamento de Scroll
 
 DPage reseta a posição de scroll nas mudanças de rota via `router.beforeEach`. O observador de scroll monitora a posição vertical e atualiza a seleção de âncora via composable `useNavigator`.
+
+Quando `showBackToTopControl` está habilitada, DPage também deriva o progresso de leitura a partir da mesma área de scroll. O controle flutuante fica oculto no topo, aparece após uma pequena rolagem, exibe progresso circular e retorna para a âncora `0` ao ser clicado.
 
 ## Integração com Store
 

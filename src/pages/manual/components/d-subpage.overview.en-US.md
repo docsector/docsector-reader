@@ -9,7 +9,7 @@ DSubpage generates a deterministic numeric ID from the current route path using 
 ## Template
 
 ```html
-<d-page>
+<d-page show-back-to-top-control>
   <header>
     <d-h1 :id="0" />
   </header>
@@ -54,3 +54,7 @@ DSubpage is automatically used by the router for all documentation pages. You do
 - `DSubpage` **uses** `DPage` as its container
 - `DPage` handles layout (scroll, toolbar, drawer)
 - `DSubpage` handles content composition (H1 + sections)
+
+## Built-in Back to Top Control
+
+Routed documentation subpages enable DPage's floating back-to-top control automatically. The control is only shown when the content actually overflows, becomes visible after the reader scrolls a little, and visualizes the current reading progress with a circular indicator.

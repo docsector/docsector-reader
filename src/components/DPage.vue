@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 
 import useNavigator from '../composables/useNavigator'
+import { getReadingProgressState } from '../composables/useReadingProgress'
 
 import DPageAnchor from './DPageAnchor.vue'
 import DPageMeta from './DPageMeta.vue'
@@ -20,6 +21,10 @@ const props = defineProps({
   disableNav: {
     type: Boolean,
     default: false
+  },
+  showBackToTopControl: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -29,6 +34,26 @@ const submenu = ref(null)
 const pageMinHeight = ref('calc(100vh - 86px)')
 const submenuHeight = ref('36px')
 const pageBottomInset = ref('0px')
+const readingProgress = ref(getReadingProgressState())
+
+const getPageScrollContainer = () => {
+  return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
+}
+
+const syncReadingProgress = (scrollTop = null) => {
+  const container = getPageScrollContainer()
+
+  if (!container) {
+    readingProgress.value = getReadingProgressState()
+    return
+  }
+
+  readingProgress.value = getReadingProgressState({
+    scrollTop: scrollTop ?? container.scrollTop,
+    scrollHeight: container.scrollHeight,
+    clientHeight: container.clientHeight
+  })
+}
 
 const updatePageMinHeight = () => {
   const pageContainerEl = pageContainer.value?.$el || pageContainer.value
@@ -47,6 +72,7 @@ const updatePageMinHeight = () => {
   pageMinHeight.value = `calc(100vh - ${totalOffset}px)`
   submenuHeight.value = `${Math.max(36, Math.round(measuredSubmenuHeight))}px`
   pageBottomInset.value = isMobile ? submenuHeight.value : '0px'
+  syncReadingProgress()
 }
 
 const schedulePageMinHeightUpdate = () => {
@@ -79,6 +105,12 @@ const main = computed(() => {
     default:
       return 'overview'
   }
+})
+const shouldShowBackToTopControl = computed(() => {
+  return props.showBackToTopControl && readingProgress.value.hasOverflow && readingProgress.value.isVisible
+})
+const backToTopRightOffset = computed(() => {
+  return layoutMeta.value && !$q.screen.lt.md ? '332px' : '24px'
 })
 
 const toggleSectionsTree = () => {
@@ -133,10 +165,7 @@ const resetPageScroll = () => {
   if (pageScrollArea.value !== null) {
     pageScrollArea.value.setScrollPosition('vertical', 0, 0)
   }
-}
-
-const getPageScrollContainer = () => {
-  return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
+  syncReadingProgress(0)
 }
 
 const isEditableTarget = (target) => {
@@ -208,6 +237,15 @@ const handleMainScrollKeys = (event) => {
   container.scrollTop = nextTop
 }
 
+const handlePageScroll = (scrollState) => {
+  scrolling(scrollState)
+  syncReadingProgress(scrollState?.position?.top)
+}
+
+const scrollToTop = () => {
+  navigate(0)
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleMainScrollKeys)
   window.addEventListener('resize', schedulePageMinHeightUpdate)
@@ -236,6 +274,7 @@ onBeforeUnmount(() => {
 watch(() => route.fullPath, () => {
   nextTick(() => {
     schedulePageMinHeightUpdate()
+    syncReadingProgress(0)
   })
 })
 </script>
@@ -292,9 +331,37 @@ watch(() => route.fullPath, () => {
         <slot />
       </div>
       <d-page-meta v-if="!disableNav" />
-      <q-scroll-observer @scroll="scrolling" :debounce="300" />
+      <q-scroll-observer @scroll="handlePageScroll" :debounce="300" />
     </q-scroll-area>
   </q-page>
+
+  <div
+    v-if="shouldShowBackToTopControl"
+    class="d-back-to-top"
+    :style="{ '--d-back-to-top-right': backToTopRightOffset }"
+  >
+    <q-circular-progress
+      class="d-back-to-top__progress"
+      :value="readingProgress.progressPercent"
+      size="58px"
+      :thickness="0.16"
+      color="primary"
+      track-color="grey-5"
+    />
+    <q-btn
+      class="d-back-to-top__button"
+      round
+      dense
+      unelevated
+      color="dark"
+      text-color="white"
+      icon="north"
+      :aria-label="$t('system.backToTop')"
+      @click="scrollToTop"
+    >
+      <q-tooltip anchor="top middle" self="bottom middle" :offset="[10, 10]">{{ $t('system.backToTop') }}</q-tooltip>
+    </q-btn>
+  </div>
 
   <q-drawer elevated show-if-above side="right" v-model="layoutMeta">
     <d-page-anchor id="anchor" />
@@ -320,6 +387,25 @@ watch(() => route.fullPath, () => {
 
 #page
   min-height: var(--d-page-min-height, calc(100vh - 86px)) !important
+
+.d-back-to-top
+  position: fixed
+  right: var(--d-back-to-top-right, 24px)
+  bottom: calc(24px + var(--d-page-bottom-inset, 0px) + env(safe-area-inset-bottom, 0px))
+  width: 58px
+  height: 58px
+  z-index: 1200
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.2))
+
+  .d-back-to-top__progress,
+  .d-back-to-top__button
+    position: absolute
+    inset: 0
+
+  .d-back-to-top__button
+    margin: auto
+    width: 40px
+    height: 40px
 
 #scroll-container
   width: 100%
@@ -425,4 +511,12 @@ body.mobile.body--dark
 body.mobile
   .q-drawer--right
     background: rgba(255, 255, 255, 0.7)
+
+body.body--light
+  .d-back-to-top__progress
+    color: var(--q-primary)
+
+body.body--dark
+  .d-back-to-top__progress
+    color: #58d1a8
 </style>

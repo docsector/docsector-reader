@@ -22,7 +22,7 @@ const id = computed(() => {
 </script>
 
 <template>
-<d-page>
+<d-page show-back-to-top-control>
   <header>
     <d-page-bar />
     <hr />

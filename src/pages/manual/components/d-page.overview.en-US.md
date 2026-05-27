@@ -9,6 +9,7 @@ Every documentation page is rendered inside a `DPage` instance.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `disableNav` | `Boolean` | `false` | Hides the DPageMeta navigation footer |
+| `showBackToTopControl` | `Boolean` | `false` | Enables the floating back-to-top control with circular reading progress |
 
 ## Template Structure
 
@@ -45,6 +46,8 @@ DPage reads the route's `meta.subpages` configuration to determine which tabs to
 ## Scroll Behavior
 
 DPage resets the scroll position on route changes via `router.beforeEach`. The scroll observer monitors vertical scroll position and updates the anchor selection via the `useNavigator` composable.
+
+When `showBackToTopControl` is enabled, DPage also derives reading progress from the same scroll container. The floating control stays hidden at the top, appears after a small amount of scroll, shows circular progress, and returns to anchor `0` when clicked.
 
 ## Store Integration
 

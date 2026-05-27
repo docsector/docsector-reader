@@ -54,6 +54,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
 - 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and dock to the bottom on mobile
+- ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress that stays above the mobile subpage toolbar
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, `empty`, or `new` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
