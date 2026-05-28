@@ -2,25 +2,25 @@
 
 ### Básico
 
-<d-expandable title="Por que esconder este conteúdo?">
+<d-block-expandable title="Por que esconder este conteúdo?">
 
 Use blocos expansíveis quando a seção principal deve continuar concisa, mas o leitor ainda pode precisar de mais detalhes.
 
-</d-expandable>
+</d-block-expandable>
 
 ### Aberto por Padrão
 
-<d-expandable title="Checklist de release" open="true">
+<d-block-expandable title="Checklist de release" open="true">
 
 - Revisar breaking changes
 - Atualizar screenshots
 - Rodar smoke tests
 
-</d-expandable>
+</d-block-expandable>
 
 ### Conteúdo Rico
 
-<d-expandable title="Apêndice de deploy">
+<d-block-expandable title="Apêndice de deploy">
 
 > [!TIP]
 > Mantenha o fluxo principal na seção principal e mova detalhes opcionais para cá.
@@ -30,4 +30,4 @@ npm install
 npm run build
 ```
 
-</d-expandable>
+</d-block-expandable>

@@ -2,7 +2,7 @@
 const BASE_URL = import.meta.env.BASE_URL || '/'
 
 defineOptions({
-  name: 'DBlockCard'
+  name: 'DBlockCards'
 })
 
 const props = defineProps({

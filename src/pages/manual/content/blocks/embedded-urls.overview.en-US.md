@@ -7,15 +7,15 @@ This block is a higher-level alternative to raw iframe markup when the source is
 ## Markdown Syntax
 
 ```html
-<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
+<d-block-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
 Optional caption rendered as inline Markdown.
-</d-embedded-url>
+</d-block-embedded-url>
 ```
 
 You can also omit the caption body when the provider preview already gives enough context:
 
 ```html
-<d-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
+<d-block-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
 ```
 
 ## Supported Providers

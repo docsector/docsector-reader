@@ -7,15 +7,15 @@ Eles são úteis para checklists, bundles de exemplo, PDFs, notas de release e q
 ## Sintaxe em Markdown
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" title="Checklist de release" size="1 KB">
+<d-block-file src="/files/manual/release-checklist.txt" title="Checklist de release" size="1 KB">
 Baixe o anexo de exemplo usado neste manual.
-</d-file>
+</d-block-file>
 ```
 
 Você também pode omitir o corpo da legenda quando o nome do arquivo já fornece contexto suficiente:
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" size="1 KB" />
+<d-block-file src="/files/manual/release-checklist.txt" size="1 KB" />
 ```
 
 ## Observações

@@ -2,6 +2,10 @@
 // defineProps is a compiler macro in <script setup>, no import needed
 import { computed } from 'vue'
 
+defineOptions({
+  name: 'DBlockBlockquote'
+})
+
 const props = defineProps({
   message: {
     type: String,

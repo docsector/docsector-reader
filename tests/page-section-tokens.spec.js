@@ -16,11 +16,11 @@ describe('page-section-tokens', () => {
 
   it('tokenizes expandable blocks with collapsed default state', () => {
     const tokens = tokenizePageSectionSource(`
-<d-expandable title="More details">
+<d-block-expandable title="More details">
 
 Hidden *content*.
 
-</d-expandable>
+</d-block-expandable>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -38,7 +38,7 @@ Hidden *content*.
 
   it('preserves rich nested content inside expandable blocks', () => {
     const tokens = tokenizePageSectionSource(`
-<d-expandable title="Advanced" open="true">
+<d-block-expandable title="Advanced" open="true">
 
 > [!TIP]
 > Keep it short.
@@ -47,7 +47,7 @@ Hidden *content*.
 echo "hi"
   ~~~
 
-</d-expandable>
+</d-block-expandable>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -69,13 +69,13 @@ echo "hi"
 
   it('flattens headings inside expandable blocks to keep the page toc stable', () => {
     const tokens = tokenizePageSectionSource(`
-<d-expandable title="Flatten headings">
+<d-block-expandable title="Flatten headings">
 
 ## Internal heading
 
 Body copy.
 
-</d-expandable>
+</d-block-expandable>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -92,14 +92,14 @@ Body copy.
 
   it('keeps custom element syntax literal inside inline and fenced code', () => {
     const tokens = tokenizePageSectionSource(`
-Use \`<d-expandable title="Literal">inline</d-expandable>\` in docs.
+Use \`<d-block-expandable title="Literal">inline</d-block-expandable>\` in docs.
 
 ~~~~html
-<d-expandable title="Literal">
+<d-block-expandable title="Literal">
 
 Body copy.
 
-</d-expandable>
+</d-block-expandable>
 ~~~~
 `)
 
@@ -107,19 +107,19 @@ Body copy.
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
-    expect(tokens[0].content).toContain('&lt;d-expandable title=&quot;Literal&quot;&gt;inline&lt;/d-expandable&gt;')
+    expect(tokens[0].content).toContain('&lt;d-block-expandable title=&quot;Literal&quot;&gt;inline&lt;/d-block-expandable&gt;')
     expect(tokens[1]).toMatchObject({
       tag: 'code',
       info: 'html'
     })
-    expect(tokens[1].content).toContain('<d-expandable title="Literal">')
+    expect(tokens[1].content).toContain('<d-block-expandable title="Literal">')
   })
 
   it('keeps quick links tokenization working', () => {
     const tokens = tokenizePageSectionSource(`
-<d-quick-links title="Get started">
-  <d-quick-link title="Install" description="Set up the project" to="/guide/getting-started" />
-</d-quick-links>
+<d-block-quick-links title="Get started">
+  <d-block-quick-link title="Install" description="Set up the project" to="/guide/getting-started" />
+</d-block-quick-links>
 `)
 
     expect(tokens).toEqual([
@@ -212,9 +212,9 @@ Body copy.
 
   it('tokenizes file blocks with caption markdown', () => {
     const tokens = tokenizePageSectionSource(`
-<d-file src="/files/manual/cli-reference.pdf" title="CLI reference" size="2 MB">
+<d-block-file src="/files/manual/cli-reference.pdf" title="CLI reference" size="2 MB">
 Download the *full* command reference.
-</d-file>
+</d-block-file>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -228,7 +228,7 @@ Download the *full* command reference.
   })
 
   it('falls back to the file name for self-closing file blocks', () => {
-    const tokens = tokenizePageSectionSource('<d-file src="/files/releases/docsector-reader.zip" />')
+    const tokens = tokenizePageSectionSource('<d-block-file src="/files/releases/docsector-reader.zip" />')
 
     expect(tokens).toHaveLength(1)
     expect(tokens[0]).toMatchObject({
@@ -242,9 +242,9 @@ Download the *full* command reference.
 
   it('tokenizes embedded URL blocks with caption markdown', () => {
     const tokens = tokenizePageSectionSource(`
-<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
+<d-block-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
 Watch the *launch* recap.
-</d-embedded-url>
+</d-block-embedded-url>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -258,11 +258,11 @@ Watch the *launch* recap.
 
   it('keeps a self-closing embedded URL block isolated from surrounding markdown', () => {
     const tokens = tokenizePageSectionSource(`
-<d-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
+<d-block-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
 
 ### Fallback URL
 
-<d-embedded-url url="https://example.com/docs/embed-me" title="API docs" />
+<d-block-embedded-url url="https://example.com/docs/embed-me" title="API docs" />
 `)
 
     expect(tokens).toHaveLength(3)
@@ -285,10 +285,10 @@ Watch the *launch* recap.
 
   it('keeps embedded URL syntax literal inside inline and fenced code', () => {
     const tokens = tokenizePageSectionSource(`
-Use \`<d-embedded-url url="https://example.com/demo"></d-embedded-url>\` in docs.
+Use \`<d-block-embedded-url url="https://example.com/demo"></d-block-embedded-url>\` in docs.
 
 ~~~~html
-<d-embedded-url url="https://example.com/demo" />
+<d-block-embedded-url url="https://example.com/demo" />
 ~~~~
 `)
 
@@ -296,12 +296,12 @@ Use \`<d-embedded-url url="https://example.com/demo"></d-embedded-url>\` in docs
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
-    expect(tokens[0].content).toContain('&lt;d-embedded-url url=&quot;https://example.com/demo&quot;&gt;&lt;/d-embedded-url&gt;')
+    expect(tokens[0].content).toContain('&lt;d-block-embedded-url url=&quot;https://example.com/demo&quot;&gt;&lt;/d-block-embedded-url&gt;')
     expect(tokens[1]).toMatchObject({
       tag: 'code',
       info: 'html'
     })
-    expect(tokens[1].content).toContain('<d-embedded-url url="https://example.com/demo" />')
+    expect(tokens[1].content).toContain('<d-block-embedded-url url="https://example.com/demo" />')
   })
 
   it('keeps cards syntax literal inside inline and fenced code', () => {
@@ -327,15 +327,30 @@ Use \`<d-block-cards><d-block-card title="Literal" description="Example" to="/do
     expect(tokens[1].content).toContain('<d-block-cards title="Literal">')
   })
 
+  it('no longer tokenizes the legacy cards syntax', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-cards title="Legacy syntax">
+  <d-card title="Legacy" description="Should stay raw" to="/docs" />
+</d-cards>
+`)
+
+    expect(tokens).toEqual([
+      {
+        tag: 'html',
+        content: '<d-cards title="Legacy syntax">\n  <d-card title="Legacy" description="Should stay raw" to="/docs" />\n</d-cards>\n'
+      }
+    ])
+  })
+
   it('keeps a self-closing file block isolated from the next heading and file block', () => {
     const tokens = tokenizePageSectionSource(`
-<d-file src="/files/manual/release-checklist.txt" size="1 KB" />
+<d-block-file src="/files/manual/release-checklist.txt" size="1 KB" />
 
 ### External file
 
-<d-file src="https://example.com/example.pdf" title="Reference PDF" size="13 KB">
+<d-block-file src="https://example.com/example.pdf" title="Reference PDF" size="13 KB">
 External caption.
-</d-file>
+</d-block-file>
 `)
 
     expect(tokens).toHaveLength(3)
@@ -628,7 +643,7 @@ Use \`- [ ] literal task marker\` in docs.
 
   it('renders math inside expandable blocks', () => {
     const tokens = tokenizePageSectionSource(`
-<d-expandable title="Math details">
+<d-block-expandable title="Math details">
 
 Inline $a^2+b^2=c^2$.
 
@@ -636,7 +651,7 @@ $$
 \\sum_{i=1}^{n} i
 $$
 
-</d-expandable>
+</d-block-expandable>
 `)
 
     expect(tokens).toHaveLength(1)
@@ -682,10 +697,10 @@ $$
 
   it('keeps file block syntax literal inside inline and fenced code', () => {
     const tokens = tokenizePageSectionSource(`
-Use \`<d-file src="/files/manual/example.pdf" />\` in docs.
+Use \`<d-block-file src="/files/manual/example.pdf" />\` in docs.
 
 ~~~~html
-<d-file src="/files/manual/example.pdf" />
+<d-block-file src="/files/manual/example.pdf" />
 ~~~~
 `)
 
@@ -693,11 +708,11 @@ Use \`<d-file src="/files/manual/example.pdf" />\` in docs.
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
-    expect(tokens[0].content).toContain('&lt;d-file src=&quot;/files/manual/example.pdf&quot; /&gt;')
+    expect(tokens[0].content).toContain('&lt;d-block-file src=&quot;/files/manual/example.pdf&quot; /&gt;')
     expect(tokens[1]).toMatchObject({
       tag: 'code',
       info: 'html'
     })
-    expect(tokens[1].content).toContain('<d-file src="/files/manual/example.pdf" />')
+    expect(tokens[1].content).toContain('<d-block-file src="/files/manual/example.pdf" />')
   })
 })

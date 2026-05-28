@@ -1,4 +1,8 @@
 <script setup>
+defineOptions({
+  name: 'DBlockQuickLinks'
+})
+
 const props = defineProps({
   items: {
     type: Array,

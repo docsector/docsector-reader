@@ -118,14 +118,14 @@ echo "Exemplo"
 
 ### Conteúdo Expansível
 
-Use `<d-expandable>` para esconder conteúdo secundário sem perder os recursos ricos de Markdown da página:
+Use `<d-block-expandable>` para esconder conteúdo secundário sem perder os recursos ricos de Markdown da página:
 
 ```markdown
-<d-expandable title="Mais detalhes">
+<d-block-expandable title="Mais detalhes">
 
 Explicações opcionais, notas operacionais ou exemplos maiores.
 
-</d-expandable>
+</d-block-expandable>
 ```
 
 Defina `open="true"` quando o bloco precisar começar aberto.
@@ -134,12 +134,12 @@ O corpo do expansível suporta parágrafos, listas, alertas, blocos de código, 
 
 ### Blocos de Arquivo
 
-Use `<d-file>` para publicar anexos baixáveis a partir de arquivos versionados no repositório ou de storage externo sem sair do Markdown:
+Use `<d-block-file>` para publicar anexos baixáveis a partir de arquivos versionados no repositório ou de storage externo sem sair do Markdown:
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" title="Checklist de release" size="1 KB">
+<d-block-file src="/files/manual/release-checklist.txt" title="Checklist de release" size="1 KB">
 Baixe o anexo de exemplo usado neste manual.
-</d-file>
+</d-block-file>
 ```
 
 Guarde arquivos versionados no repositório em `public/files/` e prefira caminhos absolutos do site, como `/files/...`.

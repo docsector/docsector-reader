@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 defineOptions({
-  name: 'DPageImage'
+  name: 'DBlockImage'
 })
 
 const props = defineProps({

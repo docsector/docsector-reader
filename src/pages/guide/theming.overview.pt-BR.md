@@ -48,7 +48,7 @@ Os componentes usam propriedades CSS customizadas para estilização consciente 
 
 ## Customizando Cores dos Blocos de Código
 
-O componente `DPageSourceCode` tem esquemas de cores separados para modos claro e escuro, usando classes de token do Prism.js. Sobrescreva as classes `token.*` no bloco SASS `.source-code` para customizar as cores de syntax highlighting.
+O componente `DBlockSourceCode` tem esquemas de cores separados para modos claro e escuro, usando classes de token do Prism.js. Sobrescreva as classes `token.*` no bloco SASS `.source-code` para customizar as cores de syntax highlighting.
 
 ## Famílias de Fontes
 

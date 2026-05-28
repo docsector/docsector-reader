@@ -7,18 +7,18 @@ They are useful for homepages, landing sections, and any page that should offer 
 ## Markdown Syntax
 
 ```html
-<d-quick-links title="Get started">
-  <d-quick-link
+<d-block-quick-links title="Get started">
+  <d-block-quick-link
     title="Install"
     description="Set up the project"
     to="/guide/getting-started"
   />
-  <d-quick-link
+  <d-block-quick-link
     title="GitHub"
     description="Open the repository"
     href="https://github.com/docsector/docsector-reader"
   />
-</d-quick-links>
+</d-block-quick-links>
 ```
 
 ## Notes

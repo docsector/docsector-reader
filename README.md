@@ -71,10 +71,10 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback
 - 🔗 **GitHub-Compatible Heading Anchors** — Markdown headings use GitHub-style slugs so standard README Table of Contents links work inside Docsector
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
-- 📖 **Expandable Markdown Sections** — Use `<d-expandable title="...">...</d-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
-- 📎 **File Attachment Blocks** — Use `<d-file src="/files/...">...</d-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
-- 🌐 **Embedded URL Blocks** — Use `<d-embedded-url url="https://...">...</d-embedded-url>` to render curated embeds for YouTube, Vimeo, Spotify, and CodePen with a safe link-card fallback for unsupported URLs
-- 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
+- 📖 **Expandable Markdown Sections** — Use `<d-block-expandable title="...">...</d-block-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
+- 📎 **File Attachment Blocks** — Use `<d-block-file src="/files/...">...</d-block-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
+- 🌐 **Embedded URL Blocks** — Use `<d-block-embedded-url url="https://...">...</d-block-embedded-url>` to render curated embeds for YouTube, Vimeo, Spotify, and CodePen with a safe link-card fallback for unsupported URLs
+- 🧭 **Quick Links Custom Element** — Use `<d-block-quick-links>` and `<d-block-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **Cards Custom Element** — Use `<d-block-cards>` and `<d-block-card>` in Markdown to render linked content cards with optional cover images
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
@@ -1026,9 +1026,9 @@ Regular blockquotes without `[!TYPE]` continue to work normally.
 ### File Attachment Blocks
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
+<d-block-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
 Download the example file bundled with the docs.
-</d-file>
+</d-block-file>
 ```
 
 Notes:
@@ -1041,9 +1041,9 @@ Notes:
 ### Embedded URL Blocks
 
 ```html
-<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
+<d-block-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
 Optional caption rendered as inline Markdown.
-</d-embedded-url>
+</d-block-embedded-url>
 ```
 
 Notes:

@@ -118,14 +118,14 @@ echo "Example"
 
 ### Expandable Content
 
-Use `<d-expandable>` to hide secondary content without removing rich Markdown features from the page:
+Use `<d-block-expandable>` to hide secondary content without removing rich Markdown features from the page:
 
 ```markdown
-<d-expandable title="More details">
+<d-block-expandable title="More details">
 
 Optional explanations, operational notes, or longer examples.
 
-</d-expandable>
+</d-block-expandable>
 ```
 
 Set `open="true"` when the block should start expanded.
@@ -134,12 +134,12 @@ The expandable body supports paragraphs, lists, alerts, code blocks, Mermaid dia
 
 ### File Blocks
 
-Use `<d-file>` to publish downloadable attachments from repo-tracked files or external storage without leaving Markdown:
+Use `<d-block-file>` to publish downloadable attachments from repo-tracked files or external storage without leaving Markdown:
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
+<d-block-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
 Download the example attachment used in this manual.
-</d-file>
+</d-block-file>
 ```
 
 Store repo-tracked files under `public/files/` and prefer absolute site paths such as `/files/...`.

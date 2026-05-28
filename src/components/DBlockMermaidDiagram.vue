@@ -2,6 +2,10 @@
 import { ref, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 
+defineOptions({
+  name: 'DBlockMermaidDiagram'
+})
+
 const props = defineProps({
   content: {
     type: String,

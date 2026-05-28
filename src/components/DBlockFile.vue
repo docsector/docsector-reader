@@ -8,7 +8,7 @@ import { resolveFileIconUrl } from '../composables/useFileIcon'
 const BASE_URL = import.meta.env.BASE_URL || '/'
 
 defineOptions({
-  name: 'DPageFile'
+  name: 'DBlockFile'
 })
 
 const props = defineProps({

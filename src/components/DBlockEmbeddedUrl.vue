@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { resolveEmbeddedUrl } from '../composables/useEmbeddedUrl'
 
 defineOptions({
-  name: 'DPageEmbeddedUrl'
+  name: 'DBlockEmbeddedUrl'
 })
 
 const props = defineProps({

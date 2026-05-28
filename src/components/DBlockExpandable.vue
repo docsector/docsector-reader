@@ -1,4 +1,8 @@
 <script setup>
+defineOptions({
+  name: 'DBlockExpandable'
+})
+
 defineProps({
   title: {
     type: String,

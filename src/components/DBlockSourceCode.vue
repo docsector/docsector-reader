@@ -11,6 +11,10 @@ import 'prismjs/components/prism-php'
 import 'prismjs/components/prism-bash'
 import { looksLikeFileName, resolveFileIconUrl } from '../composables/useFileIcon'
 
+defineOptions({
+  name: 'DBlockSourceCode'
+})
+
 const props = defineProps({
   index: {
     type: Number,

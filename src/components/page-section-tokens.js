@@ -147,11 +147,11 @@ const extractQuickLinksBlocks = (source = '') => {
   const map = new Map()
   let index = 0
 
-  const blockPattern = /<d-quick-links\b([^>]*)>([\s\S]*?)<\/d-quick-links>/gi
+  const blockPattern = /<d-block-quick-links\b([^>]*)>([\s\S]*?)<\/d-block-quick-links>/gi
   const replaced = String(source).replace(blockPattern, (_, blockAttrsRaw, inner) => {
     const blockAttrs = parseCustomTagAttributes(blockAttrsRaw)
     const items = []
-    const itemPattern = /<d-quick-link\b([^>]*)\/?\s*>/gi
+    const itemPattern = /<d-block-quick-link\b([^>]*)\/?\s*>/gi
 
     let itemMatch = itemPattern.exec(inner)
     while (itemMatch !== null) {
@@ -195,11 +195,11 @@ const extractCardsBlocks = (source = '') => {
   const map = new Map()
   let index = 0
 
-  const blockPattern = /<d-(?:block-)?cards\b([^>]*)>([\s\S]*?)<\/d-(?:block-)?cards>/gi
+  const blockPattern = /<d-block-cards\b([^>]*)>([\s\S]*?)<\/d-block-cards>/gi
   const replaced = String(source).replace(blockPattern, (_, blockAttrsRaw, inner) => {
     const blockAttrs = parseCustomTagAttributes(blockAttrsRaw)
     const items = []
-    const itemPattern = /<d-(?:block-)?card\b([^>]*)\/?\s*>/gi
+    const itemPattern = /<d-block-card\b([^>]*)\/?\s*>/gi
 
     let itemMatch = itemPattern.exec(inner)
     while (itemMatch !== null) {
@@ -248,7 +248,7 @@ const extractExpandableBlocks = (source = '') => {
   const map = new Map()
   let index = 0
 
-  const blockPattern = /<d-expandable\b([^>]*)>([\s\S]*?)<\/d-expandable>/gi
+  const blockPattern = /<d-block-expandable\b([^>]*)>([\s\S]*?)<\/d-block-expandable>/gi
   const replaced = String(source).replace(blockPattern, (_, rawAttrs, inner) => {
     const attrs = parseCustomTagAttributes(rawAttrs)
     const marker = `${EXPANDABLE_MARKER_PREFIX}${index}@@`
@@ -314,10 +314,10 @@ const extractFileBlocks = (source = '') => {
     return `\n${marker}\n`
   }
 
-  const replacedSelfClosing = String(source).replace(/<d-file\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+  const replacedSelfClosing = String(source).replace(/<d-block-file\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
     return replaceBlock(match, rawAttrs)
   })
-  const replaced = replacedSelfClosing.replace(/<d-file\b([^>]*)>([\s\S]*?)<\/d-file>/gi, replaceBlock)
+  const replaced = replacedSelfClosing.replace(/<d-block-file\b([^>]*)>([\s\S]*?)<\/d-block-file>/gi, replaceBlock)
 
   return {
     source: replaced,
@@ -349,10 +349,10 @@ const extractEmbeddedUrlBlocks = (source = '') => {
     return `\n${marker}\n`
   }
 
-  const replacedSelfClosing = String(source).replace(/<d-embedded-url\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+  const replacedSelfClosing = String(source).replace(/<d-block-embedded-url\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
     return replaceBlock(match, rawAttrs)
   })
-  const replaced = replacedSelfClosing.replace(/<d-embedded-url\b([^>]*)>([\s\S]*?)<\/d-embedded-url>/gi, replaceBlock)
+  const replaced = replacedSelfClosing.replace(/<d-block-embedded-url\b([^>]*)>([\s\S]*?)<\/d-block-embedded-url>/gi, replaceBlock)
 
   return {
     source: replaced,

@@ -7,15 +7,15 @@ They are useful for checklists, sample bundles, PDFs, release notes, and any oth
 ## Markdown Syntax
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
+<d-block-file src="/files/manual/release-checklist.txt" title="Release checklist" size="1 KB">
 Download the example attachment used in this manual.
-</d-file>
+</d-block-file>
 ```
 
 You can also omit the caption body when the file name already provides enough context:
 
 ```html
-<d-file src="/files/manual/release-checklist.txt" size="1 KB" />
+<d-block-file src="/files/manual/release-checklist.txt" size="1 KB" />
 ```
 
 ## Notes

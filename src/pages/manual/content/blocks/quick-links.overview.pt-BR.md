@@ -7,18 +7,18 @@ Eles são úteis para homepages, seções de entrada e qualquer página que prec
 ## Sintaxe em Markdown
 
 ```html
-<d-quick-links title="Comece aqui">
-  <d-quick-link
+<d-block-quick-links title="Comece aqui">
+  <d-block-quick-link
     title="Instalação"
     description="Configure o projeto"
     to="/guide/getting-started"
   />
-  <d-quick-link
+  <d-block-quick-link
     title="GitHub"
     description="Abra o repositório"
     href="https://github.com/docsector/docsector-reader"
   />
-</d-quick-links>
+</d-block-quick-links>
 ```
 
 ## Observações

@@ -48,7 +48,7 @@ Components use CSS custom properties for theme-aware styling:
 
 ## Customizing Code Block Colors
 
-The `DPageSourceCode` component has separate color schemes for light and dark modes, using Prism.js token classes. Override `token.*` classes in the `.source-code` SASS block to customize syntax highlighting colors.
+The `DBlockSourceCode` component has separate color schemes for light and dark modes, using Prism.js token classes. Override `token.*` classes in the `.source-code` SASS block to customize syntax highlighting colors.
 
 ## Font Families
 

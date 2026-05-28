@@ -7,15 +7,15 @@ Este block é uma alternativa de nível mais alto ao uso manual de iframe quando
 ## Sintaxe Markdown
 
 ```html
-<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="Demo do player do YouTube">
+<d-block-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="Demo do player do YouTube">
 Legenda opcional renderizada como Markdown inline.
-</d-embedded-url>
+</d-block-embedded-url>
 ```
 
 Você também pode omitir o corpo quando o preview do provider já entrega contexto suficiente:
 
 ```html
-<d-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
+<d-block-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
 ```
 
 ## Providers suportados
