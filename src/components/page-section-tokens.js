@@ -15,6 +15,7 @@ const ALERT_MESSAGE_TYPES = new Set([
 
 const CARDS_MARKER_PREFIX = '@@DOCSECTOR_CARDS_'
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
+const STEPPER_MARKER_PREFIX = '@@DOCSECTOR_STEPPER_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
 const EMBEDDED_URL_MARKER_PREFIX = '@@DOCSECTOR_EMBEDDED_URL_'
@@ -242,6 +243,54 @@ const extractCardsBlocks = (source = '') => {
 
 const parseExpandableOpenState = (raw = '') => {
   return ['1', 'true', 'yes', 'on'].includes(String(raw).trim().toLowerCase())
+}
+
+const extractStepperBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const blockPattern = /<d-block-stepper\b([^>]*)>([\s\S]*?)<\/d-block-stepper>/gi
+  const replaced = String(source).replace(blockPattern, (match, _rawAttrs, inner) => {
+    const steps = []
+    const stepPattern = /<d-block-step\b([^>]*)>([\s\S]*?)<\/d-block-step>/gi
+
+    let stepMatch = stepPattern.exec(inner)
+    while (stepMatch !== null) {
+      const attrs = parseCustomTagAttributes(stepMatch[1])
+      const title = attrs.title || ''
+
+      if (title) {
+        steps.push({
+          title,
+          icon: attrs.icon || '',
+          activeIcon: attrs['active-icon'] || '',
+          doneIcon: attrs['done-icon'] || '',
+          errorIcon: attrs['error-icon'] || '',
+          content: stepMatch[2]
+        })
+      }
+
+      stepMatch = stepPattern.exec(inner)
+    }
+
+    if (steps.length === 0) {
+      return match
+    }
+
+    const marker = `${STEPPER_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      steps
+    })
+
+    return `\n${marker}\n`
+  })
+
+  return {
+    source: replaced,
+    stepperMap: map
+  }
 }
 
 const extractExpandableBlocks = (source = '') => {
@@ -642,7 +691,19 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   } = options
   const normalizedSource = normalizePageSectionSource(source)
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
-  const { source: sourceWithExpandables, expandableMap } = extractExpandableBlocks(sourceWithShieldedCode)
+  const { source: sourceWithSteppers, stepperMap } = extractStepperBlocks(sourceWithShieldedCode)
+
+  stepperMap.forEach((data, marker) => {
+    stepperMap.set(marker, {
+      ...data,
+      steps: data.steps.map((step) => ({
+        ...step,
+        content: restoreShieldedCodeSegments(step.content, codeSegmentsMap)
+      }))
+    })
+  })
+
+  const { source: sourceWithExpandables, expandableMap } = extractExpandableBlocks(sourceWithSteppers)
 
   expandableMap.forEach((data, marker) => {
     expandableMap.set(marker, {
@@ -814,6 +875,26 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
       switch (element.type) {
         case 'inline': {
           const anchorId = getHeadingAnchorId(markdown, tag, element, markdownEnv, parserState)
+
+          if (stepperMap.has(element.content.trim())) {
+            const data = stepperMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'stepper',
+              steps: data.steps.map((step) => ({
+                title: step.title,
+                icon: step.icon,
+                activeIcon: step.activeIcon,
+                doneIcon: step.doneIcon,
+                errorIcon: step.errorIcon,
+                tokens: tokenizePageSectionSource(step.content, {
+                  allowHeadingTokens: false,
+                  parserState
+                })
+              }))
+            })
+            break
+          }
 
           if (expandableMap.has(element.content.trim())) {
             const data = expandableMap.get(element.content.trim())

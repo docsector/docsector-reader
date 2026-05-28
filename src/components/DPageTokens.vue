@@ -28,6 +28,7 @@ import DBlockEmbeddedUrl from './DBlockEmbeddedUrl.vue'
 import DBlockCards from './DBlockCards.vue'
 import DBlockQuickLinks from './DBlockQuickLinks.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
+import DBlockStepper from './DBlockStepper.vue'
 </script>
 
 <template>
@@ -140,6 +141,18 @@ import DBlockExpandable from './DBlockExpandable.vue'
     :title="token.title"
     :items="token.items"
   />
+
+  <d-block-stepper
+    v-else-if="token.tag === 'stepper'"
+    :steps="token.steps"
+  >
+    <template #default="{ step }">
+      <d-page-tokens
+        :id="id"
+        :tokens="step.tokens"
+      />
+    </template>
+  </d-block-stepper>
 
   <d-block-expandable
     v-else-if="token.tag === 'expandable'"

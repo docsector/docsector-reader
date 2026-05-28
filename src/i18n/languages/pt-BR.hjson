@@ -44,6 +44,11 @@
       download: 'Baixar',
       open: 'Abrir'
     },
+    stepper: {
+      continue: 'Continuar',
+      back: 'Voltar',
+      finish: 'Finalizar'
+    },
     openInChatGPT: 'Abrir no ChatGPT',
     openInChatGPTCaption: 'Pergunte ao ChatGPT sobre esta página',
     openInClaude: 'Abrir no Claude',

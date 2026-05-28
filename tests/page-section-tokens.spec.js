@@ -90,6 +90,158 @@ Body copy.
     })
   })
 
+  it('tokenizes stepper blocks with multiple steps', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-stepper>
+  <d-block-step title="Install dependencies">
+
+Run the install command.
+
+  </d-block-step>
+  <d-block-step title="Start the app">
+
+Use the dev server.
+
+  </d-block-step>
+</d-block-stepper>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'stepper'
+    })
+    expect(tokens[0].steps).toHaveLength(2)
+    expect(tokens[0].steps[0]).toMatchObject({
+      title: 'Install dependencies'
+    })
+    expect(tokens[0].steps[0].tokens).toHaveLength(1)
+    expect(tokens[0].steps[0].tokens[0]).toMatchObject({
+      tag: 'p',
+      content: 'Run the install command.',
+      anchorId: ''
+    })
+    expect(tokens[0].steps[1]).toMatchObject({
+      title: 'Start the app'
+    })
+    expect(tokens[0].steps[1].tokens).toHaveLength(1)
+    expect(tokens[0].steps[1].tokens[0]).toMatchObject({
+      tag: 'p',
+      content: 'Use the dev server.',
+      anchorId: ''
+    })
+  })
+
+  it('preserves icon overrides on stepper steps', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-stepper>
+  <d-block-step
+    title="Choose the runtime"
+    icon="memory"
+    active-icon="rocket_launch"
+    done-icon="task_alt"
+  >
+
+Pick a runtime and continue.
+
+  </d-block-step>
+</d-block-stepper>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'stepper'
+    })
+    expect(tokens[0].steps).toHaveLength(1)
+    expect(tokens[0].steps[0]).toMatchObject({
+      title: 'Choose the runtime',
+      icon: 'memory',
+      activeIcon: 'rocket_launch',
+      doneIcon: 'task_alt'
+    })
+  })
+
+  it('preserves rich markdown inside stepper steps', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-stepper>
+  <d-block-step title="Validate output">
+
+> [!TIP]
+> Review the console output first.
+
+~~~bash
+npm run dev
+~~~
+
+  </d-block-step>
+</d-block-stepper>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].steps).toHaveLength(1)
+    expect(tokens[0].steps[0].tokens.map((token) => token.tag)).toEqual(['blockquote', 'code'])
+    expect(tokens[0].steps[0].tokens[0]).toMatchObject({
+      tag: 'blockquote',
+      alertType: 'tip'
+    })
+    expect(tokens[0].steps[0].tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      content: 'npm run dev\n'
+    })
+  })
+
+  it('flattens headings inside stepper steps to keep the page toc stable', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-stepper>
+  <d-block-step title="Internal section">
+
+## Internal heading
+
+Body copy.
+
+  </d-block-step>
+</d-block-stepper>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].steps[0].tokens).toHaveLength(2)
+    expect(tokens[0].steps[0].tokens[0]).toMatchObject({
+      tag: 'p',
+      content: 'Internal heading'
+    })
+    expect(tokens[0].steps[0].tokens[1]).toMatchObject({
+      tag: 'p',
+      content: 'Body copy.'
+    })
+  })
+
+  it('keeps stepper syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-block-stepper><d-block-step title="Literal">body</d-block-step></d-block-stepper>\` in docs.
+
+~~~~html
+<d-block-stepper>
+  <d-block-step title="Literal">
+
+Body copy.
+
+  </d-block-step>
+</d-block-stepper>
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'stepper')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-block-stepper&gt;&lt;d-block-step title=&quot;Literal&quot;&gt;body&lt;/d-block-step&gt;&lt;/d-block-stepper&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-block-stepper>')
+  })
+
   it('keeps custom element syntax literal inside inline and fenced code', () => {
     const tokens = tokenizePageSectionSource(`
 Use \`<d-block-expandable title="Literal">inline</d-block-expandable>\` in docs.

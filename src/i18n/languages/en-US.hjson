@@ -45,6 +45,11 @@
       download: 'Download',
       open: 'Open'
     },
+    stepper: {
+      continue: 'Continue',
+      back: 'Back',
+      finish: 'Finish'
+    },
     openInChatGPT: 'Open in ChatGPT',
     openInChatGPTCaption: 'Ask ChatGPT about this page',
     openInClaude: 'Open in Claude',

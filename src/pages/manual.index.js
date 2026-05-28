@@ -683,6 +683,34 @@ export default {
     }
   },
 
+  '/content/blocks/stepper': {
+    config: {
+      icon: 'format_list_numbered',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Stepper — Documentation of Docsector Reader',
+          'pt-BR': 'Stepper — Documentação do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Stepper' },
+      'pt-BR': { title: 'Stepper' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'stepper steps walkthrough tutorial numbered sequence guide process gitbook',
+        'pt-BR': 'stepper etapas passo a passo tutorial sequência numerada guia processo gitbook'
+      }
+    }
+  },
+
   '/content/blocks/tables': {
     config: {
       icon: 'table_chart',
