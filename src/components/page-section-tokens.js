@@ -13,6 +13,7 @@ const ALERT_MESSAGE_TYPES = new Set([
   'caution'
 ])
 
+const CARDS_MARKER_PREFIX = '@@DOCSECTOR_CARDS_'
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
@@ -187,6 +188,55 @@ const extractQuickLinksBlocks = (source = '') => {
   return {
     source: replaced,
     quickLinksMap: map
+  }
+}
+
+const extractCardsBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const blockPattern = /<d-(?:block-)?cards\b([^>]*)>([\s\S]*?)<\/d-(?:block-)?cards>/gi
+  const replaced = String(source).replace(blockPattern, (_, blockAttrsRaw, inner) => {
+    const blockAttrs = parseCustomTagAttributes(blockAttrsRaw)
+    const items = []
+    const itemPattern = /<d-(?:block-)?card\b([^>]*)\/?\s*>/gi
+
+    let itemMatch = itemPattern.exec(inner)
+    while (itemMatch !== null) {
+      const itemAttrs = parseCustomTagAttributes(itemMatch[1])
+      const title = itemAttrs.title || ''
+      const description = itemAttrs.description || ''
+      const to = itemAttrs.to || ''
+      const href = itemAttrs.href || ''
+
+      if (title && description && (to || href)) {
+        items.push({
+          title,
+          description,
+          to,
+          href,
+          image: itemAttrs.image || '',
+          icon: itemAttrs.icon || ''
+        })
+      }
+
+      itemMatch = itemPattern.exec(inner)
+    }
+
+    const marker = `${CARDS_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      title: blockAttrs.title || '',
+      items
+    })
+
+    return `\n${marker}\n`
+  })
+
+  return {
+    source: replaced,
+    cardsMap: map
   }
 }
 
@@ -601,7 +651,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     })
   })
 
-  const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(sourceWithExpandables)
+  const { source: sourceWithCards, cardsMap } = extractCardsBlocks(sourceWithExpandables)
+  const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(sourceWithCards)
   const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
   const { source: sourceWithEmbeddedUrls, embeddedUrlMap } = extractEmbeddedUrlBlocks(sourceWithFiles)
 
@@ -775,6 +826,17 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
                 allowHeadingTokens: false,
                 parserState
               })
+            })
+            break
+          }
+
+          if (cardsMap.has(element.content.trim())) {
+            const data = cardsMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'cards',
+              title: data.title,
+              items: data.items
             })
             break
           }

@@ -139,6 +139,77 @@ Body copy.
     ])
   })
 
+  it('tokenizes cards blocks with optional cover images', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-cards title="Explore more">
+  <d-block-card
+    title="Install"
+    description="Set up the project"
+    to="/guide/getting-started"
+    image="/images/cards/install.png"
+  />
+  <d-block-card
+    title="GitHub"
+    description="Open the repository"
+    href="https://github.com/docsector/docsector-reader"
+    icon="launch"
+  />
+</d-block-cards>
+`)
+
+    expect(tokens).toEqual([
+      {
+        tag: 'cards',
+        title: 'Explore more',
+        items: [
+          {
+            title: 'Install',
+            description: 'Set up the project',
+            to: '/guide/getting-started',
+            href: '',
+            image: '/images/cards/install.png',
+            icon: ''
+          },
+          {
+            title: 'GitHub',
+            description: 'Open the repository',
+            to: '',
+            href: 'https://github.com/docsector/docsector-reader',
+            image: '',
+            icon: 'launch'
+          }
+        ]
+      }
+    ])
+  })
+
+  it('ignores incomplete cards when tokenizing cards blocks', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-cards title="Resources">
+  <d-block-card title="Valid" description="Visible item" to="/manual/content/blocks/cards" />
+  <d-block-card title="Missing link" description="This should be ignored" />
+  <d-block-card title="Missing description" href="https://example.com" />
+</d-block-cards>
+`)
+
+    expect(tokens).toEqual([
+      {
+        tag: 'cards',
+        title: 'Resources',
+        items: [
+          {
+            title: 'Valid',
+            description: 'Visible item',
+            to: '/manual/content/blocks/cards',
+            href: '',
+            image: '',
+            icon: ''
+          }
+        ]
+      }
+    ])
+  })
+
   it('tokenizes file blocks with caption markdown', () => {
     const tokens = tokenizePageSectionSource(`
 <d-file src="/files/manual/cli-reference.pdf" title="CLI reference" size="2 MB">
@@ -231,6 +302,29 @@ Use \`<d-embedded-url url="https://example.com/demo"></d-embedded-url>\` in docs
       info: 'html'
     })
     expect(tokens[1].content).toContain('<d-embedded-url url="https://example.com/demo" />')
+  })
+
+  it('keeps cards syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-block-cards><d-block-card title="Literal" description="Example" to="/docs" /></d-block-cards>\` in docs.
+
+~~~~html
+<d-block-cards title="Literal">
+  <d-block-card title="Literal" description="Example" to="/docs" />
+</d-block-cards>
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'cards')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-block-cards&gt;&lt;d-block-card title=&quot;Literal&quot; description=&quot;Example&quot; to=&quot;/docs&quot; /&gt;&lt;/d-block-cards&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-block-cards title="Literal">')
   })
 
   it('keeps a self-closing file block isolated from the next heading and file block', () => {

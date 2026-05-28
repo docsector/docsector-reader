@@ -767,6 +767,34 @@ export default {
     }
   },
 
+  '/content/blocks/cards': {
+    config: {
+      icon: 'view_module',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Cards — Documentation of Docsector Reader',
+          'pt-BR': 'Cartões — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Cards' },
+      'pt-BR': { title: 'Cartões' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'cards grid cover image navigation content links layout',
+        'pt-BR': 'cartões grade imagem capa navegação conteúdo links layout'
+      }
+    }
+  },
+
   '/content/structures': {
     config: null,
     data: {

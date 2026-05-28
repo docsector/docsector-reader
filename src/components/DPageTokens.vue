@@ -25,6 +25,7 @@ import DPageBlockquote from './DPageBlockquote.vue'
 import DPageImage from './DPageImage.vue'
 import DPageFile from './DPageFile.vue'
 import DPageEmbeddedUrl from './DPageEmbeddedUrl.vue'
+import DBlockCard from './DBlockCard.vue'
 import DQuickLinks from './DQuickLinks.vue'
 import DPageExpandable from './DPageExpandable.vue'
 </script>
@@ -126,6 +127,12 @@ import DPageExpandable from './DPageExpandable.vue'
   <d-mermaid-diagram
     v-else-if="token.tag === 'mermaid'"
     :content="token.content"
+  />
+
+  <d-block-card
+    v-else-if="token.tag === 'cards'"
+    :title="token.title"
+    :items="token.items"
   />
 
   <d-quick-links

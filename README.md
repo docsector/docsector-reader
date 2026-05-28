@@ -75,6 +75,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📎 **File Attachment Blocks** — Use `<d-file src="/files/...">...</d-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
 - 🌐 **Embedded URL Blocks** — Use `<d-embedded-url url="https://...">...</d-embedded-url>` to render curated embeds for YouTube, Vimeo, Spotify, and CodePen with a safe link-card fallback for unsupported URLs
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
+- 🗂️ **Cards Custom Element** — Use `<d-block-cards>` and `<d-block-card>` in Markdown to render linked content cards with optional cover images
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
