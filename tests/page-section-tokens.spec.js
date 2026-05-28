@@ -169,6 +169,70 @@ Download the *full* command reference.
     })
   })
 
+  it('tokenizes embedded URL blocks with caption markdown', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
+Watch the *launch* recap.
+</d-embedded-url>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'embedded-url',
+      url: 'https://www.youtube.com/watch?v=M7lc1UVf-VE',
+      title: 'YouTube player demo',
+      caption: 'Watch the <em>launch</em> recap.'
+    })
+  })
+
+  it('keeps a self-closing embedded URL block isolated from surrounding markdown', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-embedded-url url="https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P" />
+
+### Fallback URL
+
+<d-embedded-url url="https://example.com/docs/embed-me" title="API docs" />
+`)
+
+    expect(tokens).toHaveLength(3)
+    expect(tokens[0]).toMatchObject({
+      tag: 'embedded-url',
+      url: 'https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P',
+      title: '',
+      caption: ''
+    })
+    expect(tokens[1]).toMatchObject({
+      tag: 'h3',
+      content: 'Fallback URL'
+    })
+    expect(tokens[2]).toMatchObject({
+      tag: 'embedded-url',
+      url: 'https://example.com/docs/embed-me',
+      title: 'API docs'
+    })
+  })
+
+  it('keeps embedded URL syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-embedded-url url="https://example.com/demo"></d-embedded-url>\` in docs.
+
+~~~~html
+<d-embedded-url url="https://example.com/demo" />
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'embedded-url')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-embedded-url url=&quot;https://example.com/demo&quot;&gt;&lt;/d-embedded-url&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-embedded-url url="https://example.com/demo" />')
+  })
+
   it('keeps a self-closing file block isolated from the next heading and file block', () => {
     const tokens = tokenizePageSectionSource(`
 <d-file src="/files/manual/release-checklist.txt" size="1 KB" />

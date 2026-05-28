@@ -599,6 +599,34 @@ export default {
     }
   },
 
+  '/content/blocks/embedded-urls': {
+    config: {
+      icon: 'link',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Embedded URLs — Documentation of Docsector Reader',
+          'pt-BR': 'URLs embutidas — Documentação do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Embedded URLs' },
+      'pt-BR': { title: 'URLs embutidas' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'embed embedded url youtube vimeo spotify codepen iframe preview external link gitbook',
+        'pt-BR': 'embed url embutida youtube vimeo spotify codepen iframe preview link externo gitbook'
+      }
+    }
+  },
+
   '/content/blocks/math-and-tex': {
     config: {
       icon: 'functions',

@@ -73,6 +73,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 📖 **Expandable Markdown Sections** — Use `<d-expandable title="...">...</d-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 📎 **File Attachment Blocks** — Use `<d-file src="/files/...">...</d-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
+- 🌐 **Embedded URL Blocks** — Use `<d-embedded-url url="https://...">...</d-embedded-url>` to render curated embeds for YouTube, Vimeo, Spotify, and CodePen with a safe link-card fallback for unsupported URLs
 - 🧭 **Quick Links Custom Element** — Use `<d-quick-links>` and `<d-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
@@ -1035,6 +1036,21 @@ Notes:
 - `title` and `size` are optional. If `title` is omitted, the rendered card falls back to the filename from `src`.
 - The block body is rendered as an inline Markdown caption.
 - External URLs also work, so the same syntax can later point to R2 or another CDN without changing the page structure.
+
+### Embedded URL Blocks
+
+```html
+<d-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
+Optional caption rendered as inline Markdown.
+</d-embedded-url>
+```
+
+Notes:
+
+- Supported providers currently include YouTube, Vimeo, Spotify, and CodePen.
+- The block preserves the original query string, so provider options such as `autoplay=1&loop=1` keep working when supported by the destination service.
+- Unsupported or private URLs fall back to a safe external-link card instead of attempting a generic iframe.
+- Raw HTML remains the escape hatch when you need a provider outside the curated list or full manual iframe control.
 
 ---
 

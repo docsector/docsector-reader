@@ -13,5 +13,5 @@
       "stores/*": ["src/stores/*"]
     }
   },
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "tmp"]
 }

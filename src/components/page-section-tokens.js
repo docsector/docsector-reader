@@ -16,6 +16,7 @@ const ALERT_MESSAGE_TYPES = new Set([
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
+const EMBEDDED_URL_MARKER_PREFIX = '@@DOCSECTOR_EMBEDDED_URL_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
@@ -271,6 +272,41 @@ const extractFileBlocks = (source = '') => {
   return {
     source: replaced,
     fileMap: map
+  }
+}
+
+const extractEmbeddedUrlBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const replaceBlock = (match, rawAttrs, rawCaption = '') => {
+    const attrs = parseCustomTagAttributes(rawAttrs)
+    const url = decodeHtmlEntities(attrs.url || attrs.href || attrs.src || '').trim()
+
+    if (!url) {
+      return match
+    }
+
+    const marker = `${EMBEDDED_URL_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      url,
+      title: decodeHtmlEntities(attrs.title || '').trim(),
+      caption: String(rawCaption).trim()
+    })
+
+    return `\n${marker}\n`
+  }
+
+  const replacedSelfClosing = String(source).replace(/<d-embedded-url\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+  const replaced = replacedSelfClosing.replace(/<d-embedded-url\b([^>]*)>([\s\S]*?)<\/d-embedded-url>/gi, replaceBlock)
+
+  return {
+    source: replaced,
+    embeddedUrlMap: map
   }
 }
 
@@ -567,6 +603,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
   const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(sourceWithExpandables)
   const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
+  const { source: sourceWithEmbeddedUrls, embeddedUrlMap } = extractEmbeddedUrlBlocks(sourceWithFiles)
 
   fileMap.forEach((data, marker) => {
     fileMap.set(marker, {
@@ -575,10 +612,17 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     })
   })
 
+  embeddedUrlMap.forEach((data, marker) => {
+    embeddedUrlMap.set(marker, {
+      ...data,
+      caption: restoreShieldedCodeSegments(data.caption, codeSegmentsMap)
+    })
+  })
+
   const markdown = createMarkdownBlockParser()
   const markdownInline = createMarkdownInlineParser()
   const markdownEnv = {}
-  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithFiles, codeSegmentsMap), markdownEnv)
+  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithEmbeddedUrls, codeSegmentsMap), markdownEnv)
   const tokens = []
 
   let level = 0
@@ -755,6 +799,21 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               src: data.src,
               title: data.title || getFileTitleFromSrc(data.src),
               size: data.size,
+              caption: data.caption !== ''
+                ? markdownInline.renderInline(data.caption, markdownEnv)
+                : ''
+            })
+            break
+          }
+
+          if (embeddedUrlMap.has(element.content.trim())) {
+            const data = embeddedUrlMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'embedded-url',
+              map: element.map,
+              url: data.url,
+              title: data.title,
               caption: data.caption !== ''
                 ? markdownInline.renderInline(data.caption, markdownEnv)
                 : ''

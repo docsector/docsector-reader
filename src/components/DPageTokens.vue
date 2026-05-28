@@ -24,6 +24,7 @@ import DMermaidDiagram from './DMermaidDiagram.vue'
 import DPageBlockquote from './DPageBlockquote.vue'
 import DPageImage from './DPageImage.vue'
 import DPageFile from './DPageFile.vue'
+import DPageEmbeddedUrl from './DPageEmbeddedUrl.vue'
 import DQuickLinks from './DQuickLinks.vue'
 import DPageExpandable from './DPageExpandable.vue'
 </script>
@@ -102,6 +103,13 @@ import DPageExpandable from './DPageExpandable.vue'
     :src="token.src"
     :title="token.title"
     :size="token.size"
+    :caption="token.caption"
+  />
+
+  <d-page-embedded-url
+    v-else-if="token.tag === 'embedded-url'"
+    :url="token.url"
+    :title="token.title"
     :caption="token.caption"
   />
 
