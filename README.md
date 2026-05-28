@@ -42,6 +42,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
 - 🔽 **Nested Markdown Lists** — Ordered and unordered lists preserve sublist hierarchy across multiple indentation levels
+- ☑️ **Markdown Task Lists** — GitBook-style `- [ ]` and `- [x]` items render as read-only checkboxes with nested subtasks
 - 🖼️ **Block Image Captions & Zoom** — Standalone Markdown images render as zoomable figures, and raw `figure` / `picture` markup supports separate alt text and captions
 - 🧱 **Raw HTML in Markdown** — Renders inline and block HTML tags inside markdown sections (including homepage remote README content)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching

@@ -58,10 +58,12 @@ import DPageExpandable from './DPageExpandable.vue'
 
   <ul
     v-else-if="token.tag === 'ul'"
+    v-bind="token.attrs || {}"
     v-html="token.content"
   ></ul>
   <ol
     v-else-if="token.tag === 'ol'"
+    v-bind="token.attrs || {}"
     v-html="token.content"
   ></ol>
 

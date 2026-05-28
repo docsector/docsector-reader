@@ -402,6 +402,34 @@ export default {
     }
   },
 
+  '/content/blocks/task-lists': {
+    config: {
+      icon: 'check_box',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Task lists — Documentation of Docsector Reader',
+          'pt-BR': 'Listas de tarefas — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Task lists' },
+      'pt-BR': { title: 'Listas de tarefas' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'task list checklist checkbox todo done pending nested markdown gitbook',
+        'pt-BR': 'lista de tarefas checklist checkbox todo concluído pendente aninhada markdown gitbook'
+      }
+    }
+  },
+
   '/content/blocks/hints': {
     config: {
       icon: 'lightbulb',

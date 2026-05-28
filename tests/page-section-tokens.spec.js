@@ -334,6 +334,44 @@ External caption.
     expect(tokens[0].content).toContain('<li>Release workflow</li>')
   })
 
+  it('renders markdown task lists as checkbox markup on the root list token', () => {
+    const tokens = tokenizePageSectionSource(`
+- [ ] Write the overview page
+- [x] Publish the release notes
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'ul',
+      attrs: {
+        class: 'contains-task-list'
+      }
+    })
+    expect(tokens[0].content).toContain('class="task-list-item"')
+    expect(tokens[0].content).toContain('class="task-list-item-checkbox"')
+    expect(tokens[0].content).toMatch(/<input[^>]*disabled(?:="")?[^>]*type="checkbox"|<input[^>]*type="checkbox"[^>]*disabled(?:="")?[^>]*>/)
+    expect(tokens[0].content).toMatch(/<input[^>]*checked(?:="")?[^>]*type="checkbox"|<input[^>]*type="checkbox"[^>]*checked(?:="")?[^>]*>/)
+  })
+
+  it('preserves nested task list hierarchy and attributes', () => {
+    const tokens = tokenizePageSectionSource(`
+- [ ] Release workflow
+  - [x] Update the changelog
+  - [ ] Publish the package
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'ul',
+      attrs: {
+        class: 'contains-task-list'
+      }
+    })
+    expect(tokens[0].content).toContain('<ul class="contains-task-list">')
+    expect(tokens[0].content).toContain('Update the changelog')
+    expect(tokens[0].content).toContain('Publish the package')
+  })
+
   it('preserves nested ordered list markup inside the root list token', () => {
     const tokens = tokenizePageSectionSource(`
 1. Prepare the change.
@@ -388,6 +426,28 @@ $$
     })
     expect(tokens[0].content).toContain('katex-display')
     expect(tokens[0].content).not.toContain('$$')
+  })
+
+  it('keeps markdown task markers literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`- [ ] literal task marker\` in docs.
+
+~~~markdown
+- [x] keep literal in code
+~~~
+`)
+
+    expect(tokens).toHaveLength(2)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('<code>- [ ] literal task marker</code>')
+    expect(tokens[0].content).not.toContain('task-list-item-checkbox')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'markdown'
+    })
+    expect(tokens[1].content).toContain('- [x] keep literal in code')
   })
 
   it('renders inline and display math inside alert blockquotes', () => {

@@ -15,6 +15,11 @@ body
 body.body--light
   --q-primary: #655529 !important
   --q-secondary: #000080 !important
+  --task-list-checkbox-bg: #ffffff
+  --task-list-checkbox-border: #7c6a3a
+  --task-list-checkbox-checked-bg: #5e4c1f
+  --task-list-checkbox-checked-border: #4f3f18
+  --task-list-checkbox-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.3' d='M3.25 8.5 6.4 11.4 12.75 4.9'/%3E%3C/svg%3E")
 
   --q-primary-background: #FFF !important
 
@@ -48,6 +53,11 @@ body.body--dark
   --q-primary-in-dark-bg: #C1A667 !important
   --q-secondary: #FFA07A !important
   --q-negative: #fc001b !important
+  --task-list-checkbox-bg: #181818
+  --task-list-checkbox-border: #8f8a78
+  --task-list-checkbox-checked-bg: #d3b874
+  --task-list-checkbox-checked-border: #ebd08a
+  --task-list-checkbox-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23151515' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.3' d='M3.25 8.5 6.4 11.4 12.75 4.9'/%3E%3C/svg%3E")
 
   --q-light-in-dark-1: #ababab
   --q-light-in-dark-2: #c9c9c9
@@ -198,6 +208,39 @@ body.body--dark
     overflow-x: auto
     overflow-y: hidden
     padding: 0.35rem 0.1rem
+
+  ul.contains-task-list,
+  ol.contains-task-list
+    list-style: none
+    padding-left: 1.75rem
+
+  li.task-list-item
+    list-style: none
+
+  input.task-list-item-checkbox
+    appearance: none
+    -webkit-appearance: none
+    width: 1rem
+    height: 1rem
+    margin: 0 0.55rem 0 -1.45rem
+    vertical-align: middle
+    pointer-events: none
+    opacity: 1
+    border: 2px solid var(--task-list-checkbox-border)
+    border-radius: 0.2rem
+    background-color: var(--task-list-checkbox-bg)
+    background-position: center
+    background-repeat: no-repeat
+    background-size: 0.72rem 0.72rem
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08)
+
+    &:checked
+      background-color: var(--task-list-checkbox-checked-bg)
+      border-color: var(--task-list-checkbox-checked-border)
+      background-image: var(--task-list-checkbox-check)
+
+    &:disabled
+      opacity: 1
 
   a
     text-decoration: none

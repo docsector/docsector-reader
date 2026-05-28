@@ -2,6 +2,7 @@ import MarkdownIt from 'markdown-it'
 import attrs from 'markdown-it-attrs'
 import GithubSlugger from 'github-slugger'
 import katex from 'katex'
+import taskLists from 'markdown-it-task-lists'
 import texmath from 'markdown-it-texmath'
 
 const ALERT_MESSAGE_TYPES = new Set([
@@ -112,6 +113,32 @@ const restoreShieldedCodeSegments = (source = '', codeSegmentsMap = new Map()) =
   })
 
   return restored
+}
+
+const escapeHtmlAttributeValue = (value = '') => {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+}
+
+const getTokenAttributes = (element) => {
+  if (!Array.isArray(element?.attrs) || element.attrs.length === 0) {
+    return null
+  }
+
+  return Object.fromEntries(element.attrs.map(([name, value]) => [name, value ?? '']))
+}
+
+const renderTokenAttributes = (element) => {
+  const attributes = getTokenAttributes(element)
+
+  if (attributes === null) {
+    return ''
+  }
+
+  return Object.entries(attributes)
+    .map(([name, value]) => ` ${name}="${escapeHtmlAttributeValue(value)}"`)
+    .join('')
 }
 
 const extractQuickLinksBlocks = (source = '') => {
@@ -468,6 +495,14 @@ const renderBlockToken = (markdown, element, env) => {
   return markdown.renderer.render([element], markdown.options, env).trim()
 }
 
+const renderInlineToken = (markdown, markdownInline, element, env) => {
+  if (Array.isArray(element.children) && element.children.length > 0) {
+    return markdown.renderer.renderInline(element.children, markdown.options, env)
+  }
+
+  return markdownInline.renderInline(element.content, env)
+}
+
 const createMarkdownBlockParser = () => {
   const markdown = installMathSupport(new MarkdownIt({
     html: true
@@ -477,6 +512,11 @@ const createMarkdownBlockParser = () => {
     leftDelimiter: ':',
     rightDelimiter: ';',
     allowedAttributes: ['filename', 'group', 'tab', 'breadcrumb']
+  })
+  markdown.use(taskLists, {
+    enabled: false,
+    label: false,
+    labelAfter: false
   })
 
   return markdown
@@ -662,7 +702,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     }
 
     if (element.type === 'inline') {
-      element.content = markdownInline.renderInline(element.content, markdownEnv)
+      element.content = renderInlineToken(markdown, markdownInline, element, markdownEnv)
     }
 
     if (level === 0) {
@@ -779,23 +819,29 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
       switch (element.type) {
         case 'bullet_list_open':
           if (level === 1) {
+            const attributes = getTokenAttributes(element)
+
             tokens.push({
               tag: 'ul',
-              content: ''
+              content: '',
+              ...(attributes !== null ? { attrs: attributes } : {})
             })
           } else {
-            parent.content += '<ul>'
+            parent.content += `<ul${renderTokenAttributes(element)}>`
           }
           break
 
         case 'ordered_list_open':
           if (level === 1) {
+            const attributes = getTokenAttributes(element)
+
             tokens.push({
               tag: 'ol',
-              content: ''
+              content: '',
+              ...(attributes !== null ? { attrs: attributes } : {})
             })
           } else {
-            parent.content += '<ol>'
+            parent.content += `<ol${renderTokenAttributes(element)}>`
           }
           break
 
@@ -811,7 +857,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
           break
 
         case 'list_item_open':
-          parent.content += '<li>'
+          parent.content += `<li${renderTokenAttributes(element)}>`
           break
 
         case 'thead_open':
