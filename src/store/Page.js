@@ -1,3 +1,23 @@
+const getNodePath = (nodes, targetId, ancestry = []) => {
+  for (const node of nodes) {
+    const nextAncestry = [...ancestry, node.id]
+
+    if (node.id === targetId) {
+      return nextAncestry
+    }
+
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      const childPath = getNodePath(node.children, targetId, nextAncestry)
+
+      if (childPath !== null) {
+        return childPath
+      }
+    }
+  }
+
+  return null
+}
+
 export default {
   namespaced: true,
 
@@ -82,8 +102,12 @@ export default {
       state.nodesExpanded = [0]
     },
     pushNodesExpanded (state, nodeId) {
-      if (!state.nodesExpanded.includes(nodeId)) {
-        state.nodesExpanded.push(nodeId)
+      const nodePath = getNodePath(state.nodes, nodeId) || [nodeId]
+
+      for (const pathNodeId of nodePath) {
+        if (!state.nodesExpanded.includes(pathNodeId)) {
+          state.nodesExpanded.push(pathNodeId)
+        }
       }
     },
 

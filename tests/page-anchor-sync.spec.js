@@ -78,4 +78,25 @@ describe('page store anchor registration', () => {
 
     expect(state.nodesExpanded).toEqual([0, 'intro', 'details'])
   })
+
+  it('expands ancestor nodes when a child section becomes active first', () => {
+    const state = createPageState()
+
+    PageModule.mutations.pushNodes(state, {
+      id: 'chapter-a',
+      label: 'Chapter A',
+      child: false,
+      children: []
+    })
+    PageModule.mutations.pushNodes(state, {
+      id: 'chapter-a-step-1',
+      label: 'Step 1',
+      child: true,
+      children: []
+    })
+
+    PageModule.mutations.pushNodesExpanded(state, 'chapter-a-step-1')
+
+    expect(state.nodesExpanded).toEqual([0, 'chapter-a', 'chapter-a-step-1'])
+  })
 })
