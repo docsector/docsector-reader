@@ -1,13 +1,17 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useStore } from 'vuex'
+import { homePageSourceMode } from 'virtual:docsector-homepage-override'
 // components
 import DPage from "./DPage.vue";
 import DPageBar from "./DPageBar.vue";
 import DH1 from "./DH1.vue";
 import DPageSection from "./DPageSection.vue";
+import { usesRemoteReadmeHomeContent } from '../home-page-mode'
 
 const route = useRoute()
+const store = useStore()
 
 const id = computed(() => {
   const path = route.path
@@ -19,6 +23,13 @@ const id = computed(() => {
 
   return hash >>> 0
 })
+
+const usesRemoteReadmeHome = computed(() => {
+  return usesRemoteReadmeHomeContent({
+    pageBase: store.state.page.base,
+    homePageSourceMode
+  })
+})
 </script>
 
 <template>
@@ -26,11 +37,12 @@ const id = computed(() => {
   <header>
     <d-page-bar />
     <hr />
-    <d-h1 :id="0" />
+    <d-h1 v-if="!usesRemoteReadmeHome" :id="0" />
+    <span v-else id="0" aria-hidden="true"></span>
   </header>
 
   <main>
-    <d-page-section :id="id" />
+    <d-page-section :id="id" :render-primary-heading="usesRemoteReadmeHome" />
   </main>
 </d-page>
 </template>

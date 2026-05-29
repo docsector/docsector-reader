@@ -11,6 +11,10 @@ defineProps({
   id: {
     type: Number,
     required: true
+  },
+  renderPrimaryHeading: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -32,6 +36,7 @@ const tokenized = computed(() => {
 <section>
   <d-page-tokens
     :id="id"
+    :render-primary-heading="renderPrimaryHeading"
     :tokens="tokenized"
   />
 </section>

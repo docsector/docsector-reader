@@ -1504,7 +1504,7 @@ async function fetchRemoteMarkdown (url, timeoutMs = 8000) {
   }
 }
 
-async function resolveHomePageSources (projectRoot, config = {}, options = {}) {
+export async function resolveHomePageSources (projectRoot, config = {}, options = {}) {
   const { logPrefix = '[docsector]' } = options
   const pagesDir = resolve(projectRoot, 'src', 'pages')
   const { defaultLang, langs } = getConfiguredLanguages(config)
@@ -1551,18 +1551,17 @@ async function resolveHomePageSources (projectRoot, config = {}, options = {}) {
 function createHomePageOverridePlugin (projectRoot) {
   const virtualId = 'virtual:docsector-homepage-override'
   const resolvedId = '\0' + virtualId
-  let byLang = null
+  let homePageSources = null
   let loadPromise = null
 
   const ensureSources = async () => {
-    if (byLang) return byLang
+    if (homePageSources) return homePageSources
     if (!loadPromise) {
       loadPromise = (async () => {
         const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
         const { default: config } = await import(configUrl)
-        const sources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
-        byLang = sources.byLang
-        return byLang
+        homePageSources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
+        return homePageSources
       })().finally(() => {
         loadPromise = null
       })
@@ -1586,18 +1585,21 @@ function createHomePageOverridePlugin (projectRoot) {
     },
     async load (id) {
       if (id === resolvedId) {
-        await ensureSources()
-        return `export default ${JSON.stringify(byLang || {})}`
+        const sources = await ensureSources()
+        return [
+          `export const homePageSourceMode = ${JSON.stringify(sources?.mode || 'local')}`,
+          `export default ${JSON.stringify(sources?.byLang || {})}`
+        ].join('\n')
       }
 
-      await ensureSources()
-      if (!byLang) return null
+      const sources = await ensureSources()
+      if (!sources?.byLang) return null
 
       const match = id.match(/Homepage\.([A-Za-z0-9-]+)\.md\?raw(?:$|&)/)
       if (!match) return null
 
       const lang = match[1]
-      const content = byLang[lang]
+      const content = sources.byLang[lang]
       if (typeof content !== 'string') return null
 
       return `export default ${JSON.stringify(content)}`

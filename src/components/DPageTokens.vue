@@ -8,6 +8,10 @@ defineProps({
     type: Number,
     default: 0
   },
+  renderPrimaryHeading: {
+    type: Boolean,
+    default: false
+  },
   tokens: {
     type: Array,
     default: () => []
@@ -34,8 +38,13 @@ import DBlockStepper from './DBlockStepper.vue'
 
 <template>
 <template v-for="(token, index) in tokens" :key="`${token.tag}-${index}`">
+  <h1
+    v-if="token.tag === 'h1' && renderPrimaryHeading"
+    :id="token.anchorId"
+    v-html="token.content"
+  ></h1>
   <d-h2
-    v-if="token.tag === 'h2'"
+    v-else-if="token.tag === 'h2'"
     :id="token.anchorId"
     :value="token.content"
   />
