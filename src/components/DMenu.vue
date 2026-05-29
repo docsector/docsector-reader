@@ -22,6 +22,8 @@ const term = ref(null)
 const founds = ref(false)
 const items = ref([])
 const scrolling = ref(null)
+const isMenuHovered = ref(false)
+const pendingScroll = ref(false)
 
 const subpage = computed(() => {
   const parent = $route.matched[0]?.path
@@ -312,39 +314,77 @@ const getMenuItemHeaderLabel = (meta) => {
   return label // String raw
 }
 
-const scrollToActiveMenuItem = () => {
+const executeScrollToActiveMenuItem = () => {
+  const menu = document.getElementById('menu')
+  if (!menu) {
+    return
+  }
+
+  const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
+  if (!menuItemActive || typeof menuItemActive !== 'object') {
+    return
+  }
+
+  const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
+  const offsetTop2 = menuItemActive.offsetTop
+
+  const innerHeightBy2 = window.innerHeight / 2
+
+  const searchBarHeight = 50
+  let expansionHeaderHeight = 0
+  if (offsetTop1 > 0) {
+    expansionHeaderHeight = 45
+  }
+  const fixedHeight = searchBarHeight + expansionHeaderHeight
+
+  const target = scroll.getScrollTarget(menuItemActive)
+  const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
+  const duration = 300
+
+  if (offset > 0) {
+    scroll.setVerticalScrollPosition(target, offset, duration)
+  }
+}
+
+const flushPendingMenuScroll = () => {
+  if (!pendingScroll.value || isMenuHovered.value) {
+    return
+  }
+
   if (scrolling.value) {
     clearTimeout(scrolling.value)
+    scrolling.value = null
+  }
+
+  pendingScroll.value = false
+  executeScrollToActiveMenuItem()
+}
+
+const scrollToActiveMenuItem = () => {
+  pendingScroll.value = true
+
+  if (scrolling.value) {
+    clearTimeout(scrolling.value)
+    scrolling.value = null
+  }
+
+  if (isMenuHovered.value) {
+    return
   }
 
   scrolling.value = setTimeout(() => {
-    const menu = document.getElementById('menu')
-    if (menu) {
-      const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
-      if (menuItemActive && typeof menuItemActive === 'object') {
-        const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
-        const offsetTop2 = menuItemActive.offsetTop
-
-        const innerHeightBy2 = window.innerHeight / 2
-
-        const searchBarHeight = 50
-        let expansionHeaderHeight = 0
-        if (offsetTop1 > 0) {
-          expansionHeaderHeight = 45
-        }
-        const fixedHeight = searchBarHeight + expansionHeaderHeight
-
-        const target = scroll.getScrollTarget(menuItemActive)
-        const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
-        const duration = 300
-
-        if (offset > 0) {
-          scroll.setVerticalScrollPosition(target, offset, duration)
-        }
-      }
-    }
     scrolling.value = null
+    flushPendingMenuScroll()
   }, 1500)
+}
+
+const handleMenuMouseEnter = () => {
+  isMenuHovered.value = true
+}
+
+const handleMenuMouseLeave = () => {
+  isMenuHovered.value = false
+  flushPendingMenuScroll()
 }
 
 onMounted(() => {
@@ -361,6 +401,9 @@ onBeforeUnmount(() => {
   if (scrolling.value) {
     clearTimeout(scrolling.value)
   }
+
+  isMenuHovered.value = false
+  pendingScroll.value = false
 })
 
 const buildMenuItems = () => {
@@ -428,6 +471,8 @@ watch([currentBookId, activeVersionId], rebuildItems)
 </transition>
 
 <q-scroll-area id="menu"
+  @mouseenter="handleMenuMouseEnter"
+  @mouseleave="handleMenuMouseLeave"
   :visible="true"
   :class="$q.dark.isActive ? '' : 'bg-grey-2'"
 >
