@@ -27,6 +27,7 @@ import DBlockFile from './DBlockFile.vue'
 import DBlockEmbeddedUrl from './DBlockEmbeddedUrl.vue'
 import DBlockCards from './DBlockCards.vue'
 import DBlockQuickLinks from './DBlockQuickLinks.vue'
+import DBlockTimeline from './DBlockTimeline.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
 import DBlockStepper from './DBlockStepper.vue'
 </script>
@@ -141,6 +142,18 @@ import DBlockStepper from './DBlockStepper.vue'
     :title="token.title"
     :items="token.items"
   />
+
+  <d-block-timeline
+    v-else-if="token.tag === 'timeline'"
+    :items="token.items"
+  >
+    <template #default="{ item }">
+      <d-page-tokens
+        :id="id"
+        :tokens="item.tokens"
+      />
+    </template>
+  </d-block-timeline>
 
   <d-block-stepper
     v-else-if="token.tag === 'stepper'"

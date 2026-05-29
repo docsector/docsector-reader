@@ -711,6 +711,34 @@ export default {
     }
   },
 
+  '/content/blocks/timeline': {
+    config: {
+      icon: 'timeline',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Timeline — Documentation of Docsector Reader',
+          'pt-BR': 'Timeline — Documentação do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Timeline' },
+      'pt-BR': { title: 'Linha do tempo' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'timeline updates changelog release notes chronology tags anchor gitbook',
+        'pt-BR': 'timeline linha do tempo atualizações changelog notas de versão cronologia tags âncora gitbook'
+      }
+    }
+  },
+
   '/content/blocks/tables': {
     config: {
       icon: 'table_chart',

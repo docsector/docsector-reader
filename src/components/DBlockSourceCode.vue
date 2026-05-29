@@ -508,11 +508,12 @@ function printToLetter(number) {
     padding: 0
 
     .lines
-      padding: 11px 5px 8px 5px
+      padding: 10px 5px 10px 5px
       text-align: right
       float: left
       -webkit-user-select: none
       user-select: none
+      line-height: 19px
 
       a
         display: block

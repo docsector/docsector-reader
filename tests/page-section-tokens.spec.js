@@ -267,6 +267,129 @@ Body copy.
     expect(tokens[1].content).toContain('<d-block-expandable title="Literal">')
   })
 
+  it('tokenizes timeline blocks with rich markdown and nested Docsector blocks', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-timeline>
+  <d-block-timeline-item date="2025-12-25">
+
+<d-block-timeline-tag color="warning" icon="rocket_launch">beta</d-block-timeline-tag>
+<d-block-timeline-tag color="secondary" text-color="white" label="release candidate" />
+
+## A brand new update
+
+> [!TIP]
+> Review the release notes before rollout.
+
+<d-block-quick-links title="Related links">
+  <d-block-quick-link title="Install" description="Set up the project" to="/guide/getting-started" />
+</d-block-quick-links>
+
+~~~bash
+npm run release
+~~~
+
+  </d-block-timeline-item>
+</d-block-timeline>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'timeline'
+    })
+    expect(tokens[0].items).toHaveLength(1)
+    expect(tokens[0].items[0]).toMatchObject({
+      date: '2025-12-25',
+      tags: [
+        {
+          label: 'beta',
+          color: 'warning',
+          textColor: '',
+          icon: 'rocket_launch'
+        },
+        {
+          label: 'release candidate',
+          color: 'secondary',
+          textColor: 'white',
+          icon: ''
+        }
+      ],
+      anchorId: '2025-12-25-a-brand-new-update'
+    })
+    expect(tokens[0].items[0].tokens.map((token) => token.tag)).toEqual([
+      'p',
+      'blockquote',
+      'quick-links',
+      'code'
+    ])
+    expect(tokens[0].items[0].tokens[0]).toMatchObject({
+      tag: 'p',
+      content: 'A brand new update'
+    })
+    expect(tokens[0].items[0].tokens[1]).toMatchObject({
+      tag: 'blockquote',
+      alertType: 'tip'
+    })
+    expect(tokens[0].items[0].tokens[2]).toMatchObject({
+      tag: 'quick-links',
+      title: 'Related links'
+    })
+    expect(tokens[0].items[0].tokens[3]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      content: 'npm run release\n'
+    })
+  })
+
+  it('deduplicates generated timeline anchors for repeated dates and titles', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-timeline>
+  <d-block-timeline-item date="2025-12-25">
+
+## Shipping update
+
+First entry.
+
+  </d-block-timeline-item>
+  <d-block-timeline-item date="2025-12-25">
+
+## Shipping update
+
+Second entry.
+
+  </d-block-timeline-item>
+</d-block-timeline>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].items).toHaveLength(2)
+    expect(tokens[0].items[0]).toMatchObject({
+      anchorId: '2025-12-25-shipping-update'
+    })
+    expect(tokens[0].items[1]).toMatchObject({
+      anchorId: '2025-12-25-shipping-update-1'
+    })
+  })
+
+  it('preserves explicit timeline anchors', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-timeline>
+  <d-block-timeline-item date="2025-12-25" anchor="General Availability Release">
+
+## Shipping update
+
+Stable anchor.
+
+  </d-block-timeline-item>
+</d-block-timeline>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].items).toHaveLength(1)
+    expect(tokens[0].items[0]).toMatchObject({
+      anchorId: 'general-availability-release'
+    })
+  })
+
   it('keeps quick links tokenization working', () => {
     const tokens = tokenizePageSectionSource(`
 <d-block-quick-links title="Get started">

@@ -15,6 +15,7 @@ const ALERT_MESSAGE_TYPES = new Set([
 
 const CARDS_MARKER_PREFIX = '@@DOCSECTOR_CARDS_'
 const QUICK_LINKS_MARKER_PREFIX = '@@DOCSECTOR_QUICK_LINKS_'
+const TIMELINE_MARKER_PREFIX = '@@DOCSECTOR_TIMELINE_'
 const STEPPER_MARKER_PREFIX = '@@DOCSECTOR_STEPPER_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
@@ -245,6 +246,113 @@ const parseExpandableOpenState = (raw = '') => {
   return ['1', 'true', 'yes', 'on'].includes(String(raw).trim().toLowerCase())
 }
 
+const parseTimelineTags = (raw = '') => {
+  return decodeHtmlEntities(raw)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((label) => ({
+      label,
+      color: '',
+      textColor: '',
+      icon: ''
+    }))
+}
+
+const parseTimelineTagLabel = (raw = '') => {
+  return decodeHtmlEntities(String(raw).replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const createTimelineTag = (rawAttrs = '', rawLabel = '') => {
+  const attrs = parseCustomTagAttributes(rawAttrs)
+  const label = parseTimelineTagLabel(attrs.label || rawLabel)
+
+  if (label === '') {
+    return null
+  }
+
+  return {
+    label,
+    color: decodeHtmlEntities(attrs.color || '').trim(),
+    textColor: decodeHtmlEntities(attrs['text-color'] || attrs.textColor || '').trim(),
+    icon: decodeHtmlEntities(attrs.icon || '').trim()
+  }
+}
+
+const extractTimelineItemTags = (source = '') => {
+  const tags = []
+
+  const replaceBlock = (match, rawAttrs, rawLabel = '') => {
+    const tag = createTimelineTag(rawAttrs, rawLabel)
+
+    if (tag !== null) {
+      tags.push(tag)
+      return '\n'
+    }
+
+    return match
+  }
+
+  const replaced = String(source).replace(
+    /<d-block-timeline-tag\b([^>]*?)(?:\/\s*>|>([\s\S]*?)<\/d-block-timeline-tag>)/gi,
+    replaceBlock
+  )
+
+  return {
+    content: replaced,
+    tags
+  }
+}
+
+const extractTimelineBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const blockPattern = /<d-block-timeline\b([^>]*)>([\s\S]*?)<\/d-block-timeline>/gi
+  const replaced = String(source).replace(blockPattern, (match, _rawAttrs, inner) => {
+    const items = []
+    const itemPattern = /<d-block-timeline-item\b([^>]*)>([\s\S]*?)<\/d-block-timeline-item>/gi
+
+    let itemMatch = itemPattern.exec(inner)
+    while (itemMatch !== null) {
+      const attrs = parseCustomTagAttributes(itemMatch[1])
+      const date = decodeHtmlEntities(attrs.date || '').trim()
+      const { content: itemContent, tags } = extractTimelineItemTags(itemMatch[2])
+
+      if (date) {
+        items.push({
+          date,
+          tags: [...parseTimelineTags(attrs.tags || ''), ...tags],
+          anchor: decodeHtmlEntities(attrs.anchor || attrs.id || '').trim(),
+          content: itemContent
+        })
+      }
+
+      itemMatch = itemPattern.exec(inner)
+    }
+
+    if (items.length === 0) {
+      return match
+    }
+
+    const marker = `${TIMELINE_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      items
+    })
+
+    return `\n${marker}\n`
+  })
+
+  return {
+    source: replaced,
+    timelineMap: map
+  }
+}
+
 const extractStepperBlocks = (source = '') => {
   const map = new Map()
   let index = 0
@@ -450,6 +558,12 @@ const escapeHtml = (value = '') => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+const stripHtmlTags = (value = '') => {
+  return decodeHtmlEntities(String(value).replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 const extractTagAttributes = (html = '', tagName = '') => {
@@ -684,6 +798,35 @@ const getHeadingAnchorId = (markdown, currentTag, element, env, parserState) => 
   return parserState.headingSlugger.slug(headingText)
 }
 
+const getTimelineItemTitle = (tokens = []) => {
+  for (const token of tokens) {
+    if (typeof token?.content !== 'string') {
+      continue
+    }
+
+    const text = stripHtmlTags(token.content)
+    if (text !== '') {
+      return text
+    }
+  }
+
+  return ''
+}
+
+const getTimelineItemAnchorId = ({ item, itemTokens, itemIndex, parserState }) => {
+  const explicitAnchor = decodeHtmlEntities(item.anchor || '').trim()
+
+  if (explicitAnchor !== '') {
+    return parserState.headingSlugger.slug(explicitAnchor)
+  }
+
+  const title = getTimelineItemTitle(itemTokens)
+  const fallbackTitle = title || `item-${itemIndex + 1}`
+  const seed = [item.date, fallbackTitle].filter(Boolean).join(' ')
+
+  return parserState.headingSlugger.slug(seed)
+}
+
 export const tokenizePageSectionSource = (source = '', options = {}) => {
   const {
     allowHeadingTokens = true,
@@ -691,7 +834,19 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   } = options
   const normalizedSource = normalizePageSectionSource(source)
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
-  const { source: sourceWithSteppers, stepperMap } = extractStepperBlocks(sourceWithShieldedCode)
+  const { source: sourceWithTimelines, timelineMap } = extractTimelineBlocks(sourceWithShieldedCode)
+
+  timelineMap.forEach((data, marker) => {
+    timelineMap.set(marker, {
+      ...data,
+      items: data.items.map((item) => ({
+        ...item,
+        content: restoreShieldedCodeSegments(item.content, codeSegmentsMap)
+      }))
+    })
+  })
+
+  const { source: sourceWithSteppers, stepperMap } = extractStepperBlocks(sourceWithTimelines)
 
   stepperMap.forEach((data, marker) => {
     stepperMap.set(marker, {
@@ -875,6 +1030,33 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
       switch (element.type) {
         case 'inline': {
           const anchorId = getHeadingAnchorId(markdown, tag, element, markdownEnv, parserState)
+
+          if (timelineMap.has(element.content.trim())) {
+            const data = timelineMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'timeline',
+              items: data.items.map((item, itemIndex) => {
+                const itemTokens = tokenizePageSectionSource(item.content, {
+                  allowHeadingTokens: false,
+                  parserState
+                })
+
+                return {
+                  date: item.date,
+                  tags: item.tags,
+                  anchorId: getTimelineItemAnchorId({
+                    item,
+                    itemTokens,
+                    itemIndex,
+                    parserState
+                  }),
+                  tokens: itemTokens
+                }
+              })
+            })
+            break
+          }
 
           if (stepperMap.has(element.content.trim())) {
             const data = stepperMap.get(element.content.trim())

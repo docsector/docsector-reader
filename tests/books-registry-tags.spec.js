@@ -18,6 +18,7 @@ describe('book registry tags migration', () => {
     expect(currentTags.guide['en-US']['/guide/getting-started']).toContain('install')
     expect(currentTags.manual['pt-BR']['/manual/basic/d-menu']).toContain('busca')
     expect(currentTags.manual['en-US']['/manual/content/blocks/headings']).toContain('heading')
+    expect(currentTags.manual['en-US']['/manual/content/blocks/timeline']).toContain('timeline')
   })
 
   it('keeps tags scoped by book prefix', async () => {

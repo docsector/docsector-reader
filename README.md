@@ -70,6 +70,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
 - 📖 **Expandable Markdown Sections** — Use `<d-block-expandable title="...">...</d-block-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 1️⃣ **Stepper Guides** — Use `<d-block-stepper>` with nested `<d-block-step title="...">...</d-block-step>` items to render native Quasar vertical steppers with rich Markdown and optional per-step icon overrides
+- 🕒 **Timeline Updates** — Use `<d-block-timeline>` with nested `<d-block-timeline-item date="...">...</d-block-timeline-item>` entries and optional `<d-block-timeline-tag>` labels to publish GitBook-inspired changelog items with direct-link anchors, tag icons/colors, and rich Markdown bodies
 - 📎 **File Attachment Blocks** — Use `<d-block-file src="/files/...">...</d-block-file>` in Markdown to render downloadable file cards with automatic local size detection and support for external URLs
 - 🌐 **Embedded URL Blocks** — Use `<d-block-embedded-url url="https://...">...</d-block-embedded-url>` to render curated embeds for YouTube, Vimeo, Spotify, and CodePen with a safe link-card fallback for unsupported URLs
 - 🧭 **Quick Links Custom Element** — Use `<d-block-quick-links>` and `<d-block-quick-link>` in Markdown to render rich home navigation cards
