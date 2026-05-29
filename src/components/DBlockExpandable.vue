@@ -59,6 +59,7 @@ body.body--dark
   .q-item
     min-height: 0
     padding: 0
+    height: 35px
 
   .q-item__section--side
     padding-left: 0.55rem
