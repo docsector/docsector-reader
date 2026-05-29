@@ -39,7 +39,7 @@ O nó raiz (do DH1) mostra o título da página do i18n quando nenhum label é d
 
 ## Sincronização de Scroll
 
-Quando o usuário faz scroll no conteúdo da página, o observador de scroll do `DPage` chama `useNavigator().scrolling()`, que itera sobre as âncoras registradas e seleciona a mais próxima da posição de scroll atual. Isso mantém o índice sincronizado com o conteúdo visível.
+Quando o usuário faz scroll no conteúdo da página, o observador de scroll do `DPage` chama `useNavigator().scrolling()`, que seleciona o último heading registrado que cruzou o limite superior da área de conteúdo. Âncoras ausentes ou obsoletas são ignoradas para manter o índice sincronizado com a seção realmente visível, sem saltar adiante.
 
 ## Ciclo de Vida
 

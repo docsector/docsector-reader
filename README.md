@@ -50,7 +50,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
-- 🔗 **Anchor Navigation** — Right-side Table of Contents tree with scroll tracking and auto-scroll to active section
+- 🔗 **Anchor Navigation** — Right-side Table of Contents tree with stable scroll tracking, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers

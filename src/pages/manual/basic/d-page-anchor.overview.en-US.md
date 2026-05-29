@@ -39,7 +39,7 @@ The root node (from DH1) shows the page title from i18n when no label is set:
 
 ## Scroll Synchronization
 
-When the user scrolls the page content, the `DPage` scroll observer calls `useNavigator().scrolling()`, which iterates over registered anchors and selects the one closest to the current scroll position. This keeps the table of contents in sync with the visible content.
+When the user scrolls the page content, the `DPage` scroll observer calls `useNavigator().scrolling()`, which selects the last registered heading that crossed the content threshold. Missing or stale anchors are ignored so the table of contents stays in sync with the visible section instead of jumping ahead.
 
 ## Lifecycle
 

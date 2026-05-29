@@ -46,7 +46,7 @@ export default {
     pushAnchors (state, value) {
       if (value === false) {
         state.anchors = []
-      } else {
+      } else if (!state.anchors.includes(value)) {
         // index: id
         state.anchors.push(value)
       }
@@ -82,7 +82,9 @@ export default {
       state.nodesExpanded = [0]
     },
     pushNodesExpanded (state, nodeId) {
-      state.nodesExpanded.push(nodeId)
+      if (!state.nodesExpanded.includes(nodeId)) {
+        state.nodesExpanded.push(nodeId)
+      }
     },
 
     setScrolling (state, val) {

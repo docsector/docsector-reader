@@ -3,6 +3,8 @@ import { useStore } from 'vuex'
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
 
+import { DEFAULT_ACTIVE_ANCHOR_OFFSET, getActiveAnchorId } from './useActiveAnchor'
+
 export default function useNavigator() {
   const store = useStore()
   const router = useRouter()
@@ -46,7 +48,10 @@ export default function useNavigator() {
   const select = (id) => {
     const normalized = normalizeStoreAnchorId(id)
 
-    store.commit('page/setAnchor', normalized)
+    if (store.state.page.anchor !== normalized) {
+      store.commit('page/setAnchor', normalized)
+    }
+
     store.commit('page/pushNodesExpanded', normalized)
   }
 
@@ -78,27 +83,29 @@ export default function useNavigator() {
       return
     }
 
-    const scrollPositionTop = scroll.position.top + 50
-    const anchors = store.state.page.anchors
+    const activeAnchorId = getActiveAnchorId({
+      anchors: store.state.page.anchors,
+      scrollTop: scroll?.position?.top,
+      scrollOffset: DEFAULT_ACTIVE_ANCHOR_OFFSET,
+      rootAnchorId: 0,
+      getAnchorOffsetTop: (anchorId) => {
+        const domAnchorId = normalizeDomAnchorId(anchorId)
 
-    for (let i = 0; i < anchors.length; i++) {
-      const anchorId = anchors[i]
-      const domAnchorId = normalizeDomAnchorId(anchorId)
+        if (domAnchorId === '') {
+          return undefined
+        }
 
-      if (domAnchorId === '0') {
-        continue
+        const Anchor = document.getElementById(domAnchorId)
+
+        if (Anchor !== null && typeof Anchor === 'object') {
+          return Anchor.offsetTop
+        }
+
+        return undefined
       }
+    })
 
-      const Anchor = document.getElementById(domAnchorId)
-      let AnchorOffsetTop = 20
-      if (Anchor !== null && typeof Anchor === 'object') {
-        AnchorOffsetTop = Anchor.offsetTop
-      }
-
-      if (scrollPositionTop >= AnchorOffsetTop) {
-        select(anchorId)
-      }
-    }
+    select(activeAnchorId)
   }
 
   const navigate = (value, toAnchor = true) => {
