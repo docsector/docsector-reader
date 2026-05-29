@@ -51,6 +51,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
+- 🧰 **Docsector CLI Skill Installer** — Install the built-in authoring skill into older scaffolds with `docsector install-skill`
 - 🔗 **Anchor Navigation** — Right-side Table of Contents tree with stable scroll tracking, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
@@ -534,6 +535,14 @@ This repository publishes the built-in Docsector authoring skill at:
 - `/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md`
 
 The skill teaches agents Docsector Markdown authoring, all documented blocks, page/source conventions, MCP lookup, and WebMCP browser tools.
+
+For projects scaffolded before the built-in skill existed, run:
+
+```bash
+npx docsector install-skill
+```
+
+The helper copies the skill into `.github/skills/` for repository-local assistants and into `public/.well-known/agent-skills/` for published discovery. Existing folders are skipped unless `--force` is passed.
 
 When `digest` is omitted in config, Docsector computes it automatically from the referenced local artifact and writes it as:
 
@@ -1087,6 +1096,8 @@ Notes:
 
 ```bash
 docsector init <name>          # Scaffold a new consumer project
+docsector install-skill        # Install the built-in authoring skill
+docsector install-skill --force # Refresh an existing installed authoring skill
 docsector dev                  # Start dev server (port 8181)
 docsector dev --port 3000      # Custom port
 docsector build                # Build for production (dist/spa/)

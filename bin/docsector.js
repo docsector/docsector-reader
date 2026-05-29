@@ -8,11 +8,12 @@
  *   docsector dev          — Start development server with hot-reload
  *   docsector build        — Build optimized SPA for production
  *   docsector serve        — Serve the production build locally
+ *   docsector install-skill — Install the built-in authoring skill into a project
  *   docsector help         — Show help information
  */
 
 import { spawn } from 'child_process'
-import { existsSync, mkdirSync, writeFileSync, copyFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync, copyFileSync, cpSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -23,7 +24,25 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '4.3.0'
+const VERSION = '4.3.1'
+const AUTHORING_SKILL_NAME = 'docsector-documentation-authoring'
+const AUTHORING_SKILL_DESCRIPTION = 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.'
+const AUTHORING_SKILL_PUBLIC_PATH = `/.well-known/agent-skills/${AUTHORING_SKILL_NAME}/SKILL.md`
+const AUTHORING_SKILL_SOURCE_DIR = resolve(packageRoot, 'public', '.well-known', 'agent-skills', AUTHORING_SKILL_NAME)
+const AUTHORING_SKILL_CONFIG_SNIPPET = `\
+agentSkills: {
+  enabled: true,
+  path: '/.well-known/agent-skills/index.json',
+  schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+  skills: [
+    {
+      name: '${AUTHORING_SKILL_NAME}',
+      type: 'skill-md',
+      description: '${AUTHORING_SKILL_DESCRIPTION}',
+      url: '${AUTHORING_SKILL_PUBLIC_PATH}'
+    }
+  ]
+}`
 
 const HELP = `
   Docsector Reader v${VERSION}
@@ -37,11 +56,14 @@ const HELP = `
     dev          Start development server with hot-reload (port 8181)
     build        Build optimized SPA for production (output: dist/spa/)
     serve        Serve the production build locally
+    install-skill
+                 Copy the built-in Docsector authoring skill into this project
     version      Show version number
     help         Show this help message
 
   Options:
     --port <number>   Override dev server port (default: 8181)
+    --force           Overwrite an existing installed authoring skill
 
   Examples:
     docsector init my-docs
@@ -49,6 +71,8 @@ const HELP = `
     docsector dev --port 3000
     docsector build
     docsector serve
+    docsector install-skill
+    docsector install-skill --force
 
   Documentation:
     https://github.com/docsector/docsector-reader
@@ -235,10 +259,10 @@ export default {
   //   schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
   //   skills: [
   //     {
-  //       name: 'my-docs-mcp',
+  //       name: '${AUTHORING_SKILL_NAME}',
   //       type: 'skill-md',
-  //       description: 'Search and read docs pages through MCP.',
-  //       url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+  //       description: '${AUTHORING_SKILL_DESCRIPTION}',
+  //       url: '${AUTHORING_SKILL_PUBLIC_PATH}'
   //     }
   //   ]
   // },
@@ -783,6 +807,75 @@ function run (cmd, cmdArgs = []) {
   })
 }
 
+function copyAuthoringSkillTarget (targetDir, { force = false } = {}) {
+  if (!existsSync(AUTHORING_SKILL_SOURCE_DIR)) {
+    throw new Error(`Built-in authoring skill not found at ${AUTHORING_SKILL_SOURCE_DIR}`)
+  }
+
+  if (targetDir === AUTHORING_SKILL_SOURCE_DIR) {
+    return 'already-source'
+  }
+
+  if (existsSync(targetDir) && !force) {
+    return 'skipped'
+  }
+
+  mkdirSync(dirname(targetDir), { recursive: true })
+  cpSync(AUTHORING_SKILL_SOURCE_DIR, targetDir, {
+    recursive: true,
+    force: true
+  })
+
+  return existsSync(targetDir) ? 'installed' : 'failed'
+}
+
+function installAuthoringSkill ({ projectRoot = process.cwd(), force = false } = {}) {
+  const targets = [
+    {
+      label: 'Repository-local skill',
+      dir: resolve(projectRoot, '.github', 'skills', AUTHORING_SKILL_NAME)
+    },
+    {
+      label: 'Public skill artifact',
+      dir: resolve(projectRoot, 'public', '.well-known', 'agent-skills', AUTHORING_SKILL_NAME)
+    }
+  ]
+
+  console.log(`\n  Installing ${AUTHORING_SKILL_NAME} into ${projectRoot}...\n`)
+
+  try {
+    for (const target of targets) {
+      const result = copyAuthoringSkillTarget(target.dir, { force })
+      if (result === 'installed') {
+        console.log(`  created ${target.label}: ${target.dir}`)
+      } else if (result === 'already-source') {
+        console.log(`  using package ${target.label}: ${target.dir}`)
+      } else if (result === 'skipped') {
+        console.log(`  skipped ${target.label}: ${target.dir}`)
+      } else {
+        throw new Error(`Unable to install ${target.label} at ${target.dir}`)
+      }
+    }
+  } catch (err) {
+    console.error(`\n  Error: ${err.message}\n`)
+    process.exit(1)
+  }
+
+  if (!force) {
+    console.log('\n  Existing skill folders are left untouched. Use --force to refresh them.')
+  }
+
+  console.log('\n  To publish the skill discovery index, add this to docsector.config.js:\n')
+  console.log(
+    AUTHORING_SKILL_CONFIG_SNIPPET.split('\n')
+      .map(line => `  ${line}`)
+      .join('\n')
+  )
+  console.log('\n  Then run:')
+  console.log('    npx docsector build')
+  console.log('')
+}
+
 /**
  * Scaffold a new Docsector documentation project.
  */
@@ -914,6 +1007,10 @@ switch (command) {
 
   case 'serve':
     run('serve', ['dist/spa', '--history', ...args.slice(1)])
+    break
+
+  case 'install-skill':
+    installAuthoringSkill({ force: args.includes('--force') })
     break
 
   case 'version':

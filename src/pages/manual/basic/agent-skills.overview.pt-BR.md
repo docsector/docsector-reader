@@ -52,6 +52,45 @@ O Docsector mantém duas cópias sincronizadas da mesma skill:
 
 Durante o build, o Docsector copia o artefato público para `dist/spa/.well-known/agent-skills/` e gera o índice de descoberta.
 
+## Retrocompatibilidade Com Scaffolds Antigos
+
+Projetos criados antes dessa skill existir podem importá-la com o helper da CLI:
+
+```bash
+npx docsector install-skill
+```
+
+O comando copia a skill embutida para os dois locais esperados:
+
+- `.github/skills/docsector-documentation-authoring/`
+- `public/.well-known/agent-skills/docsector-documentation-authoring/`
+
+Pastas existentes são ignoradas para não sobrescrever edições locais. Use `--force` quando quiser atualizar a cópia instalada a partir do pacote:
+
+```bash
+npx docsector install-skill --force
+```
+
+O helper não reescreve `docsector.config.js`. Depois de instalar os arquivos, habilite a descoberta com:
+
+```javascript
+agentSkills: {
+  enabled: true,
+  path: '/.well-known/agent-skills/index.json',
+  schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+  skills: [
+    {
+      name: 'docsector-documentation-authoring',
+      type: 'skill-md',
+      description: 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.',
+      url: '/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md'
+    }
+  ]
+}
+```
+
+Depois execute `npx docsector build` para gerar `/.well-known/agent-skills/index.json` com o digest calculado.
+
 ## Como Agentes Devem Usar
 
 Agentes devem carregar primeiro o `SKILL.md` e abrir os arquivos de referência apenas quando a tarefa precisar de mais detalhes.
