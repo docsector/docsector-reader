@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStore } from 'vuex'
 import Prism from './code-block-highlighting'
+import { countRenderedCodeLines } from './source-code-lines'
 import { looksLikeFileName, resolveFileIconUrl } from '../composables/useFileIcon'
 
 defineOptions({
@@ -95,10 +96,7 @@ const activeBreadcrumbItems = computed(() => {
 })
 const activeBreadcrumbTitle = computed(() => activeBreadcrumbs.value.join(' > '))
 const hasBreadcrumbs = computed(() => activeBreadcrumbs.value.length > 0)
-const lines = computed(() => {
-  const splited = activeText.value.split(/\r\n|\n/)
-  return splited.length - 1
-})
+const lines = computed(() => countRenderedCodeLines(activeText.value))
 const showHeader = computed(() => hasTabs.value || hasBreadcrumbs.value || (lines.value && lines.value > 1))
 const codeLanguageClass = computed(() => `language-${activeLanguage.value}`)
 const highlighted = computed(() => {

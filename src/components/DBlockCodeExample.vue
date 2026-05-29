@@ -327,6 +327,9 @@ function openGitHub () {
 body.body--light
   --d-code-example-bg: #ffffff
   --d-code-example-border: rgba(37, 67, 45, 0.16)
+  --d-code-example-button-bg: #edf3ee
+  --d-code-example-button-border: rgba(37, 67, 45, 0.12)
+  --d-code-example-button-hover-bg: #e2ebe4
   --d-code-example-toolbar-bg: #f6f8f5
   --d-code-example-toolbar-text: #26352b
   --d-code-example-preview-bg: #ffffff
@@ -336,6 +339,9 @@ body.body--light
 body.body--dark
   --d-code-example-bg: #111512
   --d-code-example-border: rgba(197, 220, 200, 0.18)
+  --d-code-example-button-bg: #29342d
+  --d-code-example-button-border: rgba(197, 220, 200, 0.18)
+  --d-code-example-button-hover-bg: #314036
   --d-code-example-toolbar-bg: #1a211c
   --d-code-example-toolbar-text: #e8efe9
   --d-code-example-preview-bg: #0c0f0d
@@ -371,11 +377,27 @@ body.body--dark
     white-space: nowrap
 
   &__button
+    background: var(--d-code-example-button-bg)
+    border: 1px solid var(--d-code-example-button-border)
+    border-radius: 999px
     color: var(--d-code-example-muted)
     flex: 0 0 auto
+    min-height: 30px
+    min-width: 30px
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease
+
+    &:hover,
+    &:focus-visible
+      background: var(--d-code-example-button-hover-bg)
+      color: var(--d-code-example-toolbar-text)
+
+    &.q-btn--disabled,
+    &[disabled]
+      opacity: 0.55
 
   &__source
     border-top: 1px solid var(--d-code-example-border)
+    border-bottom: 1px solid var(--d-code-example-border)
 
     .source-code
       box-shadow: none
