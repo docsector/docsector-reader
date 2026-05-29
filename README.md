@@ -81,6 +81,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
 - 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
+- 📏 **Accurate Source Code Line Counts** — Code example headers count visible lines correctly across LF, CRLF, and terminal newlines without inflating the total
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
