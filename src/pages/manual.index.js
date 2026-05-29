@@ -265,6 +265,35 @@ export default {
     }
   },
 
+  '/basic/agent-skills': {
+    config: {
+      icon: 'psychology',
+      status: 'new',
+      version: 'v4.3.0',
+      meta: {
+        description: {
+          'en-US': 'Agent Skills — Documentation of Docsector Reader',
+          'pt-BR': 'Skills de Agentes — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Agent Skills' },
+      'pt-BR': { title: 'Skills de Agentes' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'agent skills skill md authoring blocks references mcp webmcp ai discovery well-known copilot',
+        'pt-BR': 'skills agentes skill md autoria blocos referências mcp webmcp ia descoberta well-known copilot'
+      }
+    }
+  },
+
   // =========================================================================
   // Content
   // =========================================================================

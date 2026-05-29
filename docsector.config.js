@@ -55,6 +55,21 @@ export default {
     toolSuffix: 'docsector'
   },
 
+  // @ Agent Skills
+  agentSkills: {
+    enabled: true,
+    path: '/.well-known/agent-skills/index.json',
+    schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+    skills: [
+      {
+        name: 'docsector-documentation-authoring',
+        type: 'skill-md',
+        description: 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.',
+        url: '/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md'
+      }
+    ]
+  },
+
   // @ Home page source
   homePage: {
     source: 'remote-readme',

@@ -30,6 +30,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
+- ✍️ **Docsector Authoring Skill** — Publishable `SKILL.md` that teaches agents Docsector blocks, page patterns, MCP lookup, and WebMCP tools
 - 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
 - 🌐 **WebMCP Browser Tools** — Optional registration of in-page tools via `navigator.modelContext` for browser agents
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
@@ -77,6 +78,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🗂️ **Cards Custom Element** — Use `<d-block-cards>` and `<d-block-card>` in Markdown to render linked content cards with optional cover images
 - 🧾 **API JSON Reference Block** — Use `<d-block-api src="..." />` in Markdown to render Quasar-compatible API reference UIs from public JSON assets without inventing a new schema
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
+- 🧠 **Docsector Authoring Skill Docs** — Documents the built-in `SKILL.md` and reference files so agents can learn Docsector blocks, page patterns, MCP lookup, and WebMCP tools from a public manual page
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
@@ -527,6 +529,12 @@ The generated payload follows Agent Skills Discovery RFC v0.2.0 and includes:
 - `$schema`
 - `skills[]` entries with `name`, `type`, `description`, `url`, `digest`
 
+This repository publishes the built-in Docsector authoring skill at:
+
+- `/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md`
+
+The skill teaches agents Docsector Markdown authoring, all documented blocks, page/source conventions, MCP lookup, and WebMCP browser tools.
+
 When `digest` is omitted in config, Docsector computes it automatically from the referenced local artifact and writes it as:
 
 - `sha256:{hex}`
@@ -543,10 +551,10 @@ export default {
     schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
     skills: [
       {
-        name: 'my-docs-mcp',
+        name: 'docsector-documentation-authoring',
         type: 'skill-md',
-        description: 'Search and fetch docs pages via MCP.',
-        url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+        description: 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.',
+        url: '/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md'
       }
     ]
   }
@@ -757,10 +765,10 @@ export default {
     schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
     skills: [
       {
-        name: 'my-docs-mcp',
+        name: 'docsector-documentation-authoring',
         type: 'skill-md',
-        description: 'Search and fetch docs pages via MCP.',
-        url: '/.well-known/agent-skills/my-docs-mcp/SKILL.md'
+        description: 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.',
+        url: '/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md'
       }
     ]
   },

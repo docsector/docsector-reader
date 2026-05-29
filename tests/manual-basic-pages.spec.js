@@ -14,6 +14,7 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/edit-on-github']).toBeDefined()
     expect(manualPages['/basic/translation-progress']).toBeDefined()
     expect(manualPages['/basic/previous-and-next']).toBeDefined()
+    expect(manualPages['/basic/agent-skills']).toBeDefined()
 
     expect(manualPages['/basic/d-menu'].config.menu.header).toBeUndefined()
     expect(manualPages['/basic/d-menu'].config.menu.subheader).toBe('.basic')
@@ -26,6 +27,7 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/edit-on-github'].data['en-US'].title).toBe('Edit on GitHub')
     expect(manualPages['/basic/translation-progress'].data['en-US'].title).toBe('Translation Progress')
     expect(manualPages['/basic/previous-and-next'].data['en-US'].title).toBe('Previous & Next')
+    expect(manualPages['/basic/agent-skills'].data['en-US'].title).toBe('Agent Skills')
 
     expect(manualPages['/components/d-menu']).toBeUndefined()
     expect(manualPages['/components/d-page-anchor']).toBeUndefined()
