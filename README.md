@@ -79,6 +79,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
+- 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
@@ -1022,6 +1023,22 @@ Notes:
 
 Supported alert types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`.
 Regular blockquotes without `[!TYPE]` continue to work normally.
+
+### Code Example Blocks
+
+```html
+<d-block-code-example src="manual/code-examples/basic-counter" title="Basic counter">
+Optional caption rendered as inline Markdown.
+</d-block-code-example>
+```
+
+Notes:
+
+- Store live examples as Vue SFCs under `src/examples/**/*.vue`; for example, `src="manual/code-examples/basic-counter"` resolves `src/examples/manual/code-examples/BasicCounter.vue` after kebab-case normalization.
+- Readers get a live preview, a GitHub button for the example SFC, a source button with Template / Script / Style / All tabs, and a CodePen button when the example can be exported safely.
+- Use `expanded="true"` only when the source code should be visible by default.
+- CodePen export currently supports plain Vue SFCs with a template, optional style, and an Options API `export default` script. Named imports from `vue` and `quasar` are converted to browser globals.
+- Examples using `<script setup>`, TypeScript scripts, or local imports still render in Docsector, but the CodePen action is disabled. Use `codepen="false"` to hide it intentionally.
 
 ### File Attachment Blocks
 

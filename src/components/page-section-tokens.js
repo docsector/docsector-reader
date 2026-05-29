@@ -20,6 +20,7 @@ const STEPPER_MARKER_PREFIX = '@@DOCSECTOR_STEPPER_'
 const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
 const EMBEDDED_URL_MARKER_PREFIX = '@@DOCSECTOR_EMBEDDED_URL_'
+const CODE_EXAMPLE_MARKER_PREFIX = '@@DOCSECTOR_CODE_EXAMPLE_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
@@ -244,6 +245,24 @@ const extractCardsBlocks = (source = '') => {
 
 const parseExpandableOpenState = (raw = '') => {
   return ['1', 'true', 'yes', 'on'].includes(String(raw).trim().toLowerCase())
+}
+
+const parseBooleanAttribute = (raw, fallback = false) => {
+  if (raw === undefined || raw === null || raw === '') {
+    return fallback
+  }
+
+  const normalized = String(raw).trim().toLowerCase()
+
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false
+  }
+
+  return fallback
 }
 
 const parseTimelineTags = (raw = '') => {
@@ -514,6 +533,46 @@ const extractEmbeddedUrlBlocks = (source = '') => {
   return {
     source: replaced,
     embeddedUrlMap: map
+  }
+}
+
+const extractCodeExampleBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const replaceBlock = (match, rawAttrs, rawCaption = '') => {
+    const attrs = parseCustomTagAttributes(rawAttrs)
+    const src = decodeHtmlEntities(attrs.src || attrs.file || '').trim()
+
+    if (!src) {
+      return match
+    }
+
+    const marker = `${CODE_EXAMPLE_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      src,
+      title: decodeHtmlEntities(attrs.title || '').trim(),
+      expanded: parseBooleanAttribute(attrs.expanded, false),
+      codepen: parseBooleanAttribute(attrs.codepen, true),
+      scrollable: parseBooleanAttribute(attrs.scrollable, false),
+      overflow: parseBooleanAttribute(attrs.overflow, false),
+      height: decodeHtmlEntities(attrs.height || '').trim(),
+      caption: String(rawCaption).trim()
+    })
+
+    return `\n${marker}\n`
+  }
+
+  const replacedSelfClosing = String(source).replace(/<d-block-code-example\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+  const replaced = replacedSelfClosing.replace(/<d-block-code-example\b([^>]*)>([\s\S]*?)<\/d-block-code-example>/gi, replaceBlock)
+
+  return {
+    source: replaced,
+    codeExampleMap: map
   }
 }
 
@@ -871,6 +930,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   const { source: sourceWithQuickLinks, quickLinksMap } = extractQuickLinksBlocks(sourceWithCards)
   const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
   const { source: sourceWithEmbeddedUrls, embeddedUrlMap } = extractEmbeddedUrlBlocks(sourceWithFiles)
+  const { source: sourceWithCodeExamples, codeExampleMap } = extractCodeExampleBlocks(sourceWithEmbeddedUrls)
 
   fileMap.forEach((data, marker) => {
     fileMap.set(marker, {
@@ -886,10 +946,17 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     })
   })
 
+  codeExampleMap.forEach((data, marker) => {
+    codeExampleMap.set(marker, {
+      ...data,
+      caption: restoreShieldedCodeSegments(data.caption, codeSegmentsMap)
+    })
+  })
+
   const markdown = createMarkdownBlockParser()
   const markdownInline = createMarkdownInlineParser()
   const markdownEnv = {}
-  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithEmbeddedUrls, codeSegmentsMap), markdownEnv)
+  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithCodeExamples, codeSegmentsMap), markdownEnv)
   const tokens = []
 
   let level = 0
@@ -1139,6 +1206,27 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               map: element.map,
               url: data.url,
               title: data.title,
+              caption: data.caption !== ''
+                ? markdownInline.renderInline(data.caption, markdownEnv)
+                : ''
+            })
+            break
+          }
+
+          if (codeExampleMap.has(element.content.trim())) {
+            const data = codeExampleMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'code-example',
+              map: element.map,
+              codeIndex: parserState.codeIndex++,
+              src: data.src,
+              title: data.title,
+              expanded: data.expanded,
+              codepen: data.codepen,
+              scrollable: data.scrollable,
+              overflow: data.overflow,
+              height: data.height,
               caption: data.caption !== ''
                 ? markdownInline.renderInline(data.caption, markdownEnv)
                 : ''

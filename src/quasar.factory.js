@@ -1144,6 +1144,82 @@ function createBooksPlugin (projectRoot) {
   }
 }
 
+function buildVirtualCodeExamplesModule () {
+  return `const componentModules = import.meta.glob('/src/examples/**/*.vue')
+const sourceModules = import.meta.glob('/src/examples/**/*.vue', { query: '?raw', import: 'default' })
+
+const trimSlashes = (value) => String(value || '').replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '')
+const toKebabSegment = (value) => String(value || '')
+  .replace(/\\.vue$/i, '')
+  .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+  .replace(/[\\s_]+/g, '-')
+  .replace(/-+/g, '-')
+  .toLowerCase()
+
+export const normalizeCodeExampleId = (value) => trimSlashes(value)
+  .replace(/^src\\/examples\\//i, '')
+  .replace(/^examples\\//i, '')
+  .replace(/\\.vue$/i, '')
+  .split('/')
+  .filter(Boolean)
+  .map(toKebabSegment)
+  .join('/')
+
+export const codeExamples = Object.keys(componentModules).reduce((examples, filePath) => {
+  const id = normalizeCodeExampleId(filePath)
+
+  examples[id] = {
+    id,
+    filePath,
+    loadComponent: componentModules[filePath],
+    loadSource: sourceModules[filePath]
+  }
+
+  return examples
+}, {})
+
+export const codeExampleIds = Object.keys(codeExamples).sort()
+
+export const resolveCodeExample = (value) => {
+  const id = normalizeCodeExampleId(value)
+  const entry = codeExamples[id]
+
+  if (!entry) {
+    return {
+      id,
+      filePath: '',
+      exists: false,
+      loadComponent: null,
+      loadSource: null
+    }
+  }
+
+  return {
+    ...entry,
+    exists: true
+  }
+}
+
+export default codeExamples
+`
+}
+
+function createCodeExamplesPlugin () {
+  const virtualId = 'virtual:docsector-code-examples'
+  const resolvedId = '\0' + virtualId
+
+  return {
+    name: 'docsector-code-examples',
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    load (id) {
+      if (id !== resolvedId) return null
+      return buildVirtualCodeExamplesModule()
+    }
+  }
+}
+
 /**
  * Create the HJSON Vite plugin for loading .hjson files as ES modules.
  */
@@ -2919,6 +2995,7 @@ export function createQuasarConfig (options = {}) {
 
       vitePlugins: [
         createBooksPlugin(projectRoot),
+        createCodeExamplesPlugin(),
         createHjsonPlugin(),
         createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),

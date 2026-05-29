@@ -34,6 +34,7 @@ import DBlockQuickLinks from './DBlockQuickLinks.vue'
 import DBlockTimeline from './DBlockTimeline.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
 import DBlockStepper from './DBlockStepper.vue'
+import DBlockCodeExample from './DBlockCodeExample.vue'
 </script>
 
 <template>
@@ -133,6 +134,19 @@ import DBlockStepper from './DBlockStepper.vue'
     :filename="token.filename"
     :breadcrumbs="token.breadcrumbs"
     :tabs="token.tabs"
+  />
+
+  <d-block-code-example
+    v-else-if="token.tag === 'code-example'"
+    :index="id + token.codeIndex"
+    :src="token.src"
+    :title="token.title"
+    :caption="token.caption"
+    :expanded="token.expanded"
+    :codepen="token.codepen"
+    :scrollable="token.scrollable"
+    :overflow="token.overflow"
+    :height="token.height"
   />
 
   <d-block-mermaid-diagram

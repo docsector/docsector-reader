@@ -514,6 +514,34 @@ export default {
     }
   },
 
+  '/content/blocks/code-examples': {
+    config: {
+      icon: 'integration_instructions',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Code examples — Documentation of Docsector Reader',
+          'pt-BR': 'Exemplos de código — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Code examples' },
+      'pt-BR': { title: 'Exemplos de código' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'code examples live preview vue sfc source codepen component demo',
+        'pt-BR': 'exemplos código preview ao vivo vue sfc fonte codepen componente demo'
+      }
+    }
+  },
+
   '/content/blocks/mermaid-diagrams': {
     config: {
       icon: 'account_tree',

@@ -48,4 +48,16 @@ describe('book registry tags migration', () => {
       rmSync(projectRoot, { recursive: true, force: true })
     }
   })
+
+  it('registers the code examples virtual module plugin', () => {
+    const config = createQuasarConfig({ projectRoot: process.cwd() })
+    const plugin = config.build.vitePlugins.find((plugin) => plugin?.name === 'docsector-code-examples')
+
+    expect(plugin).toBeTruthy()
+
+    const resolvedId = plugin.resolveId('virtual:docsector-code-examples')
+
+    expect(resolvedId).toBe('\0virtual:docsector-code-examples')
+    expect(plugin.load(resolvedId)).toContain("import.meta.glob('/src/examples/**/*.vue')")
+  })
 })

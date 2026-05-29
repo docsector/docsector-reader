@@ -2,13 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useStore } from 'vuex'
-import Prism from 'prismjs'
-// @ Load Prism languages
-import 'prismjs/components/prism-markup-templating' // dependency for prism-php extension
-// PHP
-import 'prismjs/components/prism-php'
-// Bash
-import 'prismjs/components/prism-bash'
+import Prism from './code-block-highlighting'
 import { looksLikeFileName, resolveFileIconUrl } from '../composables/useFileIcon'
 
 defineOptions({

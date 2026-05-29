@@ -515,6 +515,85 @@ Download the *full* command reference.
     })
   })
 
+  it('tokenizes self-closing code example blocks', () => {
+    const tokens = tokenizePageSectionSource('<d-block-code-example src="manual/code-examples/basic-counter" title="Basic counter" expanded="true" scrollable="yes" overflow="on" height="320" />')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code-example',
+      codeIndex: 0,
+      src: 'manual/code-examples/basic-counter',
+      title: 'Basic counter',
+      expanded: true,
+      codepen: true,
+      scrollable: true,
+      overflow: true,
+      height: '320',
+      caption: ''
+    })
+  })
+
+  it('tokenizes code example blocks with file alias, disabled codepen, and caption markdown', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-code-example file="manual/code-examples/basic-card.vue" title="Basic card" codepen="false">
+Open the source to inspect the *Vue SFC*.
+</d-block-code-example>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code-example',
+      src: 'manual/code-examples/basic-card.vue',
+      title: 'Basic card',
+      expanded: false,
+      codepen: false,
+      scrollable: false,
+      overflow: false,
+      height: '',
+      caption: 'Open the source to inspect the <em>Vue SFC</em>.'
+    })
+  })
+
+  it('increments code indexes around code example blocks', () => {
+    const tokens = tokenizePageSectionSource(`
+~~~bash
+echo before
+~~~
+
+<d-block-code-example src="manual/code-examples/basic-counter" />
+
+~~~bash
+echo after
+~~~
+`)
+
+    expect(tokens.map((token) => token.tag)).toEqual(['code', 'code-example', 'code'])
+    expect(tokens[0]).toMatchObject({ codeIndex: 0 })
+    expect(tokens[1]).toMatchObject({ codeIndex: 1 })
+    expect(tokens[2]).toMatchObject({ codeIndex: 2 })
+  })
+
+  it('keeps code example syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-block-code-example src="manual/demo" />\` in docs.
+
+~~~~html
+<d-block-code-example src="manual/demo" />
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'code-example')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-block-code-example src=&quot;manual/demo&quot; /&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-block-code-example src="manual/demo" />')
+  })
+
   it('tokenizes embedded URL blocks with caption markdown', () => {
     const tokens = tokenizePageSectionSource(`
 <d-block-embedded-url url="https://www.youtube.com/watch?v=M7lc1UVf-VE" title="YouTube player demo">
