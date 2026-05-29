@@ -533,6 +533,39 @@ Download the *full* command reference.
     })
   })
 
+  it('tokenizes self-closing api blocks', () => {
+    const tokens = tokenizePageSectionSource('<d-block-api src="/quasar-api/QBtn.json" title="Button API" page-link="true" />')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'api',
+      src: '/quasar-api/QBtn.json',
+      title: 'Button API',
+      pageLink: true
+    })
+  })
+
+  it('keeps api block syntax literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<d-block-api src="/quasar-api/QBtn.json" />\` in docs.
+
+~~~~html
+<d-block-api src="/quasar-api/QBtn.json" />
+~~~~
+`)
+
+    expect(tokens.some((token) => token.tag === 'api')).toBe(false)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('&lt;d-block-api src=&quot;/quasar-api/QBtn.json&quot; /&gt;')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<d-block-api src="/quasar-api/QBtn.json" />')
+  })
+
   it('tokenizes code example blocks with file alias, disabled codepen, and caption markdown', () => {
     const tokens = tokenizePageSectionSource(`
 <d-block-code-example file="manual/code-examples/basic-card.vue" title="Basic card" codepen="false">

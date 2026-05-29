@@ -21,6 +21,7 @@ const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
 const EMBEDDED_URL_MARKER_PREFIX = '@@DOCSECTOR_EMBEDDED_URL_'
 const CODE_EXAMPLE_MARKER_PREFIX = '@@DOCSECTOR_CODE_EXAMPLE_'
+const API_BLOCK_MARKER_PREFIX = '@@DOCSECTOR_API_BLOCK_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
@@ -576,6 +577,43 @@ const extractCodeExampleBlocks = (source = '') => {
   }
 }
 
+const extractApiBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const replaceBlock = (match, rawAttrs) => {
+    const attrs = parseCustomTagAttributes(rawAttrs)
+    const src = decodeHtmlEntities(attrs.src || '').trim()
+
+    if (!src) {
+      return match
+    }
+
+    const marker = `${API_BLOCK_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      src,
+      title: decodeHtmlEntities(attrs.title || '').trim(),
+      pageLink: parseBooleanAttribute(attrs['page-link'], false)
+    })
+
+    return `\n${marker}\n`
+  }
+
+  const replacedSelfClosing = String(source).replace(/<d-block-api\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+  const replaced = replacedSelfClosing.replace(/<d-block-api\b([^>]*)>([\s\S]*?)<\/d-block-api>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+
+  return {
+    source: replaced,
+    apiBlockMap: map
+  }
+}
+
 const parseFenceAttributes = (raw = '') => {
   const parsed = {}
   const pattern = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s;]+))/g
@@ -931,6 +969,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
   const { source: sourceWithEmbeddedUrls, embeddedUrlMap } = extractEmbeddedUrlBlocks(sourceWithFiles)
   const { source: sourceWithCodeExamples, codeExampleMap } = extractCodeExampleBlocks(sourceWithEmbeddedUrls)
+  const { source: sourceWithApiBlocks, apiBlockMap } = extractApiBlocks(sourceWithCodeExamples)
 
   fileMap.forEach((data, marker) => {
     fileMap.set(marker, {
@@ -956,7 +995,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   const markdown = createMarkdownBlockParser()
   const markdownInline = createMarkdownInlineParser()
   const markdownEnv = {}
-  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithCodeExamples, codeSegmentsMap), markdownEnv)
+  const parsed = markdown.parse(restoreShieldedCodeSegments(sourceWithApiBlocks, codeSegmentsMap), markdownEnv)
   const tokens = []
 
   let level = 0
@@ -1230,6 +1269,19 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               caption: data.caption !== ''
                 ? markdownInline.renderInline(data.caption, markdownEnv)
                 : ''
+            })
+            break
+          }
+
+          if (apiBlockMap.has(element.content.trim())) {
+            const data = apiBlockMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'api',
+              map: element.map,
+              src: data.src,
+              title: data.title,
+              pageLink: data.pageLink
             })
             break
           }

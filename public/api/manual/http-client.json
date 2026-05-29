@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "docsUrl": "https://example.com/sdk/http-client"
+  },
+  "props": {
+    "baseUrl": {
+      "type": "String",
+      "desc": "Base URL used by the client.",
+      "default": "https://api.example.com",
+      "examples": ["https://api.example.com", "https://staging.example.com"],
+      "category": "configuration"
+    },
+    "timeout": {
+      "type": "Number",
+      "desc": "Request timeout in milliseconds.",
+      "default": 10000,
+      "category": "configuration"
+    },
+    "retries": {
+      "type": "Number",
+      "desc": "Retry attempts for idempotent calls.",
+      "default": 2,
+      "category": "behavior"
+    }
+  },
+  "methods": {
+    "request": {
+      "desc": "Perform an HTTP request.",
+      "params": {
+        "options": {
+          "type": "Object",
+          "desc": "Request options.",
+          "required": true,
+          "definition": {
+            "url": {
+              "type": "String",
+              "desc": "Absolute or relative URL.",
+              "required": true,
+              "examples": ["/status", "https://example.com/health"]
+            },
+            "method": {
+              "type": "String",
+              "desc": "HTTP method.",
+              "default": "GET",
+              "examples": ["GET", "POST"]
+            },
+            "headers": {
+              "type": "Object",
+              "desc": "Additional request headers.",
+              "required": false
+            }
+          }
+        }
+      },
+      "returns": {
+        "type": "Promise<ResponseLike>",
+        "desc": "Resolves with the parsed response wrapper."
+      },
+      "examples": ["client.request({ url: '/status' })"]
+    },
+    "cancelAll": {
+      "desc": "Abort all in-flight requests.",
+      "returns": {
+        "type": "void",
+        "desc": "No return value."
+      }
+    }
+  },
+  "events": {
+    "response": {
+      "desc": "Emitted after a response is resolved.",
+      "params": {
+        "payload": {
+          "type": "Object",
+          "desc": "Resolved response payload.",
+          "required": true
+        }
+      }
+    },
+    "error": {
+      "desc": "Emitted when a request fails.",
+      "params": {
+        "error": {
+          "type": "Error",
+          "desc": "The original request error.",
+          "required": true
+        }
+      }
+    }
+  }
+}

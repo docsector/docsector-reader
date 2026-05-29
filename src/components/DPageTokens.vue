@@ -35,6 +35,7 @@ import DBlockTimeline from './DBlockTimeline.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
 import DBlockStepper from './DBlockStepper.vue'
 import DBlockCodeExample from './DBlockCodeExample.vue'
+import DBlockApi from './DBlockApi.vue'
 </script>
 
 <template>
@@ -147,6 +148,13 @@ import DBlockCodeExample from './DBlockCodeExample.vue'
     :scrollable="token.scrollable"
     :overflow="token.overflow"
     :height="token.height"
+  />
+
+  <d-block-api
+    v-else-if="token.tag === 'api'"
+    :src="token.src"
+    :title="token.title"
+    :page-link="token.pageLink"
   />
 
   <d-block-mermaid-diagram

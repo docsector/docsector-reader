@@ -879,6 +879,34 @@ export default {
     }
   },
 
+  '/content/blocks/api-reference': {
+    config: {
+      icon: 'api',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'API Reference Block — Documentation of Docsector Reader',
+          'pt-BR': 'Bloco de Referência de API — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'API Reference' },
+      'pt-BR': { title: 'Referência de API' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'api json quasar reference props methods events docs metadata custom block',
+        'pt-BR': 'api json quasar referência props métodos eventos docs metadados bloco customizado'
+      }
+    }
+  },
+
   '/content/structures': {
     config: null,
     data: {
