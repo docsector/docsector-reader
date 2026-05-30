@@ -57,6 +57,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, resize-safe drawer state, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
+- 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, include per-message copy actions, and show a floating quick return to the bottom
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
