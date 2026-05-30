@@ -705,6 +705,10 @@ Allow: /
 User-agent: DuckAssistBot
 Allow: /
 
+# Cloudflare
+User-agent: Cloudflare-AI-Search
+Allow: /
+
 # xAI
 User-agent: GrokBot
 Allow: /

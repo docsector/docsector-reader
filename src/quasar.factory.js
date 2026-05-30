@@ -32,6 +32,7 @@ import HJSON from 'hjson'
 
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
+import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
 import { appendSitemapsToRobots, createSitemap } from './sitemap.js'
 
 /**
@@ -1755,9 +1756,6 @@ function createMarkdownEndpointPlugin (projectRoot) {
     return Math.max(1, Math.ceil(markdown.length / 4))
   }
 
-  // LLM bot user-agent patterns
-  const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
-
   return {
     name: 'docsector-markdown-endpoint',
 
@@ -1810,7 +1808,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
         }
 
         if (homepagePath && typeof remoteHomepage === 'string' && remoteHomepage.length > 0) {
-          if ((markdownNegotiationEnabled && wantsMarkdown) || (markdownAgentFallback && LLM_BOT_PATTERN.test(req.headers['user-agent'] || ''))) {
+          if ((markdownNegotiationEnabled && wantsMarkdown) || (markdownAgentFallback && matchesMarkdownAgentUserAgent(req.headers['user-agent'] || ''))) {
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.setHeader('Vary', 'Accept')
             res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(remoteHomepage)))
@@ -1847,7 +1845,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
 
         // Auto-serve markdown to LLM bot crawlers
         const ua = req.headers['user-agent'] || ''
-        if (markdownAgentFallback && LLM_BOT_PATTERN.test(ua)) {
+        if (markdownAgentFallback && matchesMarkdownAgentUserAgent(ua)) {
           const file = resolveNegotiatedFile(url.pathname, lang)
           if (file) {
             const content = readFileSync(file, 'utf-8')
@@ -2175,7 +2173,7 @@ function createMarkdownBuildPlugin (projectRoot) {
         const functionsDir = resolve(projectRoot, 'functions')
         mkdirSync(functionsDir, { recursive: true })
 
-        const middlewareCode = `const LLM_BOT_PATTERN = /GPTBot|ChatGPT-User|OAI-SearchBot|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|Google-Extended|Gemini-Deep-Research|PerplexityBot|Perplexity-User|Bytespider|CCBot|Meta-ExternalAgent|FacebookBot|Amazonbot|Applebot-Extended|cohere-ai|DuckAssistBot|GrokBot|AI2Bot|YouBot|PetalBot/i
+        const middlewareCode = `const LLM_BOT_PATTERN = new RegExp(${JSON.stringify(MARKDOWN_AGENT_USER_AGENT_SOURCE)}, 'i')
 
 const DEFAULT_LANG = ${JSON.stringify(defaultLang)}
 const MARKDOWN_ENABLED = ${markdownNegotiationEnabled ? 'true' : 'false'}

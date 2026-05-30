@@ -25,9 +25,9 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧠 **Markdown Negotiation** — Requests with `Accept: text/markdown` receive markdown responses, while browsers keep HTML by default
 - 🔐 **Web Bot Auth Directory** — Optional signed JWKS directory at `/.well-known/http-message-signatures-directory` for bot identity verification
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
-- 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
+- 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with root-relative URLs by default and absolute URLs when `siteUrl` is configured
-- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.) and advertises `Sitemap: /sitemap.xml`
+- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 24 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, etc.) and advertises `Sitemap: /sitemap.xml`
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
 - ✍️ **Docsector Authoring Skill** — Publishable `SKILL.md` that teaches agents Docsector blocks, page patterns, MCP lookup, and WebMCP tools
