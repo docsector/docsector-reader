@@ -49,6 +49,10 @@ export default {
     editBaseUrl: 'https://github.com/docsector/docsector-reader/edit/main/src/pages'
   },
 
+  // @ Site URL
+  // Used for absolute sitemap, llms.txt, MCP, and AI Search metadata URLs.
+  siteUrl: 'https://docsector.com',
+
   // @ MCP
   mcp: {
     serverName: 'docsector-docs',
