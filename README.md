@@ -57,7 +57,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, resize-safe drawer state, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
-- 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, include per-message copy actions, and show a floating quick return to the bottom
+- 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, preserve the assistant panel open state across reloads, include per-message copy actions, and show a floating quick return to the bottom
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
@@ -298,7 +298,7 @@ Check `checks.discovery.webMcp.status` equals `"pass"`.
 
 Docsector Reader can add an opt-in assistant panel for documentation Q&A. Users open it from the global header while reading pages and subpages; it is not a dedicated documentation route. The drawer posts to a same-origin Cloudflare Pages Function, and that function calls Cloudflare AI Search so secrets, rate-limit strategy, provider errors, and future auth stay server-side.
 
-The panel is disabled by default. When enabled, desktop pages get a dedicated right-side assistant rail that can sit beside the table of contents on wide screens. Mobile uses a fullscreen dialog. Conversations restore at the latest message, reveal earlier history progressively in long chats, deduplicate repeated source links, and provide per-message copy actions.
+The panel is disabled by default. When enabled, desktop pages get a dedicated right-side assistant rail that can sit beside the table of contents on wide screens. Mobile uses a fullscreen dialog. Conversations restore at the latest message, reveal earlier history progressively in long chats, deduplicate repeated source links, preserve the panel open state across page reloads, and provide per-message copy actions.
 
 ### Configure
 

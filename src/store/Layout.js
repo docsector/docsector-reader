@@ -1,7 +1,35 @@
-export default {
-  namespaced: true,
+export const LAYOUT_ASSISTANT_STORAGE_KEY = 'docsector.layout.assistant.v1'
 
-  state: {
+function getStorage (storage = null) {
+  if (storage) return storage
+  if (typeof window === 'undefined') return null
+  return window.localStorage || null
+}
+
+export function loadPersistedAssistantLayout ({ storage = null, key = LAYOUT_ASSISTANT_STORAGE_KEY } = {}) {
+  const target = getStorage(storage)
+  if (!target) return false
+
+  try {
+    return target.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
+export function savePersistedAssistantLayout (value, { storage = null, key = LAYOUT_ASSISTANT_STORAGE_KEY } = {}) {
+  const target = getStorage(storage)
+  if (!target) return
+
+  try {
+    target.setItem(key, value ? 'true' : 'false')
+  } catch {
+    // Ignore storage failures so layout keeps working in memory.
+  }
+}
+
+export function createLayoutState () {
+  return {
     header: true,
     footer: true,
     left: false,
@@ -30,9 +58,15 @@ export default {
     scrolling: true,
     meta: true,
     metaToggle: false,
-    assistant: false,
+    assistant: loadPersistedAssistantLayout(),
     assistantWidth: 380
-  },
+  }
+}
+
+export default {
+  namespaced: true,
+
+  state: createLayoutState,
   getters: {
     view (state) {
       const
@@ -122,7 +156,8 @@ export default {
       state.metaToggle = val
     },
     setAssistant (state, val) {
-      state.assistant = val
+      state.assistant = Boolean(val)
+      savePersistedAssistantLayout(state.assistant)
     },
     setAssistantWidth (state, val) {
       state.assistantWidth = val
