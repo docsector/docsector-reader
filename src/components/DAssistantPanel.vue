@@ -340,6 +340,19 @@ watch(assistant.sources, scrollToBottom, { deep: true })
   overflow: hidden
   position: relative
 
+  &.d-mobile-assistant-panel
+    width: 100vw
+    max-width: 100vw
+    height: 100dvh
+    max-height: 100dvh
+
+    .d-assistant-panel__header
+      padding-top: env(safe-area-inset-top, 0px)
+      min-height: calc(54px + env(safe-area-inset-top, 0px))
+
+    .d-assistant-panel__composer
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px))
+
   &__resizer
     position: absolute
     top: 0

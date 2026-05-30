@@ -470,8 +470,9 @@ watch(() => route.fullPath, () => {
     </div>
   </q-drawer>
 
-  <q-dialog v-if="assistantEnabled" v-model="mobileAssistantOpen" maximized>
+  <q-dialog v-if="assistantEnabled" v-model="mobileAssistantOpen" maximized class="d-mobile-assistant-dialog">
     <d-assistant-panel
+      class="d-mobile-assistant-panel"
       :context-title="currentPageTitle"
       :markdown-url="currentMarkdownUrl"
       @close="closeAssistant"
@@ -517,6 +518,19 @@ watch(() => route.fullPath, () => {
     margin: auto
     width: 40px
     height: 40px
+
+.d-mobile-assistant-dialog
+  .q-dialog__inner
+    padding: 0
+    align-items: stretch
+    justify-content: stretch
+
+  .d-mobile-assistant-panel
+    width: 100vw
+    max-width: 100vw
+    height: 100dvh
+    max-height: 100dvh
+    margin: 0
 
 #scroll-container
   width: 100%
