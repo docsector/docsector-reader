@@ -174,4 +174,66 @@ describe('api-block-model', () => {
     expect(model.tabs).toEqual([])
     expect(model.nothingToShow).toBe(true)
   })
+
+  it('resolves Quasar extends definitions so shared props keep their real type and category', () => {
+    const model = createApiBlockModel('QSeparator.json', {
+      props: {
+        dark: {
+          extends: 'dark'
+        },
+        spaced: {
+          type: ['Boolean', 'String'],
+          desc: 'Adds separator spacing',
+          category: 'content'
+        },
+        inset: {
+          type: ['Boolean', 'String'],
+          desc: 'Adds inset spacing',
+          category: 'content'
+        },
+        vertical: {
+          type: 'Boolean',
+          desc: 'Displays the separator vertically',
+          category: 'content'
+        },
+        size: {
+          extends: 'size'
+        },
+        color: {
+          extends: 'color'
+        }
+      },
+      events: {
+        click: {
+          extends: 'click'
+        }
+      }
+    })
+
+    expect(model.innerTabs.props).toEqual(['content', 'style'])
+    expect(model.api.props.style.dark).toEqual({
+      type: ['Boolean', 'null'],
+      default: 'null',
+      desc: 'Notify the component that the background is a dark color',
+      category: 'style'
+    })
+    expect(model.api.props.style.size).toEqual({
+      type: 'String',
+      desc: 'Size in CSS units, including unit name',
+      examples: ["'16px'", "'2rem'"],
+      category: 'style'
+    })
+    expect(model.api.props.style.color).toEqual({
+      type: 'String',
+      tsType: 'NamedColor',
+      desc: 'Color name for component from the Quasar Color Palette',
+      examples: ["'primary'", "'teal'", "'teal-10'"],
+      category: 'style'
+    })
+    expect(model.api.events[defaultInnerTabName].click.params.evt).toEqual({
+      type: 'Event',
+      desc: 'JS event object',
+      required: true
+    })
+  })
 })

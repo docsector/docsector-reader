@@ -1,3 +1,5 @@
+import quasarApiExtends from './quasar-api-extends.json'
+
 const defaultInnerTabName = '__default'
 const fallbackCategoryName = 'general'
 
@@ -7,6 +9,78 @@ const isPlainObject = (value) => {
 
 const isSupportedTopLevelSection = (value) => {
   return typeof value === 'string' || isPlainObject(value)
+}
+
+const mergeEntries = (baseValue, overrideValue) => {
+  if (!isPlainObject(baseValue) || !isPlainObject(overrideValue)) {
+    return overrideValue === undefined ? baseValue : overrideValue
+  }
+
+  const acc = {
+    ...baseValue
+  }
+
+  Object.entries(overrideValue).forEach(([key, value]) => {
+    acc[key] = isPlainObject(value) && isPlainObject(baseValue[key])
+      ? mergeEntries(baseValue[key], value)
+      : value
+  })
+
+  return acc
+}
+
+const resolveExtendsSource = (extendName = '', preferredSection = '') => {
+  const normalizedName = String(extendName || '').trim()
+
+  if (normalizedName === '') {
+    return undefined
+  }
+
+  if (isPlainObject(quasarApiExtends?.[preferredSection]?.[normalizedName])) {
+    return quasarApiExtends[preferredSection][normalizedName]
+  }
+
+  return Object.values(quasarApiExtends || {}).find((sectionEntries) => {
+    return isPlainObject(sectionEntries?.[normalizedName])
+  })?.[normalizedName]
+}
+
+const resolveExtendedEntries = (value, preferredSection = '', seen = new Set()) => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => resolveExtendedEntries(entry, preferredSection, seen))
+  }
+
+  if (!isPlainObject(value)) {
+    return value
+  }
+
+  const extendName = typeof value.extends === 'string' ? value.extends.trim() : ''
+  const seenKey = `${preferredSection}:${extendName}`
+  const baseValue = extendName !== '' && !seen.has(seenKey)
+    ? resolveExtendsSource(extendName, preferredSection)
+    : undefined
+  const nextSeen = new Set(seen)
+
+  if (extendName !== '') {
+    nextSeen.add(seenKey)
+  }
+
+  const currentValue = {}
+
+  Object.entries(value).forEach(([key, entryValue]) => {
+    if (key === 'extends') {
+      return
+    }
+
+    currentValue[key] = resolveExtendedEntries(entryValue, preferredSection, nextSeen)
+  })
+
+  return mergeEntries(
+    baseValue === undefined
+      ? {}
+      : resolveExtendedEntries(baseValue, preferredSection, nextSeen),
+    currentValue
+  )
 }
 
 const getEntryCategories = (entry = {}) => {
@@ -296,7 +370,9 @@ export const createApiBlockModel = (sourceName = '', apiDocument = {}) => {
   const apiSections = {}
 
   Object.entries(apiSectionsRaw).forEach(([sectionName, sectionValue]) => {
-    const sanitizedValue = pruneInternalEntries(sectionValue)
+    const sanitizedValue = pruneInternalEntries(
+      resolveExtendedEntries(sectionValue, sectionName)
+    )
 
     if (sanitizedValue !== undefined && isSupportedTopLevelSection(sanitizedValue)) {
       apiSections[sectionName] = sanitizedValue
