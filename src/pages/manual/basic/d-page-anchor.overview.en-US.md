@@ -44,7 +44,7 @@ When the user scrolls the page content, the `DPage` scroll observer calls `useNa
 ## Lifecycle
 
 - **onMounted** — Enables meta toggle, starts scroll tracking after 1s delay, anchors to URL hash if present
-- **onBeforeUnmount** — Resets anchors, nodes, and disables scroll tracking
+- **onBeforeUnmount** — Clears local timers and disables the meta drawer toggle without clearing the page Table of Contents state during responsive UI unmounts
 
 ## Styling
 

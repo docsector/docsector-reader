@@ -44,7 +44,7 @@ Quando o usuário faz scroll no conteúdo da página, o observador de scroll do 
 ## Ciclo de Vida
 
 - **onMounted** — Habilita toggle de meta, inicia rastreamento de scroll após 1s de delay, ancora no hash da URL se presente
-- **onBeforeUnmount** — Reseta âncoras, nós e desabilita rastreamento de scroll
+- **onBeforeUnmount** — Limpa timers locais e desabilita o toggle do drawer meta sem apagar o estado do índice da página durante desmontagens responsivas da UI
 
 ## Estilização
 

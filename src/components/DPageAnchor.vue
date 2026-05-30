@@ -15,6 +15,8 @@ const { t } = useI18n()
 const { navigate, anchor, selected: navigatorSelected } = useNavigator()
 
 const scrolling = ref(null)
+const enableScrollingTimeout = ref(null)
+const initialAnchorTimeout = ref(null)
 
 const nodes = computed(() => store.getters['page/nodes'])
 const expanded = computed({
@@ -77,13 +79,13 @@ watch(selected, () => {
 onMounted(() => {
   store.commit('layout/setMetaToggle', true)
 
-  setTimeout(() => {
+  enableScrollingTimeout.value = setTimeout(() => {
     store.commit('page/setScrolling', true)
   }, 1000)
 
   const id = route.hash.replace(/^#+/g, '')
   if (id) {
-    setTimeout(() => {
+    initialAnchorTimeout.value = setTimeout(() => {
       anchor(route.hash)
     }, 500)
   }
@@ -94,13 +96,15 @@ onBeforeUnmount(() => {
     clearTimeout(scrolling.value)
   }
 
+  if (enableScrollingTimeout.value) {
+    clearTimeout(enableScrollingTimeout.value)
+  }
+
+  if (initialAnchorTimeout.value) {
+    clearTimeout(initialAnchorTimeout.value)
+  }
+
   store.commit('layout/setMetaToggle', false)
-
-  store.commit('page/resetAnchor')
-  store.commit('page/resetAnchors')
-  store.commit('page/resetNodes')
-
-  store.commit('page/setScrolling', false)
 })
 </script>
 
