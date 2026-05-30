@@ -136,6 +136,10 @@ const mobileAssistantOpen = computed({
   get: () => assistantEnabled && rightRailState.value.isMobile && layoutAssistant.value,
   set: (value) => { layoutAssistant.value = value }
 })
+const mobileTocOpen = computed({
+  get: () => rightRailState.value.isMobile && layoutMeta.value,
+  set: (value) => { layoutMeta.value = value }
+})
 const backToTopRightOffset = computed(() => {
   return rightRailState.value.backToTopRightOffset
 })
@@ -471,6 +475,18 @@ watch(() => route.fullPath, () => {
   </q-drawer>
 
   <q-dialog
+    v-model="mobileTocOpen"
+    position="right"
+    square
+    full-height
+    class="d-mobile-anchor-dialog"
+  >
+    <div id="anchor" class="d-mobile-anchor-dialog__panel">
+      <d-page-anchor />
+    </div>
+  </q-dialog>
+
+  <q-dialog
     v-if="assistantEnabled"
     v-model="mobileAssistantOpen"
     maximized
@@ -550,6 +566,32 @@ watch(() => route.fullPath, () => {
     height: 100dvh
     max-height: 100dvh
     margin: 0
+
+.d-mobile-anchor-dialog
+  .q-dialog__inner
+    padding: 0
+    align-items: stretch
+    justify-content: flex-end
+
+  .q-dialog__backdrop
+    background: rgba(15, 23, 42, 0.24)
+
+  &__panel
+    width: min(100vw, 340px)
+    max-width: 100vw
+    height: 100%
+    max-height: 100dvh
+    padding-top: env(safe-area-inset-top, 0px)
+    padding-bottom: env(safe-area-inset-bottom, 0px)
+    background: rgba(248, 250, 252, 0.88)
+    backdrop-filter: blur(18px)
+    -webkit-backdrop-filter: blur(18px)
+    overflow: auto
+    box-shadow: -16px 0 40px rgba(15, 23, 42, 0.22)
+
+body.body--dark
+  .d-mobile-anchor-dialog__panel
+    background: rgba(15, 23, 42, 0.9)
 
 #scroll-container
   width: 100%
