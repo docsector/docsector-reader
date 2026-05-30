@@ -6,7 +6,7 @@ Na implementação, esse comportamento é sustentado por `DPageAnchor`.
 
 ## Como Funciona
 
-1. Conforme cada componente de título (DH1–DH6) é montado, ele se registra no store `page/nodes` via `useNavigator`
+1. `DPageSection` tokeniza a subpágina atual e reconstrói a árvore de títulos na ordem do conteúdo
 2. `DPageAnchor` lê o getter `page/nodes` para renderizar a árvore
 3. Quando o usuário faz scroll, o observador de scroll no `DPage` atualiza a âncora selecionada
 4. Clicar em um nó da árvore navega até o título correspondente
@@ -22,7 +22,7 @@ A implementação interage com estes estados/getters da store:
 
 ## Renderização da Árvore
 
-Usa o componente `QTree` do Quasar com `default-expand-all`. A chave do nó é o `id` numérico do título, e o label é o texto do título.
+Usa o componente `QTree` do Quasar com `default-expand-all`. A chave do nó é o `id` do título, e o label é o texto do título. Tokens H2 viram entradas de primeiro nível, e tokens H3 ficam aninhados no H2 anterior mais próximo.
 
 O nó raiz (do DH1) mostra o título da página do i18n quando nenhum label é definido:
 

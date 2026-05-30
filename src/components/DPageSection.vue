@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
 import DPageTokens from './DPageTokens.vue'
 import { pageValueI18nPath } from '../i18n/path'
+import { buildPageAnchorTree } from './page-anchor-tree'
 import { tokenizePageSectionSource } from './page-section-tokens'
 
 defineProps({
@@ -30,6 +31,10 @@ const tokenized = computed(() => {
 
   return tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')))
 })
+
+watch(tokenized, (tokens) => {
+  store.commit('page/setAnchorTree', buildPageAnchorTree(tokens))
+}, { immediate: true })
 </script>
 
 <template>

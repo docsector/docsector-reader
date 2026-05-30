@@ -6,7 +6,7 @@ Under the hood, this behavior is powered by `DPageAnchor`.
 
 ## How It Works
 
-1. As each heading component (DH1–DH6) mounts, it registers itself in the `page/nodes` store via `useNavigator`
+1. `DPageSection` tokenizes the current subpage and rebuilds the heading tree in source order
 2. `DPageAnchor` reads the `page/nodes` getter to render the tree
 3. When the user scrolls, the scroll observer in `DPage` updates the selected anchor
 4. Clicking a tree node navigates to the corresponding heading
@@ -22,7 +22,7 @@ The implementation interacts with these store state/getters:
 
 ## Tree Rendering
 
-Uses Quasar's `QTree` component with `default-expand-all`. The node key is the heading's numeric `id`, and the label is the heading text.
+Uses Quasar's `QTree` component with `default-expand-all`. The node key is the heading `id`, and the label is the heading text. H2 tokens become top-level tree entries, and H3 tokens nest under the nearest preceding H2.
 
 The root node (from DH1) shows the page title from i18n when no label is set:
 

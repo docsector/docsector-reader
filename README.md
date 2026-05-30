@@ -52,7 +52,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
 - 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
 - 🧰 **Docsector CLI Skill Installer** — Install the built-in authoring skill into older scaffolds with `docsector install-skill`
-- 🔗 **Anchor Navigation** — Right-side Table of Contents tree with stable scroll tracking, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
+- 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
