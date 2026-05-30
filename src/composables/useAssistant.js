@@ -1,11 +1,16 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { createAssistantRequestPayload } from '../ai-assistant/messages'
+import { clearAssistantSession, loadAssistantSession, saveAssistantSession } from '../ai-assistant/session'
 import { extractAssistantStreamDelta, normalizeAssistantSourceChunks, parseServerSentEvents } from '../ai-assistant/stream'
 
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
+const assistantMessages = ref([])
+const assistantSources = ref([])
+let assistantSessionReady = false
+let assistantSessionWatcherReady = false
 
 function createMessage (role, content = '') {
   return {
@@ -22,9 +27,32 @@ function getCompletionText (payload) {
     || ''
 }
 
+function persistAssistantSession () {
+  saveAssistantSession({
+    messages: assistantMessages.value,
+    sources: assistantSources.value
+  })
+}
+
+function ensureAssistantSession () {
+  if (!assistantSessionReady) {
+    const session = loadAssistantSession()
+    assistantMessages.value = session.messages
+    assistantSources.value = session.sources
+    assistantSessionReady = true
+  }
+
+  if (!assistantSessionWatcherReady) {
+    watch([assistantMessages, assistantSources], persistAssistantSession, { deep: true })
+    assistantSessionWatcherReady = true
+  }
+}
+
 export default function useAssistant ({ route, locale, getContext } = {}) {
-  const messages = ref([])
-  const sources = ref([])
+  ensureAssistantSession()
+
+  const messages = assistantMessages
+  const sources = assistantSources
   const loading = ref(false)
   const error = ref('')
   const abortController = ref(null)
@@ -35,6 +63,7 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     messages.value = []
     sources.value = []
     error.value = ''
+    clearAssistantSession()
   }
 
   const stop = () => {
@@ -100,6 +129,9 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     const userMessage = createMessage('user', prompt)
     const assistantMessage = createMessage('assistant')
     messages.value.push(userMessage, assistantMessage)
+    // Use the reactive proxy from the array so streamed mutations trigger
+    // live re-renders (raw object mutations bypass Vue reactivity).
+    const liveAssistantMessage = messages.value[messages.value.length - 1]
 
     abortController.value = new AbortController()
     loading.value = true
@@ -134,20 +166,20 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
 
       const contentType = response.headers.get('content-type') || ''
       if (contentType.includes('text/event-stream') && response.body) {
-        await consumeStream(response, assistantMessage)
+        await consumeStream(response, liveAssistantMessage)
       } else {
         const payload = await response.json()
-        assistantMessage.content = getCompletionText(payload)
+        liveAssistantMessage.content = getCompletionText(payload)
         sources.value = normalizeAssistantSourceChunks(payload?.chunks)
       }
 
-      if (!assistantMessage.content.trim()) {
-        assistantMessage.content = 'No answer was returned for this request.'
+      if (!liveAssistantMessage.content.trim()) {
+        liveAssistantMessage.content = 'No answer was returned for this request.'
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
         error.value = err?.message || 'Assistant request failed.'
-        assistantMessage.content = ''
+        liveAssistantMessage.content = ''
       }
     } finally {
       loading.value = false

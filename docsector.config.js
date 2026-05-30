@@ -61,11 +61,11 @@ export default {
 
   // @ AI Assistant
   aiAssistant: {
-    enabled: false,
+    enabled: true,
     provider: 'aiSearch',
     endpoint: '/assistant',
     ui: {
-      title: 'Docsector Assistant',
+      title: 'Docsector AI Assistant',
       subtitle: 'Ask, search, or explain the docs.',
       drawerWidth: 380,
       wideBreakpoint: 1280,
@@ -78,12 +78,12 @@ export default {
     },
     aiSearch: {
       binding: 'AI_SEARCH',
-      instanceName: '',
+      instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
       namespace: '',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
       model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-      retrievalType: 'hybrid',
+      retrievalType: 'vector',
       maxResults: 6,
       matchThreshold: 0.4,
       contextExpansion: 1,

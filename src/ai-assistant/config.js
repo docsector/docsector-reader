@@ -67,6 +67,7 @@ export function normalizeAiAssistantConfig (config = {}) {
     aiSearch: {
       binding: toCleanString(aiSearch.binding, 'AI_SEARCH'),
       instanceName: toCleanString(aiSearch.instanceName || aiSearch.instanceId, ''),
+      instanceNameEnv: toCleanString(aiSearch.instanceNameEnv, 'AI_SEARCH_INSTANCE_NAME'),
       namespace: toCleanString(aiSearch.namespace, ''),
       accountIdEnv: toCleanString(aiSearch.accountIdEnv, 'CLOUDFLARE_ACCOUNT_ID'),
       apiTokenEnv: toCleanString(aiSearch.apiTokenEnv, 'CLOUDFLARE_API_TOKEN'),

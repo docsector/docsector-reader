@@ -5,8 +5,11 @@ import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 
 import useAssistant from '../composables/useAssistant'
+import { isAssistantThinkingState, listVisibleAssistantMessages } from '../ai-assistant/panel'
+import DPageTokens from './DPageTokens.vue'
+import { tokenizePageSectionSource } from './page-section-tokens'
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'resize'])
 
 const props = defineProps({
   contextTitle: {
@@ -16,8 +19,30 @@ const props = defineProps({
   markdownUrl: {
     type: String,
     default: ''
+  },
+  width: {
+    type: Number,
+    default: 0
+  },
+  resizable: {
+    type: Boolean,
+    default: false
   }
 })
+
+const siteFavicon = '/favicon.ico'
+
+const resolveAssetUrl = (src = '') => {
+  const raw = String(src || '').trim()
+  if (!raw) return ''
+  if (/^(?:https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw
+
+  try {
+    return new URL(raw, typeof window !== 'undefined' ? window.location.origin : 'https://localhost').href
+  } catch {
+    return raw
+  }
+}
 
 const route = useRoute()
 const $q = useQuasar()
@@ -54,6 +79,51 @@ const sourceHref = (source) => {
   return `/${key}`
 }
 
+const faviconFor = () => resolveAssetUrl(siteFavicon)
+
+const sources = computed(() => assistant.sources.value)
+const hasSources = computed(() => sources.value.length > 0 && assistant.config.ui.showCitations)
+const sourceAvatars = computed(() => sources.value.slice(0, 4))
+const sourcesLabel = computed(() => t('assistant.sourcesCount', { count: sources.value.length }))
+const visibleMessages = computed(() => listVisibleAssistantMessages(assistant.messages.value))
+
+const isThinking = computed(() => isAssistantThinkingState({
+  loading: assistant.loading.value,
+  messages: assistant.messages.value
+}))
+
+const renderMessageTokens = (message) => {
+  if (message?.role !== 'assistant') {
+    return []
+  }
+
+  return tokenizePageSectionSource(message?.content || '', { allowHeadingTokens: false })
+}
+
+const startResize = (event) => {
+  if (!props.resizable) return
+  event.preventDefault()
+  const startX = event.clientX
+  const startWidth = props.width || 380
+
+  const onMove = (moveEvent) => {
+    const delta = startX - moveEvent.clientX
+    emit('resize', startWidth + delta)
+  }
+
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    document.body.style.userSelect = ''
+    document.body.style.cursor = ''
+  }
+
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'col-resize'
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+}
+
 const scrollToBottom = () => {
   nextTick(() => {
     const target = scrollArea.value?.$el?.querySelector('.q-scrollarea__container')
@@ -82,14 +152,43 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 
 <template>
 <aside class="d-assistant-panel" :class="`d-assistant-panel--${panelTone}`">
+  <div
+    v-if="resizable"
+    class="d-assistant-panel__resizer"
+    role="separator"
+    aria-orientation="vertical"
+    :aria-label="t('assistant.resize')"
+    @pointerdown="startResize"
+  />
   <header class="d-assistant-panel__header">
     <div class="d-assistant-panel__brand">
       <q-icon name="auto_awesome" size="22px" />
       <strong>{{ title }}</strong>
     </div>
-    <q-btn dense flat round icon="close" :aria-label="t('assistant.close')" @click="emit('close')">
-      <q-tooltip>{{ t('assistant.close') }}</q-tooltip>
-    </q-btn>
+    <div class="d-assistant-panel__header-actions">
+      <q-btn v-if="assistant.hasMessages.value"
+        dense round
+        color="white"
+        class="d-assistant-panel__header-action d-assistant-panel__header-action--clear"
+        icon="delete_outline"
+        text-color="negative"
+        :aria-label="t('assistant.clear')"
+        @click="assistant.clear"
+      >
+        <q-tooltip>{{ t('assistant.clear') }}</q-tooltip>
+      </q-btn>
+      <q-btn
+        dense round
+        color="white"
+        text-color="black"
+        class="d-assistant-panel__header-action d-assistant-panel__header-action--close"
+        icon="close"
+        :aria-label="t('assistant.close')"
+        @click="emit('close')"
+      >
+        <q-tooltip>{{ t('assistant.close') }}</q-tooltip>
+      </q-btn>
+    </div>
   </header>
 
   <q-scroll-area ref="scrollArea" class="d-assistant-panel__body">
@@ -103,12 +202,25 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 
     <div v-else class="d-assistant-panel__messages">
       <div
-        v-for="message in assistant.messages.value"
+        v-for="(message, index) in visibleMessages"
         :key="message.id"
         class="d-assistant-message"
         :class="`d-assistant-message--${message.role}`"
       >
-        <div class="d-assistant-message__content">{{ message.content }}</div>
+        <div
+          v-if="message.role === 'assistant'"
+          class="content no-padding d-assistant-message__content d-assistant-message__content--markdown"
+        >
+          <d-page-tokens :id="(index + 1) * 1000" :tokens="renderMessageTokens(message)" />
+        </div>
+        <div v-else class="d-assistant-message__content">{{ message.content }}</div>
+      </div>
+
+      <div v-if="isThinking" class="d-assistant-message d-assistant-message--assistant">
+        <div class="d-assistant-message__content d-assistant-message__thinking">
+          <q-spinner-dots size="22px" />
+          <span>{{ t('assistant.thinking') }}</span>
+        </div>
       </div>
     </div>
 
@@ -117,19 +229,62 @@ watch(assistant.sources, scrollToBottom, { deep: true })
       <span>{{ assistant.error.value }}</span>
     </div>
 
-    <div v-if="assistant.sources.value.length > 0 && assistant.config.ui.showCitations" class="d-assistant-panel__sources">
-      <div class="d-assistant-panel__sources-title">{{ t('assistant.sources') }}</div>
-      <a
-        v-for="source in assistant.sources.value"
-        :key="source.id"
-        class="d-assistant-source"
-        :href="sourceHref(source)"
-        target="_blank"
-        rel="noopener noreferrer"
+    <div v-if="hasSources" class="d-assistant-panel__sources">
+      <q-chip
+        clickable
+        class="d-assistant-sources-chip"
+        :ripple="false"
       >
-        <q-icon name="description" size="16px" />
-        <span>{{ source.title }}</span>
-      </a>
+        <span class="d-assistant-sources-chip__avatars">
+          <q-avatar
+            v-for="(source, index) in sourceAvatars"
+            :key="source.id"
+            class="d-assistant-sources-chip__avatar"
+            :style="{ zIndex: sourceAvatars.length - index }"
+            size="24px"
+          >
+            <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
+          </q-avatar>
+        </span>
+        <span class="d-assistant-sources-chip__label">{{ sourcesLabel }}</span>
+        <q-icon name="expand_more" size="16px" />
+
+        <q-menu
+          anchor="top left"
+          self="bottom left"
+          :offset="[0, 8]"
+          class="d-assistant-sources-menu"
+        >
+          <q-list separator class="d-assistant-sources-menu__list">
+            <q-item-label header class="d-assistant-sources-menu__header">
+              {{ t('assistant.sources') }}
+            </q-item-label>
+            <q-item
+              v-for="source in assistant.sources.value"
+              :key="source.id"
+              v-close-popup
+              clickable
+              tag="a"
+              :href="sourceHref(source)"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <q-item-section avatar>
+                <q-avatar size="28px" class="d-assistant-sources-menu__avatar">
+                  <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label lines="1">{{ source.title }}</q-item-label>
+                <q-item-label v-if="source.meta" caption lines="1">{{ source.meta }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="open_in_new" size="16px" />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </q-chip>
     </div>
   </q-scroll-area>
 
@@ -183,6 +338,30 @@ watch(assistant.sources, scrollToBottom, { deep: true })
   background: #f8fafc
   color: #111827
   overflow: hidden
+  position: relative
+
+  &__resizer
+    position: absolute
+    top: 0
+    left: 0
+    width: 7px
+    height: 100%
+    cursor: col-resize
+    z-index: 5
+    touch-action: none
+
+    &::after
+      content: ''
+      position: absolute
+      top: 0
+      left: 2px
+      width: 2px
+      height: 100%
+      background: transparent
+      transition: background 0.15s ease
+
+    &:hover::after
+      background: var(--q-primary)
 
   &--dark
     background: #1b1b1c
@@ -193,10 +372,13 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 
     .d-assistant-message--assistant .d-assistant-message__content,
     .d-assistant-panel__prompt,
-    .d-assistant-source
+    .d-assistant-sources-chip
       background: rgba(255, 255, 255, 0.045)
       color: rgba(255, 255, 255, 0.86)
       border-color: rgba(255, 255, 255, 0.12)
+
+    .d-assistant-sources-chip__avatar
+      border-color: #1b1b1c
 
     .d-assistant-panel__mark
       color: #ffad98
@@ -237,9 +419,31 @@ watch(assistant.sources, scrollToBottom, { deep: true })
       overflow: hidden
       text-overflow: ellipsis
 
+  &__header-actions
+    flex: 0 0 auto
+    display: flex
+    align-items: center
+    gap: 2px
+
+  &__header-action
+    background: rgba(15, 23, 42, 0.08)
+    color: currentColor
+
+    &:hover
+      background: rgba(15, 23, 42, 0.14)
+
+    &--clear
+      margin-right: 8px
+
   &__body
     flex: 1 1 auto
     min-height: 0
+    overflow-x: hidden
+
+    .q-scrollarea__container,
+    .q-scrollarea__content
+      overflow-x: hidden
+      max-width: 100%
 
   &__empty
     min-height: 100%
@@ -272,7 +476,8 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     background: rgba(14, 165, 233, 0.12)
 
   &__messages
-    padding: 16px 14px 96px
+    padding: 16px 14px 14px
+    overflow-x: hidden
 
   &__error
     margin: 0 14px 96px
@@ -286,10 +491,12 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     border-radius: 8px
 
   &__sources
-    margin: -76px 14px 96px
+    margin: 0 14px 0
     display: flex
     flex-direction: column
+    align-items: flex-start
     gap: 6px
+    overflow-x: hidden
 
   &__sources-title
     font-size: 0.76rem
@@ -358,6 +565,8 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 .d-assistant-message
   display: flex
   margin-bottom: 10px
+  min-width: 0
+  overflow-x: hidden
 
   &--user
     justify-content: flex-end
@@ -372,30 +581,121 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     .d-assistant-message__content
       background: rgba(255, 255, 255, 0.78)
       border: 1px solid rgba(15, 23, 42, 0.1)
+      padding: 12px 14px !important
 
   &__content
     max-width: 88%
+    min-width: 0
     padding: 10px 12px
     border-radius: 8px
     white-space: pre-wrap
     overflow-wrap: anywhere
     line-height: 1.45
 
-.d-assistant-source
-  min-height: 34px
-  display: flex
-  align-items: center
-  gap: 8px
-  padding: 7px 10px
-  border: 1px solid rgba(15, 23, 42, 0.12)
-  border-radius: 8px
-  color: inherit
-  text-decoration: none
-  background: rgba(255, 255, 255, 0.62)
+    &--markdown
+      min-height: 0 !important
+      white-space: normal
 
-  span
-    min-width: 0
-    overflow: hidden
-    text-overflow: ellipsis
+      // Visuals come from Docsector's own page token components so the chat
+      // stays identical to pages/subpages; only enforce bubble-safe spacing
+      // and overflow containment here.
+      p
+        line-height: 1.6em
+
+      p,
+      ul,
+      ol,
+      blockquote,
+      .d-table-wrapper
+        margin-top: 0
+        margin-bottom: 0.7em
+
+      > :first-child
+        margin-top: 0
+
+      > :last-child
+        margin-bottom: 0
+
+      pre,
+      table,
+      .d-table-wrapper
+        max-width: 100%
+        overflow-x: auto
+
+      img
+        max-width: 100%
+        height: auto
+
+  &__thinking
+    display: flex
+    align-items: center
+    gap: 9px
+    color: inherit
+    opacity: 0.78
+    font-weight: 600
+
+.d-assistant-sources-chip
+  max-width: 100%
+  height: auto
+  min-height: 34px
+  padding: 4px 10px 4px 6px
+  margin: 0
+  border-radius: 999px
+  background: rgba(255, 255, 255, 0.78)
+  border: 1px solid rgba(15, 23, 42, 0.12)
+  font-weight: 600
+
+  &__avatars
+    display: inline-flex
+    align-items: center
+    padding-left: 6px
+
+  &__avatar
+    display: inline-flex
+    align-items: center
+    justify-content: center
+    flex: 0 0 24px
+    position: relative
+    background: var(--q-primary)
+    border: 2px solid #f8fafc
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18)
+
+    & + &
+      margin-left: -11px
+
+    img
+      width: 100%
+      height: 100%
+      box-sizing: border-box
+      object-fit: contain
+      padding: 4px
+      background: transparent
+
+  &__label
+    margin: 0 2px 0 8px
+    font-size: 0.8rem
     white-space: nowrap
+
+.d-assistant-sources-menu
+  max-width: min(360px, 90vw)
+
+  &__header
+    padding: 8px 16px 6px
+    font-weight: 700
+    opacity: 0.7
+
+  &__avatar
+    background: var(--q-primary)
+
+  &__list
+    padding-bottom: 4px
+
+    .q-item__section--avatar
+      padding-left: 6px
+
+    img
+      box-sizing: border-box
+      object-fit: contain
+      padding: 5px
+      background: transparent
 </style>

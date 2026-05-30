@@ -267,6 +267,20 @@ Body copy.
     expect(tokens[1].content).toContain('<d-block-expandable title="Literal">')
   })
 
+  it('marks markdown inline code as copyable rendered content', () => {
+    const tokens = tokenizePageSectionSource('Run `npm run build` after editing the page.')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('data-docsector-inline-code-copy=""')
+    expect(tokens[0].content).toContain('class="d-copyable-inline-code"')
+    expect(tokens[0].content).toContain('role="button"')
+    expect(tokens[0].content).toContain('tabindex="0"')
+    expect(tokens[0].content).toContain('>npm run build</code>')
+  })
+
   it('tokenizes timeline blocks with rich markdown and nested Docsector blocks', () => {
     const tokens = tokenizePageSectionSource(`
 <d-block-timeline>
@@ -1001,7 +1015,8 @@ Use \`- [ ] literal task marker\` in docs.
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
-    expect(tokens[0].content).toContain('<code>- [ ] literal task marker</code>')
+    expect(tokens[0].content).toContain('data-docsector-inline-code-copy=""')
+    expect(tokens[0].content).toContain('>- [ ] literal task marker</code>')
     expect(tokens[0].content).not.toContain('task-list-item-checkbox')
     expect(tokens[1]).toMatchObject({
       tag: 'code',
@@ -1072,7 +1087,8 @@ $$
     expect(tokens[0]).toMatchObject({
       tag: 'p'
     })
-    expect(tokens[0].content).toContain('<code>$E = mc^2$</code>')
+    expect(tokens[0].content).toContain('data-docsector-inline-code-copy=""')
+    expect(tokens[0].content).toContain('>$E = mc^2$</code>')
     expect(tokens[0].content).not.toContain('katex')
     expect(tokens[1]).toMatchObject({
       tag: 'code',

@@ -5,6 +5,8 @@ import katex from 'katex'
 import taskLists from 'markdown-it-task-lists'
 import texmath from 'markdown-it-texmath'
 
+import { installInlineCodeCopyRenderer } from './inline-code-copy'
+
 const ALERT_MESSAGE_TYPES = new Set([
   'note',
   'tip',
@@ -850,9 +852,9 @@ const renderInlineToken = (markdown, markdownInline, element, env) => {
 }
 
 const createMarkdownBlockParser = () => {
-  const markdown = installMathSupport(new MarkdownIt({
+  const markdown = installInlineCodeCopyRenderer(installMathSupport(new MarkdownIt({
     html: true
-  }))
+  })))
 
   markdown.use(attrs, {
     leftDelimiter: ':',
@@ -869,9 +871,9 @@ const createMarkdownBlockParser = () => {
 }
 
 const createMarkdownInlineParser = () => {
-  return installMathSupport(new MarkdownIt({
+  return installInlineCodeCopyRenderer(installMathSupport(new MarkdownIt({
     html: true
-  }))
+  })) )
 }
 
 const normalizePageSectionSource = (source = '') => {

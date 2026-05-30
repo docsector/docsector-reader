@@ -606,6 +606,7 @@ const TEMPLATE_ENV_EXAMPLE = `\
 # Copy to .env (or .dev.vars for wrangler pages dev) and fill with real values.
 #
 # AI Assistant (Cloudflare AI Search REST fallback)
+AI_SEARCH_INSTANCE_NAME=
 CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_API_TOKEN=
 

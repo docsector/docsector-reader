@@ -3277,7 +3277,7 @@ export function createQuasarConfig (options = {}) {
       config: {},
       lang: 'en-US',
       plugins: [
-        'Meta', 'LocalStorage', 'SessionStorage'
+        'Meta', 'Notify', 'LocalStorage', 'SessionStorage'
       ]
     },
 

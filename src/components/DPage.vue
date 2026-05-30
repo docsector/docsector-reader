@@ -140,6 +140,10 @@ const backToTopRightOffset = computed(() => {
   return rightRailState.value.backToTopRightOffset
 })
 const currentMarkdownUrl = computed(() => {
+  if (store.state.page.base === 'home') {
+    return `${window.location.origin}/Homepage.${locale.value}.md`
+  }
+
   const path = route.path.replace(/\/+$/, '')
   return `${window.location.origin}${path || '/homepage'}.md`
 })
@@ -154,6 +158,12 @@ const toggleSectionsTree = () => {
 
 const closeAssistant = () => {
   layoutAssistant.value = false
+}
+
+const onAssistantResize = (value) => {
+  const maxWidth = Math.max(320, Math.min(620, Math.round($q.screen.width - 480)))
+  const clamped = Math.min(maxWidth, Math.max(320, Math.round(Number(value) || 0)))
+  store.commit('layout/setAssistantWidth', clamped)
 }
 
 const setRightRailOpen = (value) => {
@@ -452,6 +462,9 @@ watch(() => route.fullPath, () => {
         :style="{ width: `${rightRailState.assistantWidth}px` }"
         :context-title="currentPageTitle"
         :markdown-url="currentMarkdownUrl"
+        :width="rightRailState.assistantWidth"
+        resizable
+        @resize="onAssistantResize"
         @close="closeAssistant"
       />
     </div>

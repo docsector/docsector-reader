@@ -44,8 +44,27 @@ describe('assistant stream helpers', () => {
         id: 'chunk-a',
         key: 'manual/basic/agent-skills/overview.md',
         title: 'Agent Skills',
+        meta: 'manual/basic/agent-skills/overview',
         text: 'Use MCP.',
         score: 0.72
+      }
+    ])
+  })
+
+  it('derives readable labels from URL source keys', () => {
+    expect(normalizeAssistantSourceChunks([
+      {
+        key: 'https://docsector.com/manual/content/blocks/quick-links/showcase',
+        score: 0.4
+      }
+    ])).toEqual([
+      {
+        id: 'https://docsector.com/manual/content/blocks/quick-links/showcase',
+        key: 'https://docsector.com/manual/content/blocks/quick-links/showcase',
+        title: 'Quick Links / Showcase',
+        meta: 'docsector.com/manual/content/blocks/quick-links/showcase',
+        text: '',
+        score: 0.4
       }
     ])
   })

@@ -26,6 +26,51 @@ export function parseServerSentEvents (input = '') {
   return events
 }
 
+function titleCaseSegment (segment = '') {
+  return String(segment || '')
+    .replace(/\.md$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .replace(/\b\p{L}/gu, letter => letter.toUpperCase())
+}
+
+function buildAssistantSourceDisplay (key = '') {
+  const rawKey = String(key || '').trim()
+  if (!rawKey) {
+    return { title: '', meta: '' }
+  }
+
+  try {
+    const url = new URL(rawKey)
+    const segments = url.pathname
+      .split('/')
+      .filter(Boolean)
+      .map(segment => titleCaseSegment(decodeURIComponent(segment)))
+      .filter(Boolean)
+
+    const title = segments.length === 0
+      ? 'Home'
+      : segments.slice(-2).join(' / ')
+
+    const metaPath = decodeURIComponent(url.pathname || '/').replace(/\.md$/i, '')
+    const meta = `${url.host}${metaPath}${url.search}`
+
+    return { title, meta }
+  } catch {
+    const cleanPath = decodeURIComponent(rawKey.replace(/^\/+/, '').replace(/\.md$/i, ''))
+    const segments = cleanPath
+      .split('/')
+      .filter(Boolean)
+      .map(segment => titleCaseSegment(segment))
+      .filter(Boolean)
+
+    return {
+      title: segments.length === 0 ? 'Home' : segments.slice(-2).join(' / '),
+      meta: cleanPath || '/'
+    }
+  }
+}
+
 export function extractAssistantStreamDelta (event) {
   if (!event || event.data === '[DONE]') {
     return { done: true, content: '', chunks: [] }
@@ -64,12 +109,14 @@ export function normalizeAssistantSourceChunks (chunks = []) {
       const key = chunk?.item?.key || chunk?.key || chunk?.url || ''
       const score = Number(chunk?.score ?? chunk?.scoring_details?.vector_score ?? 0)
       const text = typeof chunk?.text === 'string' ? chunk.text.trim() : ''
-      const title = chunk?.item?.metadata?.title || chunk?.metadata?.title || key
+      const display = buildAssistantSourceDisplay(key)
+      const title = chunk?.item?.metadata?.title || chunk?.metadata?.title || display.title
 
       return {
         id: String(chunk?.id || key || `source-${index + 1}`),
         key: String(key || ''),
         title: String(title || `Source ${index + 1}`),
+        meta: String(display.meta || ''),
         text,
         score: Number.isFinite(score) ? score : 0
       }

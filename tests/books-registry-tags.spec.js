@@ -60,4 +60,10 @@ describe('book registry tags migration', () => {
     expect(resolvedId).toBe('\0virtual:docsector-code-examples')
     expect(plugin.load(resolvedId)).toContain("import.meta.glob('/src/examples/**/*.vue')")
   })
+
+  it('enables Quasar Notify for shared copy feedback', () => {
+    const config = createQuasarConfig({ projectRoot: process.cwd() })
+
+    expect(config.framework.plugins).toContain('Notify')
+  })
 })

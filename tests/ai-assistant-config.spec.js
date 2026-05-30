@@ -26,6 +26,7 @@ describe('AI assistant config', () => {
         },
         aiSearch: {
           instanceName: 'docs-prod',
+          instanceNameEnv: 'DOCS_AI_SEARCH_INSTANCE',
           maxResults: 80,
           matchThreshold: 2,
           contextExpansion: 9,
@@ -40,10 +41,23 @@ describe('AI assistant config', () => {
     expect(config.ui.drawerWidth).toBe(520)
     expect(config.ui.suggestedPrompts).toEqual(['Explain routing', 'Find MCP docs'])
     expect(config.aiSearch.instanceName).toBe('docs-prod')
+    expect(config.aiSearch.instanceNameEnv).toBe('DOCS_AI_SEARCH_INSTANCE')
     expect(config.aiSearch.maxResults).toBe(50)
     expect(config.aiSearch.matchThreshold).toBe(1)
     expect(config.aiSearch.contextExpansion).toBe(3)
     expect(config.aiSearch.queryRewrite.enabled).toBe(false)
     expect(config.aiSearch.reranking.enabled).toBe(true)
+  })
+
+  it('defaults instanceNameEnv when omitted', () => {
+    const config = normalizeAiAssistantConfig({
+      aiAssistant: {
+        enabled: true,
+        aiSearch: {}
+      }
+    })
+
+    expect(config.aiSearch.instanceName).toBe('')
+    expect(config.aiSearch.instanceNameEnv).toBe('AI_SEARCH_INSTANCE_NAME')
   })
 })

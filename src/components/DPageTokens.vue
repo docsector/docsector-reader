@@ -23,6 +23,7 @@ import DH3 from './DH3.vue'
 import DH4 from './DH4.vue'
 import DH5 from './DH5.vue'
 import DH6 from './DH6.vue'
+import DPageRichContent from './DPageRichContent.vue'
 import DBlockSourceCode from './DBlockSourceCode.vue'
 import DBlockMermaidDiagram from './DBlockMermaidDiagram.vue'
 import DBlockBlockquote from './DBlockBlockquote.vue'
@@ -71,28 +72,34 @@ import DBlockApi from './DBlockApi.vue'
     :value="token.content"
   />
 
-  <ul
+  <d-page-rich-content
     v-else-if="token.tag === 'ul'"
-    v-bind="token.attrs || {}"
-    v-html="token.content"
-  ></ul>
-  <ol
+    tag="ul"
+    :attrs="token.attrs"
+    :html="token.content"
+  />
+  <d-page-rich-content
     v-else-if="token.tag === 'ol'"
-    v-bind="token.attrs || {}"
-    v-html="token.content"
-  ></ol>
+    tag="ol"
+    :attrs="token.attrs"
+    :html="token.content"
+  />
 
   <div
     v-else-if="token.tag === 'table'"
     class="d-table-wrapper"
   >
-    <table v-html="token.content"></table>
+    <d-page-rich-content
+      tag="table"
+      :html="token.content"
+    />
   </div>
 
-  <div
+  <d-page-rich-content
     v-else-if="token.tag === 'html'"
-    v-html="token.content"
-  ></div>
+    tag="div"
+    :html="token.content"
+  />
 
   <d-block-image
     v-else-if="token.tag === 'image'"
@@ -100,16 +107,20 @@ import DBlockApi from './DBlockApi.vue'
     :caption-html="token.captionHtml"
   />
 
-  <p
+  <d-page-rich-content
     v-else-if="token.tag === 'p'"
-    v-html="token.content"
-  ></p>
+    tag="p"
+    :html="token.content"
+  />
 
   <d-block-blockquote
     v-else-if="token.tag === 'blockquote'"
     :message="token.alertType"
   >
-    <div v-html="token.content"></div>
+    <d-page-rich-content
+      tag="div"
+      :html="token.content"
+    />
   </d-block-blockquote>
 
   <d-block-file

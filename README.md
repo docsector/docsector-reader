@@ -43,6 +43,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 📋 **Clickable Inline Code** — Backtick-rendered inline code snippets are clickable across pages, subpages, and AI assistant answers
 - 🔽 **Nested Markdown Lists** — Ordered and unordered lists preserve sublist hierarchy across multiple indentation levels
 - ☑️ **Markdown Task Lists** — GitBook-style `- [ ]` and `- [x]` items render as read-only checkboxes with nested subtasks
 - 🖼️ **Block Image Captions & Zoom** — Standalone Markdown images render as zoomable figures, and raw `figure` / `picture` markup supports separate alt text and captions
@@ -323,7 +324,7 @@ export default {
     },
     aiSearch: {
       binding: 'AI_SEARCH',
-      instanceName: 'my-docs-search',
+      instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
       model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -347,6 +348,7 @@ Use Cloudflare AI Search as the first provider path:
 - Build and deploy the Docsector site first; build output always publishes `/sitemap.xml` and adds `Sitemap: /sitemap.xml` to `robots.txt` for crawler discovery.
 - Use a Website data source. For the cleanest retrieval, point its specific sitemap to `/ai-search-sitemap.xml`; otherwise the crawler can discover `/sitemap.xml` from `robots.txt`.
 - Add metadata fields such as title, path, locale, book, version, and subpage if you want filtering later.
+- Set `AI_SEARCH_INSTANCE_NAME` as a Cloudflare Pages environment variable or local `.dev.vars` entry.
 - Bind the instance to Pages as `AI_SEARCH` when available, or set encrypted Pages secrets for `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` with AI Search run access.
 - Keep AI Search public endpoints optional; the built-in UI uses the configured internal endpoint by default.
 
@@ -389,6 +391,7 @@ Use the right place for each environment:
 Minimum variables when not using direct AI Search binding:
 
 ```bash
+AI_SEARCH_INSTANCE_NAME=...
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
 ```
@@ -870,7 +873,7 @@ export default {
     },
     aiSearch: {
       binding: 'AI_SEARCH',
-      instanceName: '',
+      instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
       retrievalType: 'hybrid',
