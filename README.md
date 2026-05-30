@@ -26,13 +26,14 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔐 **Web Bot Auth Directory** — Optional signed JWKS directory at `/.well-known/http-message-signatures-directory` for bot identity verification
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, and others)
-- 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with all page URLs (requires `siteUrl` in config)
-- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.)
+- 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with root-relative URLs by default and absolute URLs when `siteUrl` is configured
+- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 23 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GrokBot, etc.) and advertises `Sitemap: /sitemap.xml`
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
 - ✍️ **Docsector Authoring Skill** — Publishable `SKILL.md` that teaches agents Docsector blocks, page patterns, MCP lookup, and WebMCP tools
 - 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
 - 🌐 **WebMCP Browser Tools** — Optional registration of in-page tools via `navigator.modelContext` for browser agents
+- 🤖 **AI Assistant Panel** — Optional documentation assistant drawer backed by Cloudflare AI Search through an internal same-origin endpoint
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -291,9 +292,114 @@ Check `checks.discovery.webMcp.status` equals `"pass"`.
 
 ---
 
+## 🤖 AI Assistant Panel
+
+Docsector Reader can add an opt-in assistant panel for documentation Q&A. Users open it from the global header while reading pages and subpages; it is not a dedicated documentation route. The drawer posts to a same-origin Cloudflare Pages Function, and that function calls Cloudflare AI Search so secrets, rate-limit strategy, provider errors, and future auth stay server-side.
+
+The panel is disabled by default. When enabled, desktop pages get a dedicated right-side assistant rail that can sit beside the table of contents on wide screens. Mobile uses a fullscreen dialog.
+
+### Configure
+
+```javascript
+export default {
+  // ...other config
+
+  siteUrl: 'https://my-docs.example.com',
+
+  aiAssistant: {
+    enabled: true,
+    provider: 'aiSearch',
+    endpoint: '/assistant',
+    ui: {
+      title: 'Docs Assistant',
+      drawerWidth: 380,
+      wideBreakpoint: 1280,
+      showCitations: true,
+      suggestedPrompts: [
+        'How do I get started?',
+        'Summarize this page.',
+        'Where is the related API reference?'
+      ]
+    },
+    aiSearch: {
+      binding: 'AI_SEARCH',
+      instanceName: 'my-docs-search',
+      accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
+      apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
+      model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      retrievalType: 'hybrid',
+      maxResults: 6,
+      matchThreshold: 0.4,
+      contextExpansion: 1,
+      queryRewrite: { enabled: true },
+      reranking: { enabled: false },
+      stream: true
+    }
+  }
+}
+```
+
+### Cloudflare setup
+
+Use Cloudflare AI Search as the first provider path:
+
+- Create an AI Search instance in Cloudflare.
+- Build and deploy the Docsector site first; build output always publishes `/sitemap.xml` and adds `Sitemap: /sitemap.xml` to `robots.txt` for crawler discovery.
+- Use a Website data source. For the cleanest retrieval, point its specific sitemap to `/ai-search-sitemap.xml`; otherwise the crawler can discover `/sitemap.xml` from `robots.txt`.
+- Add metadata fields such as title, path, locale, book, version, and subpage if you want filtering later.
+- Bind the instance to Pages as `AI_SEARCH` when available, or set encrypted Pages secrets for `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` with AI Search run access.
+- Keep AI Search public endpoints optional; the built-in UI uses the configured internal endpoint by default.
+
+### Build output
+
+When enabled, `docsector build` can generate:
+
+| File | Purpose |
+|---|---|
+| `functions/assistant.js` | Cloudflare Pages Function for browser assistant requests |
+| `dist/spa/sitemap.xml` | Default crawler sitemap advertised from `robots.txt` |
+| `dist/spa/robots.txt` | Crawler policy with `Sitemap: /sitemap.xml` |
+| `dist/spa/ai-search-sitemap.xml` | Markdown-focused sitemap for AI Search crawling |
+| `dist/spa/.well-known/ai-search/manifest.json` | Source metadata for indexed documentation pages |
+| `dist/spa/_routes.json` | Routes the internal assistant endpoint to the Pages Function |
+
+### Validate
+
+```bash
+npx docsector build
+cat dist/spa/sitemap.xml
+cat dist/spa/robots.txt
+cat dist/spa/ai-search-sitemap.xml
+cat dist/spa/.well-known/ai-search/manifest.json
+npx wrangler pages dev dist/spa
+```
+
+Workers AI, AI Search, and remote bindings can incur Cloudflare usage during local development.
+
+### Environment variables quick guide
+
+Docsector now ships `.env.example` so teams can standardize Cloudflare variables.
+
+Use the right place for each environment:
+
+- Cloudflare Pages production/preview: set vars in Pages settings (recommended).
+- Local `wrangler pages dev`: use `.dev.vars` for Function runtime variables.
+- Local Node-based tools: `.env` works when your runner actually loads it.
+
+Minimum variables when not using direct AI Search binding:
+
+```bash
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_API_TOKEN=...
+```
+
+If you bind AI Search as `AI_SEARCH`, the Assistant tries binding first and uses REST fallback when binding is not available.
+
+---
+
 ## � llms.txt (LLM Discovery)
 
-Docsector Reader automatically generates [llms.txt](https://llmstxt.org) files at build time when `siteUrl` is configured (same requirement as sitemap.xml).
+Docsector Reader automatically generates [llms.txt](https://llmstxt.org) files at build time when `siteUrl` is configured. `sitemap.xml` is generated even without `siteUrl`; `llms.txt` keeps the `siteUrl` requirement because it contains absolute Markdown links.
 
 | File | Purpose |
 |---|---|
@@ -499,6 +605,7 @@ Notes:
 - `aiTrain`, `search`, and `aiInput` accept `yes` / `no` (or booleans).
 - Default scope is only `User-agent: *`.
 - Build patch is idempotent: repeated builds do not duplicate `Content-Signal` lines.
+- Build also keeps `Sitemap: /sitemap.xml` discoverable in `robots.txt` so crawlers can find the generated sitemap automatically.
 
 ### Validate
 
@@ -749,6 +856,27 @@ export default {
   markdownNegotiation: {
     enabled: true,
     agentFallback: true
+  },
+
+  aiAssistant: {
+    enabled: false,
+    provider: 'aiSearch',
+    endpoint: '/assistant',
+    ui: {
+      title: 'Docsector Assistant',
+      drawerWidth: 380,
+      wideBreakpoint: 1280,
+      showCitations: true
+    },
+    aiSearch: {
+      binding: 'AI_SEARCH',
+      instanceName: '',
+      accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
+      apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
+      retrievalType: 'hybrid',
+      maxResults: 6,
+      stream: true
+    }
   },
 
   mcpServerCard: {

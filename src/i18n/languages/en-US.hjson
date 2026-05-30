@@ -105,6 +105,23 @@
     changelog: 'Changelog'
   },
 
+  assistant: {
+    title: 'Docsector Assistant',
+    subtitle: "I'm here to help you with the docs.",
+    open: 'Open assistant',
+    close: 'Close assistant',
+    placeholder: 'Ask, search, or explain...',
+    send: 'Send',
+    stop: 'Stop',
+    context: 'Based on your context',
+    sources: 'Sources',
+    greeting: {
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening'
+    }
+  },
+
   // @
   system: {
     documentation: 'Documentation',

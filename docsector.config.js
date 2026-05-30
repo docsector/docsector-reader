@@ -55,6 +55,46 @@ export default {
     toolSuffix: 'docsector'
   },
 
+  // @ AI Assistant
+  aiAssistant: {
+    enabled: false,
+    provider: 'aiSearch',
+    endpoint: '/assistant',
+    ui: {
+      title: 'Docsector Assistant',
+      subtitle: 'Ask, search, or explain the docs.',
+      drawerWidth: 380,
+      wideBreakpoint: 1280,
+      showCitations: true,
+      suggestedPrompts: [
+        'How do I get started?',
+        'Summarize this page.',
+        'Where is the related API reference?'
+      ]
+    },
+    aiSearch: {
+      binding: 'AI_SEARCH',
+      instanceName: '',
+      namespace: '',
+      accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
+      apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
+      model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      retrievalType: 'hybrid',
+      maxResults: 6,
+      matchThreshold: 0.4,
+      contextExpansion: 1,
+      queryRewrite: {
+        enabled: true
+      },
+      reranking: {
+        enabled: false,
+        model: '@cf/baai/bge-reranker-base',
+        matchThreshold: 0.4
+      },
+      stream: true
+    }
+  },
+
   // @ Agent Skills
   agentSkills: {
     enabled: true,

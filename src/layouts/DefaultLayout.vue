@@ -15,6 +15,17 @@
         <q-icon class="q-mb-xs q-mr-sm" :name="headerTitleIcon" />
         {{ headerTitleText }}
       </q-toolbar-title>
+      <q-btn
+        v-if="assistantEnabled"
+        class="filled d-header__assistant-toggle"
+        :class="assistantOpen ? 'active' : null"
+        square
+        icon="auto_awesome"
+        :aria-label="t('assistant.open')"
+        @click="toggleAssistant"
+      >
+        <q-tooltip>{{ t('assistant.open') }}</q-tooltip>
+      </q-btn>
       <q-btn class="filled" square icon="settings" aria-label="Configuration" @click="openSettingsDialog" />
     </q-toolbar>
 
@@ -59,12 +70,15 @@ import { useMeta, colors } from 'quasar'
 
 import DMenu from '../components/DMenu.vue'
 import docsectorConfig from 'docsector.config.js'
+import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { pageTitleI18nPath } from '../i18n/path'
 
 defineOptions({ name: 'LayoutDefault' })
 
 const branding = docsectorConfig.branding || {}
+const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
+const assistantEnabled = assistantConfig.enabled === true
 
 const route = useRoute()
 const router = useRouter()
@@ -74,6 +88,8 @@ const { t, locale } = useI18n()
 const layout = ref({
   menu: false
 })
+
+const assistantOpen = computed(() => store.state.layout.assistant)
 
 const headerTitleIcon = computed(() => {
   return route.matched[0].meta.icon ?? route.meta.icon
@@ -271,6 +287,10 @@ function openSettingsDialog () {
   store.commit('settings/dialog', true)
 }
 
+function toggleAssistant () {
+  store.commit('layout/setAssistant', !store.state.layout.assistant)
+}
+
 function getFirstRoutePathByBook (bookId) {
   const routes = router.options?.routes || []
   const versionId = activeVersionId.value
@@ -356,6 +376,8 @@ store.commit('page/resetAnchors')
     color: var(--d-book-tab-active-color, #ffffff)
   .q-btn
     border-radius: 0
+  .d-header__assistant-toggle.active
+    background: rgba(255, 255, 255, 0.16)
   .q-btn:before
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2), 0 0 2px rgba(0, 0, 0, 0.14), 0 0 1px -2px rgba(0, 0, 0, 0.12)
     border-radius: 0

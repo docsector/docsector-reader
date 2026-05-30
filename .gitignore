@@ -39,3 +39,5 @@ yarn.lock
 # Other
 /functions
 /tmp
+.env
+.dev.vars

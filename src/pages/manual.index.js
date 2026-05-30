@@ -265,6 +265,35 @@ export default {
     }
   },
 
+  '/basic/ai-assistant': {
+    config: {
+      icon: 'auto_awesome',
+      status: 'new',
+      version: 'v4.4.0',
+      meta: {
+        description: {
+          'en-US': 'AI Assistant — Documentation of Docsector Reader',
+          'pt-BR': 'Assistente de IA — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'AI Assistant' },
+      'pt-BR': { title: 'Assistente de IA' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'ai assistant cloudflare ai search rag drawer semantic search citations streaming',
+        'pt-BR': 'ia assistente cloudflare ai search rag drawer busca semântica citações streaming'
+      }
+    }
+  },
+
   '/basic/agent-skills': {
     config: {
       icon: 'psychology',

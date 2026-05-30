@@ -29,7 +29,9 @@ export default {
     // Main
     scrolling: true,
     meta: true,
-    metaToggle: false
+    metaToggle: false,
+    assistant: false,
+    assistantWidth: 380
   },
   getters: {
     view (state) {
@@ -118,6 +120,12 @@ export default {
     },
     setMetaToggle (state, val) {
       state.metaToggle = val
+    },
+    setAssistant (state, val) {
+      state.assistant = val
+    },
+    setAssistantWidth (state, val) {
+      state.assistantWidth = val
     }
   },
   actions: {}

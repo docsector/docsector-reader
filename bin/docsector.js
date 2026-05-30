@@ -152,6 +152,11 @@ export default {
     editBaseUrl: 'https://github.com/your-org/your-repo/edit/main/src/pages'
   },
 
+  // @ Site URL (optional)
+  // Set this for absolute URLs in sitemap.xml, llms.txt, and AI metadata.
+  // sitemap.xml is still generated with root-relative URLs when omitted.
+  // siteUrl: 'https://docs.example.com',
+
   // @ MCP (Model Context Protocol)
   // Uncomment to enable an MCP server at /mcp for AI assistant integration.
   // Requires Cloudflare Pages Functions (or compatible serverless platform).
@@ -587,9 +592,30 @@ node_modules
 .quasar
 dist
 functions
+.env
+.dev.vars
 npm-debug.log*
 .DS_Store
 .thumbs.db
+`
+
+const TEMPLATE_ENV_EXAMPLE = `\
+# -----------------------------------------------------------------------------
+# Docsector Reader / Cloudflare environment example
+# -----------------------------------------------------------------------------
+# Copy to .env (or .dev.vars for wrangler pages dev) and fill with real values.
+#
+# AI Assistant (Cloudflare AI Search REST fallback)
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+
+# Optional: AI Search instance binding name (defaults to AI_SEARCH in config)
+# AI_SEARCH=
+
+# Optional: Web Bot Auth runtime variables
+# WEB_BOT_AUTH_JWKS=
+# WEB_BOT_AUTH_PRIVATE_JWK=
+# WEB_BOT_AUTH_KEY_ID=
 `
 
 const TEMPLATE_MARKDOWNLINT = `\
@@ -608,6 +634,7 @@ const TEMPLATE_ROBOTS_TXT = `\
 User-agent: *
 Allow: /
 Content-Signal: ai-train=yes, search=yes, ai-input=yes
+Sitemap: /sitemap.xml
 
 # Explicitly allow AI crawlers
 # OpenAI
@@ -758,6 +785,7 @@ npm run build
 \`\`\`
 
 The optimized SPA output will be in \`dist/spa/\`.
+Docsector also generates \`dist/spa/sitemap.xml\` and keeps \`robots.txt\` discoverable with \`Sitemap: /sitemap.xml\`. Set \`siteUrl\` in \`docsector.config.js\` when you want absolute sitemap URLs.
 `
 
 // =============================================================================
@@ -918,6 +946,7 @@ function initProject (name) {
     ['package.json', getTemplatePackageJson(name)],
     ['quasar.config.js', TEMPLATE_QUASAR_CONFIG],
     ['docsector.config.js', TEMPLATE_DOCSECTOR_CONFIG],
+    ['.env.example', TEMPLATE_ENV_EXAMPLE],
     ['.markdownlint.json', TEMPLATE_MARKDOWNLINT],
     ['index.html', TEMPLATE_INDEX_HTML],
     ['postcss.config.cjs', TEMPLATE_POSTCSS],
@@ -948,6 +977,7 @@ function initProject (name) {
   console.log(`    ${name}/`)
   console.log('    ├── docsector.config.js')
   console.log('    ├── quasar.config.js')
+  console.log('    ├── .env.example')
   console.log('    ├── .markdownlint.json')
   console.log('    ├── package.json')
   console.log('    ├── index.html')

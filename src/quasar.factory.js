@@ -30,6 +30,10 @@ import { resolve } from 'path'
 import { pathToFileURL } from 'url'
 import HJSON from 'hjson'
 
+import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
+import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
+import { appendSitemapsToRobots, createSitemap } from './sitemap.js'
+
 /**
  * No-op configure wrapper.
  * Quasar's `configure` from `quasar/wrappers` is a TypeScript identity function.
@@ -1863,6 +1867,74 @@ function createMarkdownEndpointPlugin (projectRoot) {
   }
 }
 
+function collectAiSearchIndexEntries ({ pagesDir, pageEntries = [], defaultLang = 'en-US' } = {}) {
+  const entries = []
+
+  for (const entry of pageEntries) {
+    const { book, pagePath, page } = entry
+    if (page?.config === null) continue
+    if (page?.config?.status === 'empty') continue
+
+    const title = page?.data?.['*']?.title
+      || page?.data?.[defaultLang]?.title
+      || page?.data?.['en-US']?.title
+      || pagePath?.split('/').pop()
+      || pagePath
+
+    const subpages = ['overview']
+    if (page?.config?.subpages?.showcase) subpages.push('showcase')
+    if (page?.config?.subpages?.vs) subpages.push('vs')
+
+    for (const subpage of subpages) {
+      const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
+      if (!existsSync(srcFile)) continue
+
+      const routePath = buildPageRoutePath(entry, subpage)
+      entries.push({
+        title,
+        path: routePath,
+        markdownPath: `${routePath}.md`,
+        locale: defaultLang,
+        book,
+        version: entry.version,
+        subpage
+      })
+    }
+  }
+
+  return entries
+}
+
+function collectStandardSitemapEntries ({ pagesDir, pageEntries = [], defaultLang = 'en-US' } = {}) {
+  const entries = [
+    { path: '/', priority: '1.0' }
+  ]
+  const seenPaths = new Set(['/'])
+
+  for (const entry of pageEntries) {
+    const { page } = entry
+    if (page?.config === null) continue
+    if (page?.config?.status === 'empty') continue
+
+    const subpages = ['overview']
+    if (page?.config?.subpages?.showcase) subpages.push('showcase')
+    if (page?.config?.subpages?.vs) subpages.push('vs')
+
+    for (const subpage of subpages) {
+      const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
+      if (!existsSync(srcFile)) continue
+
+      const routePath = buildPageRoutePath(entry, subpage, { leadingSlash: true })
+      if (seenPaths.has(routePath)) continue
+
+      seenPaths.add(routePath)
+      entries.push({ path: routePath })
+    }
+  }
+
+  return entries
+}
+
 /**
  * Create a Vite plugin that generates static `.md` files at build time.
  *
@@ -1883,6 +1955,7 @@ function createMarkdownBuildPlugin (projectRoot) {
 
       const { default: config } = await import(configUrl)
       const { pageEntries } = await loadBooksRegistry(projectRoot)
+      const assistantConfig = normalizeAiAssistantConfig(config)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
       let count = 0
@@ -1929,34 +2002,23 @@ function createMarkdownBuildPlugin (projectRoot) {
 
       console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
 
-      // Generate sitemap.xml if siteUrl is configured
       const siteUrl = (config.siteUrl || '').replace(/\/+$/, '')
-      if (siteUrl) {
-        const today = new Date().toISOString().split('T')[0]
-        let urls = ''
+      const generatedAt = new Date().toISOString()
+      const sitemapConfig = config.sitemap || {}
+      const sitemapEnabled = sitemapConfig.enabled !== false
 
-        for (const entry of pageEntries) {
-          const { page } = entry
-          if (page.config === null) continue
-          if (page.config.status === 'empty') continue
-
-          const subpages = ['overview']
-          if (page.config.subpages?.showcase) subpages.push('showcase')
-          if (page.config.subpages?.vs) subpages.push('vs')
-
-          for (const subpage of subpages) {
-            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
-            if (!existsSync(srcFile)) continue
-
-            const routePath = buildPageRoutePath(entry, subpage, { leadingSlash: true })
-            urls += `  <url>\n    <loc>${siteUrl}${routePath}</loc>\n    <lastmod>${today}</lastmod>\n  </url>\n`
-          }
-        }
-
-        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}</urlset>\n`
+      if (sitemapEnabled) {
+        const sitemapEntries = collectStandardSitemapEntries({ pagesDir, pageEntries, defaultLang })
+        const sitemap = createSitemap({
+          entries: sitemapEntries,
+          generatedAt,
+          siteUrl
+        })
         writeFileSync(resolve(distDir, 'sitemap.xml'), sitemap)
-        console.log(`\x1b[36m[docsector]\x1b[0m Generated sitemap.xml`)
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated sitemap.xml (${sitemapEntries.length} URLs)`)
+      }
 
+      if (siteUrl) {
         // Generate llms.txt and llms-full.txt (LLM-friendly page index and full content)
         const brandingName = config.branding?.name || 'Documentation'
         const brandingVersion = config.branding?.version || ''
@@ -2047,6 +2109,8 @@ function createMarkdownBuildPlugin (projectRoot) {
       const agentSkillsEnabled = agentSkillsConfig.enabled === true
       const mcpServerCardConfig = config.mcpServerCard || {}
       const mcpServerCardEnabled = mcpServerCardConfig.enabled === true
+      const aiAssistantEnabled = assistantConfig.enabled === true
+      let aiSearchSitemapGenerated = false
 
       const toUrl = (href) => {
         if (!href) return null
@@ -2059,6 +2123,52 @@ function createMarkdownBuildPlugin (projectRoot) {
         if (!href || /^https?:\/\//i.test(href)) return null
         const path = href.startsWith('/') ? href.slice(1) : href
         return path || null
+      }
+
+      if (aiAssistantEnabled && assistantConfig.provider === 'aiSearch') {
+        const aiSearchEntries = collectAiSearchIndexEntries({
+          pagesDir,
+          pageEntries,
+          defaultLang
+        })
+        const artifacts = createAiSearchIndexArtifacts({
+          siteUrl,
+          entries: aiSearchEntries
+        })
+        const manifestPath = '.well-known/ai-search/manifest.json'
+        const sitemapPath = 'ai-search-sitemap.xml'
+
+        mkdirSync(resolve(distDir, '.well-known', 'ai-search'), { recursive: true })
+        writeFileSync(resolve(distDir, manifestPath), JSON.stringify(artifacts.manifest, null, 2) + '\n')
+        if (artifacts.sitemap) {
+          writeFileSync(resolve(distDir, sitemapPath), artifacts.sitemap)
+          aiSearchSitemapGenerated = true
+        }
+        console.log(`\x1b[36m[docsector]\x1b[0m Generated AI Search index artifacts (${aiSearchEntries.length} pages)`)
+
+        const headersWithAiSearch = readFileSync(headersPath, 'utf-8')
+        const aiSearchHeaders = [
+          '/.well-known/ai-search/manifest.json\n  Content-Type: application/json; charset=utf-8',
+          '/ai-search-sitemap.xml\n  Content-Type: application/xml; charset=utf-8'
+        ].filter(rule => !headersWithAiSearch.includes(rule.split('\n')[0])).join('\n\n')
+        if (aiSearchHeaders) {
+          writeFileSync(headersPath, headersWithAiSearch.trimEnd() + '\n\n' + aiSearchHeaders + '\n')
+        }
+      }
+
+      if (aiAssistantEnabled) {
+        const functionsDir = resolve(projectRoot, 'functions')
+        const packageRoot = getPackageRoot(projectRoot)
+        const templatePath = resolve(packageRoot, 'src', 'ai-assistant', 'server.js')
+        mkdirSync(functionsDir, { recursive: true })
+
+        if (existsSync(templatePath)) {
+          const serverCode = readFileSync(templatePath, 'utf-8')
+            .replaceAll('__AI_ASSISTANT_CONFIG__', JSON.stringify(assistantConfig, null, 2))
+
+          writeFileSync(resolve(functionsDir, 'assistant.js'), serverCode)
+          console.log(`\x1b[36m[docsector]\x1b[0m Generated AI Assistant endpoint at functions/assistant.js`)
+        }
       }
 
       if (markdownNegotiationEnabled || webBotAuthEnabled) {
@@ -2227,6 +2337,7 @@ function estimateTokens (markdown = '') {
 
 function shouldBypass (pathname) {
   if (pathname === '/mcp' || pathname.startsWith('/mcp/')) return true
+  if (pathname === '/assistant' || pathname.startsWith('/assistant/')) return true
   if (pathname.startsWith('/.well-known/')) return true
   return /\\.(js|css|map|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|xml|json|txt)$/i.test(pathname)
 }
@@ -2324,6 +2435,26 @@ export async function onRequest (context) {
         if (patchedRobots !== existingRobots) {
           writeFileSync(robotsPath, patchedRobots)
           console.log(`\x1b[36m[docsector]\x1b[0m Updated robots.txt with Content-Signal policy`)
+        }
+      }
+
+      const robotsSitemapPaths = []
+      if (sitemapEnabled) robotsSitemapPaths.push('/sitemap.xml')
+      if (aiSearchSitemapGenerated) robotsSitemapPaths.push('/ai-search-sitemap.xml')
+
+      if (robotsSitemapPaths.length > 0) {
+        const robotsPath = resolve(distDir, 'robots.txt')
+        const existingRobots = existsSync(robotsPath)
+          ? readFileSync(robotsPath, 'utf-8')
+          : 'User-agent: *\nAllow: /\n'
+        const patchedRobots = appendSitemapsToRobots(existingRobots, {
+          sitemaps: robotsSitemapPaths,
+          siteUrl
+        })
+
+        if (patchedRobots !== existingRobots) {
+          writeFileSync(robotsPath, patchedRobots)
+          console.log(`\x1b[36m[docsector]\x1b[0m Updated robots.txt with sitemap discovery`)
         }
       }
 
@@ -2653,7 +2784,7 @@ export async function onRequest (context) {
       }
 
       // Generate or merge _routes.json for Cloudflare Pages functions
-      if (config.mcp || markdownNegotiationEnabled || webBotAuthEnabled) {
+      if (config.mcp || aiAssistantEnabled || markdownNegotiationEnabled || webBotAuthEnabled) {
         const routesPath = resolve(distDir, '_routes.json')
         let routes = { version: 1, include: [], exclude: [] }
         if (existsSync(routesPath)) {
@@ -2670,6 +2801,10 @@ export async function onRequest (context) {
 
         if (config.mcp && !markdownNegotiationEnabled && !routes.include.includes('/mcp')) {
           routes.include.push('/mcp')
+        }
+
+        if (aiAssistantEnabled && !markdownNegotiationEnabled && !routes.include.includes('/assistant')) {
+          routes.include.push('/assistant')
         }
 
         if (webBotAuthEnabled && !markdownNegotiationEnabled && !routes.include.includes(webBotAuthDirectoryPath)) {

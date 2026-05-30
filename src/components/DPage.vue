@@ -2,18 +2,24 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
+import docsectorConfig from 'docsector.config.js'
 
 import useNavigator from '../composables/useNavigator'
 import { getReadingProgressState } from '../composables/useReadingProgress'
+import { normalizeAiAssistantConfig } from '../ai-assistant/config'
+import { getAssistantRightRailState } from '../ai-assistant/layout'
 
 import DPageAnchor from './DPageAnchor.vue'
+import DAssistantPanel from './DAssistantPanel.vue'
 import DPageMeta from './DPageMeta.vue'
 
 const store = useStore()
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
+const { locale } = useI18n()
 
 const { scrolling, navigate } = useNavigator()
 
@@ -35,6 +41,8 @@ const pageMinHeight = ref('calc(100vh - 86px)')
 const submenuHeight = ref('36px')
 const pageBottomInset = ref('0px')
 const readingProgress = ref(getReadingProgressState())
+const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
+const assistantEnabled = assistantConfig.enabled === true
 
 const getPageScrollContainer = () => {
   return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
@@ -96,6 +104,11 @@ const layoutMeta = computed({
   get: () => store.state.layout.meta,
   set: (value) => store.commit('layout/setMeta', value)
 })
+const layoutAssistant = computed({
+  get: () => store.state.layout.assistant,
+  set: (value) => store.commit('layout/setAssistant', value)
+})
+const assistantWidth = computed(() => store.state.layout.assistantWidth || assistantConfig.ui.drawerWidth)
 const main = computed(() => {
   switch (store.state.page.relative) {
     case '/showcase':
@@ -109,12 +122,45 @@ const main = computed(() => {
 const shouldShowBackToTopControl = computed(() => {
   return props.showBackToTopControl && readingProgress.value.hasOverflow && readingProgress.value.isVisible
 })
+const rightRailState = computed(() => getAssistantRightRailState({
+  tocOpen: layoutMeta.value,
+  assistantOpen: assistantEnabled && layoutAssistant.value,
+  screenWidth: $q.screen.width,
+  assistantWidth: assistantWidth.value,
+  mobileBreakpoint: 768
+}))
+const rightRailOpen = computed(() => {
+  return !rightRailState.value.isMobile && (rightRailState.value.showToc || rightRailState.value.showAssistant)
+})
+const mobileAssistantOpen = computed({
+  get: () => assistantEnabled && rightRailState.value.isMobile && layoutAssistant.value,
+  set: (value) => { layoutAssistant.value = value }
+})
 const backToTopRightOffset = computed(() => {
-  return layoutMeta.value && !$q.screen.lt.md ? '332px' : '24px'
+  return rightRailState.value.backToTopRightOffset
+})
+const currentMarkdownUrl = computed(() => {
+  const path = route.path.replace(/\/+$/, '')
+  return `${window.location.origin}${path || '/homepage'}.md`
+})
+const currentPageTitle = computed(() => {
+  const data = route.matched?.[0]?.meta?.data || route.meta?.data || {}
+  return data?.[locale.value]?.title || data?.['*']?.title || data?.['en-US']?.title || ''
 })
 
 const toggleSectionsTree = () => {
   layoutMeta.value = !layoutMeta.value
+}
+
+const closeAssistant = () => {
+  layoutAssistant.value = false
+}
+
+const setRightRailOpen = (value) => {
+  if (!value) {
+    layoutMeta.value = false
+    layoutAssistant.value = false
+  }
 }
 
 const pActive = (relative) => {
@@ -341,7 +387,9 @@ watch(() => route.fullPath, () => {
           />
         </q-btn-group>
       </q-toolbar-title>
-      <q-btn class="d-submenu__toggle" @click="toggleSectionsTree" icon="account_tree" />
+      <q-btn class="d-submenu__toggle" :class="layoutMeta ? 'active' : null" @click="toggleSectionsTree" icon="account_tree">
+        <q-tooltip>{{ $t('page.edit.anchor') }}</q-tooltip>
+      </q-btn>
     </div>
   </q-toolbar>
 
@@ -383,9 +431,39 @@ watch(() => route.fullPath, () => {
     </q-btn>
   </div>
 
-  <q-drawer elevated show-if-above side="right" v-model="layoutMeta">
-    <d-page-anchor id="anchor" />
+  <q-drawer
+    v-if="!rightRailState.isMobile"
+    elevated
+    show-if-above
+    side="right"
+    :model-value="rightRailOpen"
+    :width="rightRailState.totalWidth || 308"
+    class="d-right-rail-drawer"
+    @update:model-value="setRightRailOpen"
+  >
+    <div class="d-right-rail">
+      <div v-if="rightRailState.showToc" class="d-right-rail__toc" :style="{ width: `${rightRailState.tocWidth}px` }">
+        <d-page-anchor id="anchor" />
+      </div>
+      <q-separator v-if="rightRailState.showToc && rightRailState.showAssistant" vertical />
+      <d-assistant-panel
+        v-if="rightRailState.showAssistant"
+        class="d-right-rail__assistant"
+        :style="{ width: `${rightRailState.assistantWidth}px` }"
+        :context-title="currentPageTitle"
+        :markdown-url="currentMarkdownUrl"
+        @close="closeAssistant"
+      />
+    </div>
   </q-drawer>
+
+  <q-dialog v-if="assistantEnabled" v-model="mobileAssistantOpen" maximized>
+    <d-assistant-panel
+      :context-title="currentPageTitle"
+      :markdown-url="currentMarkdownUrl"
+      @close="closeAssistant"
+    />
+  </q-dialog>
 </q-page-container>
 </template>
 
@@ -454,10 +532,29 @@ watch(() => route.fullPath, () => {
     border-radius: 0
     margin-right: 0
 
+    &.active
+      background: rgba(255, 255, 255, 0.16)
+
   .on-left
     margin-right: 5px
   .toolbar-container
     overflow: visible
+
+.d-right-rail
+  height: 100%
+  display: flex
+  min-width: 0
+  overflow: hidden
+
+  &__toc
+    height: 100%
+    min-width: 0
+    overflow: auto
+
+  &__assistant
+    height: 100%
+    min-width: 320px
+    flex: 0 0 auto
     padding: 0
   .q-btn-group
     box-shadow: none

@@ -33,6 +33,7 @@
     "index.html",
     "postcss.config.cjs",
     ".eslintrc.cjs",
+    ".env.example",
     "jsconfig.json",
     "README.md",
     "LICENSE.md"

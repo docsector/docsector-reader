@@ -104,6 +104,23 @@
     changelog: 'Changelog'
   },
 
+  assistant: {
+    title: 'Assistente Docsector',
+    subtitle: 'Estou aqui para ajudar com a documentação.',
+    open: 'Abrir assistente',
+    close: 'Fechar assistente',
+    placeholder: 'Pergunte, pesquise ou explique...',
+    send: 'Enviar',
+    stop: 'Parar',
+    context: 'Com base no seu contexto',
+    sources: 'Fontes',
+    greeting: {
+      morning: 'Bom dia',
+      afternoon: 'Boa tarde',
+      evening: 'Boa noite'
+    }
+  },
+
   // @
   system: {
     documentation: 'Documentação',
