@@ -70,6 +70,26 @@ const engineDefaults = {
           deprecated: 'deprecated'
         }
       }
+    },
+    assistant: {
+      title: 'Docsector Assistant',
+      subtitle: "I'm here to help you with the docs.",
+      open: 'Open assistant',
+      close: 'Close assistant',
+      clear: 'Clear conversation',
+      placeholder: 'Ask, search, or explain...',
+      send: 'Send',
+      stop: 'Stop',
+      context: 'Based on your context',
+      sources: 'Sources',
+      sourcesCount: '{count} sources',
+      thinking: 'Searching the docs…',
+      resize: 'Resize assistant',
+      greeting: {
+        morning: 'Good morning',
+        afternoon: 'Good afternoon',
+        evening: 'Good evening'
+      }
     }
   },
   'pt-BR': {
@@ -119,6 +139,26 @@ const engineDefaults = {
           draft: 'rascunho',
           deprecated: 'obsoleta'
         }
+      }
+    },
+    assistant: {
+      title: 'Assistente Docsector',
+      subtitle: 'Estou aqui para ajudar com a documentação.',
+      open: 'Abrir assistente',
+      close: 'Fechar assistente',
+      clear: 'Limpar conversa',
+      placeholder: 'Pergunte, pesquise ou explique...',
+      send: 'Enviar',
+      stop: 'Parar',
+      context: 'Com base no seu contexto',
+      sources: 'Fontes',
+      sourcesCount: '{count} fontes',
+      thinking: 'Consultando a documentação…',
+      resize: 'Redimensionar assistente',
+      greeting: {
+        morning: 'Bom dia',
+        afternoon: 'Boa tarde',
+        evening: 'Boa noite'
       }
     }
   }
