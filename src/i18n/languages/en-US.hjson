@@ -118,6 +118,9 @@
     context: 'Based on your context',
     sources: 'Sources',
     sourcesCount: '{count} sources',
+    copyMessage: 'Copy message',
+    copied: 'Message copied',
+    loadEarlier: 'Load earlier messages',
     thinking: 'Searching the docs…',
     resize: 'Resize assistant',
     greeting: {

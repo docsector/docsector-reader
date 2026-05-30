@@ -29,6 +29,7 @@ describe('assistant session persistence', () => {
       ],
       sources: [
         { id: 'source-1', key: '/guide', title: 'Guide', meta: 'docsector.com/guide', score: '0.8' },
+        { id: 'source-duplicate', key: 'guide/', title: 'Guide duplicate', score: '0.2' },
         { id: 'empty-source', key: '', text: '' }
       ]
     })).toEqual({

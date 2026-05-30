@@ -68,4 +68,36 @@ describe('assistant stream helpers', () => {
       }
     ])
   })
+
+  it('deduplicates source chunks that point to the same link', () => {
+    expect(normalizeAssistantSourceChunks([
+      {
+        id: 'chunk-a',
+        score: 0.2,
+        text: 'First match',
+        item: {
+          key: '/manual/basic/agent-skills/overview.md',
+          metadata: { title: 'Agent Skills' }
+        }
+      },
+      {
+        id: 'chunk-b',
+        score: 0.91,
+        text: 'Second match',
+        item: {
+          key: 'manual/basic/agent-skills/overview/',
+          metadata: { title: 'Agent Skills Duplicate' }
+        }
+      }
+    ])).toEqual([
+      {
+        id: 'chunk-a',
+        key: '/manual/basic/agent-skills/overview.md',
+        title: 'Agent Skills',
+        meta: 'manual/basic/agent-skills/overview',
+        text: 'First match',
+        score: 0.91
+      }
+    ])
+  })
 })

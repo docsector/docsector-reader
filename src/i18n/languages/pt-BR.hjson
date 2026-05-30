@@ -117,6 +117,9 @@
     context: 'Com base no seu contexto',
     sources: 'Fontes',
     sourcesCount: '{count} fontes',
+    copyMessage: 'Copiar mensagem',
+    copied: 'Mensagem copiada',
+    loadEarlier: 'Carregar mensagens anteriores',
     thinking: 'Consultando a documentação…',
     resize: 'Redimensionar assistente',
     greeting: {

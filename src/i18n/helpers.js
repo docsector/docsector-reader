@@ -83,6 +83,9 @@ const engineDefaults = {
       context: 'Based on your context',
       sources: 'Sources',
       sourcesCount: '{count} sources',
+      copyMessage: 'Copy message',
+      copied: 'Message copied',
+      loadEarlier: 'Load earlier messages',
       thinking: 'Searching the docs…',
       resize: 'Resize assistant',
       greeting: {
@@ -153,6 +156,9 @@ const engineDefaults = {
       context: 'Com base no seu contexto',
       sources: 'Fontes',
       sourcesCount: '{count} fontes',
+      copyMessage: 'Copiar mensagem',
+      copied: 'Mensagem copiada',
+      loadEarlier: 'Carregar mensagens anteriores',
       thinking: 'Consultando a documentação…',
       resize: 'Redimensionar assistente',
       greeting: {

@@ -71,6 +71,67 @@ function buildAssistantSourceDisplay (key = '') {
   }
 }
 
+function normalizeAssistantSourcePath (path = '') {
+  const normalized = String(path || '')
+    .replace(/\\/g, '/')
+    .replace(/\/+/g, '/')
+    .replace(/\/+$/g, '')
+    .replace(/\.md$/i, '')
+
+  return normalized || '/'
+}
+
+export function normalizeAssistantSourceLinkKey (key = '') {
+  const rawKey = String(key || '').trim()
+  if (!rawKey) return ''
+
+  try {
+    if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(rawKey)) {
+      const url = new URL(rawKey, 'https://docsector.local')
+      return [
+        url.protocol.toLowerCase(),
+        '//',
+        url.host.toLowerCase(),
+        normalizeAssistantSourcePath(decodeURIComponent(url.pathname || '/')),
+        url.search
+      ].join('')
+    }
+  } catch {
+    // Fall through to relative-path normalization for malformed URLs.
+  }
+
+  const hashless = rawKey.split('#')[0]
+  const queryIndex = hashless.indexOf('?')
+  const rawPath = queryIndex === -1 ? hashless : hashless.slice(0, queryIndex)
+  const search = queryIndex === -1 ? '' : hashless.slice(queryIndex)
+  const normalizedPath = normalizeAssistantSourcePath(rawPath).replace(/^\/+/, '') || '/'
+
+  return `${normalizedPath}${search}`
+}
+
+export function dedupeAssistantSources (sources = []) {
+  const byLink = new Map()
+
+  for (const source of Array.isArray(sources) ? sources : []) {
+    const dedupeKey = normalizeAssistantSourceLinkKey(source?.key) || `text:${String(source?.text || '').trim()}`
+    if (!dedupeKey || dedupeKey === 'text:') continue
+
+    const previous = byLink.get(dedupeKey)
+    if (!previous) {
+      byLink.set(dedupeKey, source)
+      continue
+    }
+
+    byLink.set(dedupeKey, {
+      ...previous,
+      text: previous.text || source.text || '',
+      score: Math.max(Number(previous.score || 0), Number(source.score || 0))
+    })
+  }
+
+  return Array.from(byLink.values())
+}
+
 export function extractAssistantStreamDelta (event) {
   if (!event || event.data === '[DONE]') {
     return { done: true, content: '', chunks: [] }
@@ -104,7 +165,7 @@ export function extractAssistantStreamDelta (event) {
 }
 
 export function normalizeAssistantSourceChunks (chunks = []) {
-  return (Array.isArray(chunks) ? chunks : [])
+  const sources = (Array.isArray(chunks) ? chunks : [])
     .map((chunk, index) => {
       const key = chunk?.item?.key || chunk?.key || chunk?.url || ''
       const score = Number(chunk?.score ?? chunk?.scoring_details?.vector_score ?? 0)
@@ -122,4 +183,6 @@ export function normalizeAssistantSourceChunks (chunks = []) {
       }
     })
     .filter(chunk => chunk.key || chunk.text)
+
+  return dedupeAssistantSources(sources)
 }

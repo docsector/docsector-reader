@@ -1,11 +1,16 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
+import { copyToClipboard, useQuasar } from 'quasar'
 
 import useAssistant from '../composables/useAssistant'
-import { isAssistantThinkingState, listVisibleAssistantMessages } from '../ai-assistant/panel'
+import {
+  ASSISTANT_MESSAGE_WINDOW_SIZE,
+  ASSISTANT_MESSAGE_WINDOW_STEP,
+  getAssistantMessageWindow,
+  isAssistantThinkingState
+} from '../ai-assistant/panel'
 import DPageTokens from './DPageTokens.vue'
 import { tokenizePageSectionSource } from './page-section-tokens'
 
@@ -49,6 +54,12 @@ const $q = useQuasar()
 const { t, locale } = useI18n()
 const input = ref('')
 const scrollArea = ref(null)
+const visibleMessageLimit = ref(ASSISTANT_MESSAGE_WINDOW_SIZE)
+const copiedMessageId = ref('')
+const showScrollToBottom = ref(false)
+let scrollFrame = 0
+let copiedMessageTimer = null
+let revealingOlderMessages = false
 
 const assistant = useAssistant({
   route,
@@ -85,12 +96,44 @@ const sources = computed(() => assistant.sources.value)
 const hasSources = computed(() => sources.value.length > 0 && assistant.config.ui.showCitations)
 const sourceAvatars = computed(() => sources.value.slice(0, 4))
 const sourcesLabel = computed(() => t('assistant.sourcesCount', { count: sources.value.length }))
-const visibleMessages = computed(() => listVisibleAssistantMessages(assistant.messages.value))
+const messageWindow = computed(() => getAssistantMessageWindow(assistant.messages.value, visibleMessageLimit.value))
+const visibleMessages = computed(() => messageWindow.value.messages)
+const hasOlderMessages = computed(() => messageWindow.value.hiddenCount > 0)
+const streamingAssistantMessageId = computed(() => {
+  if (!assistant.loading.value) {
+    return ''
+  }
+
+  const lastMessage = assistant.messages.value[assistant.messages.value.length - 1]
+  return lastMessage?.role === 'assistant' ? String(lastMessage.id || '') : ''
+})
+const latestAssistantMessageId = computed(() => {
+  for (let index = assistant.messages.value.length - 1; index >= 0; index -= 1) {
+    const message = assistant.messages.value[index]
+    if (message?.role === 'assistant' && String(message?.content || '').trim()) {
+      return String(message.id || '')
+    }
+  }
+
+  return ''
+})
 
 const isThinking = computed(() => isAssistantThinkingState({
   loading: assistant.loading.value,
   messages: assistant.messages.value
 }))
+
+const isStreamingAssistantMessage = (message) => {
+  return String(message?.id || '') !== '' && String(message?.id || '') === streamingAssistantMessageId.value
+}
+
+const hasMessageContent = (message) => {
+  return String(message?.content || '').trim().length > 0
+}
+
+const messageHasSources = (message) => {
+  return hasSources.value && String(message?.id || '') === latestAssistantMessageId.value
+}
 
 const renderMessageTokens = (message) => {
   if (message?.role !== 'assistant') {
@@ -124,13 +167,118 @@ const startResize = (event) => {
   window.addEventListener('pointerup', onUp)
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    const target = scrollArea.value?.$el?.querySelector('.q-scrollarea__container')
-    if (target) {
-      target.scrollTop = target.scrollHeight
-    }
+const getScrollTarget = () => {
+  return scrollArea.value?.getScrollTarget?.()
+    || scrollArea.value?.$el?.querySelector('.q-scrollarea__container')
+}
+
+const applyBottomScroll = () => {
+  const target = getScrollTarget()
+  scrollArea.value?.setScrollPosition?.('vertical', Number.MAX_SAFE_INTEGER, 0)
+  if (target) {
+    target.scrollTop = target.scrollHeight
+  }
+}
+
+const scrollToBottom = ({ attempts = 6 } = {}) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  if (scrollFrame !== 0) {
+    window.cancelAnimationFrame(scrollFrame)
+  }
+
+  const run = (remainingAttempts) => {
+    scrollFrame = window.requestAnimationFrame(() => {
+      scrollFrame = 0
+
+      nextTick(() => {
+        applyBottomScroll()
+        if (remainingAttempts > 0) {
+          run(remainingAttempts - 1)
+        }
+      })
+    })
+  }
+
+  run(attempts)
+}
+
+const loadOlderMessages = async () => {
+  if (!hasOlderMessages.value || revealingOlderMessages) return
+
+  revealingOlderMessages = true
+  const target = getScrollTarget()
+  const previousHeight = target?.scrollHeight || 0
+  visibleMessageLimit.value += ASSISTANT_MESSAGE_WINDOW_STEP
+
+  await nextTick()
+
+  const nextTarget = getScrollTarget()
+  if (nextTarget) {
+    nextTarget.scrollTop += Math.max(0, nextTarget.scrollHeight - previousHeight)
+  }
+
+  revealingOlderMessages = false
+}
+
+const syncScrollToBottomVisibility = () => {
+  const target = getScrollTarget()
+  if (!target || !assistant.hasMessages.value) {
+    showScrollToBottom.value = false
+    return
+  }
+
+  const maxTop = Math.max(0, target.scrollHeight - target.clientHeight)
+  const distanceToBottom = maxTop - target.scrollTop
+  showScrollToBottom.value = distanceToBottom > 120
+}
+
+const handleScroll = (info = {}) => {
+  syncScrollToBottomVisibility()
+
+  const position = Number(info.verticalPosition ?? info.position?.top ?? 0)
+  if (position <= 80) {
+    loadOlderMessages()
+  }
+}
+
+const notifyMessageCopied = () => {
+  $q.notify({
+    message: t('assistant.copied'),
+    color: 'positive',
+    textColor: 'white',
+    icon: 'check',
+    position: 'top',
+    timeout: 1200
   })
+}
+
+const copyMessage = (message) => {
+  const content = String(message?.content || '').trim()
+  const id = String(message?.id || '')
+  if (!content || !id) return
+
+  copyToClipboard(content)
+    .then(() => {
+      copiedMessageId.value = id
+      notifyMessageCopied()
+
+      if (copiedMessageTimer !== null) {
+        window.clearTimeout(copiedMessageTimer)
+      }
+
+      copiedMessageTimer = window.setTimeout(() => {
+        copiedMessageId.value = ''
+        copiedMessageTimer = null
+      }, 1600)
+    })
+    .catch(() => {})
+}
+
+const messageCopyIcon = (message) => {
+  return copiedMessageId.value === String(message?.id || '') ? 'check' : 'content_copy'
 }
 
 const submit = async (value = input.value) => {
@@ -140,14 +288,45 @@ const submit = async (value = input.value) => {
   await assistant.send(prompt)
 }
 
+const scrollToBottomAction = () => {
+  showScrollToBottom.value = false
+  scrollToBottom({ attempts: 10 })
+}
+
 const handleKeydown = (event) => {
   if (event.key !== 'Enter' || event.shiftKey) return
   event.preventDefault()
   submit()
 }
 
-watch(assistant.messages, scrollToBottom, { deep: true })
-watch(assistant.sources, scrollToBottom, { deep: true })
+watch(assistant.messages, () => scrollToBottom({ attempts: 6 }), { deep: true })
+watch(assistant.sources, () => scrollToBottom({ attempts: 4 }), { deep: true })
+watch(() => assistant.messages.value.length, (length, previousLength) => {
+  if (length < previousLength) {
+    visibleMessageLimit.value = ASSISTANT_MESSAGE_WINDOW_SIZE
+  }
+
+  if (length === 0) {
+    showScrollToBottom.value = false
+  }
+})
+
+onMounted(() => {
+  scrollToBottom({ attempts: 14 })
+  nextTick(syncScrollToBottomVisibility)
+})
+
+onBeforeUnmount(() => {
+  if (scrollFrame !== 0 && typeof window !== 'undefined') {
+    window.cancelAnimationFrame(scrollFrame)
+    scrollFrame = 0
+  }
+
+  if (copiedMessageTimer !== null && typeof window !== 'undefined') {
+    window.clearTimeout(copiedMessageTimer)
+    copiedMessageTimer = null
+  }
+})
 </script>
 
 <template>
@@ -191,7 +370,7 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     </div>
   </header>
 
-  <q-scroll-area ref="scrollArea" class="d-assistant-panel__body">
+  <q-scroll-area ref="scrollArea" class="d-assistant-panel__body" @scroll="handleScroll">
     <div v-if="!assistant.hasMessages.value" class="d-assistant-panel__empty">
       <div class="d-assistant-panel__mark">
         <q-icon name="auto_awesome" size="52px" />
@@ -201,6 +380,18 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     </div>
 
     <div v-else class="d-assistant-panel__messages">
+      <div v-if="hasOlderMessages" class="d-assistant-panel__older">
+        <q-btn
+          dense no-caps unelevated
+          icon="expand_less"
+          color="white"
+          text-color="primary"
+          class="d-assistant-panel__older-action"
+          :label="t('assistant.loadEarlier')"
+          @click="loadOlderMessages"
+        />
+      </div>
+
       <div
         v-for="(message, index) in visibleMessages"
         :key="message.id"
@@ -208,12 +399,109 @@ watch(assistant.sources, scrollToBottom, { deep: true })
         :class="`d-assistant-message--${message.role}`"
       >
         <div
-          v-if="message.role === 'assistant'"
+          v-if="message.role === 'assistant' && isStreamingAssistantMessage(message)"
+          class="d-assistant-message__content d-assistant-message__content--streaming"
+        >
+          {{ message.content }}
+        </div>
+        <div
+          v-else-if="message.role === 'assistant'"
           class="content no-padding d-assistant-message__content d-assistant-message__content--markdown"
         >
           <d-page-tokens :id="(index + 1) * 1000" :tokens="renderMessageTokens(message)" />
         </div>
         <div v-else class="d-assistant-message__content">{{ message.content }}</div>
+
+        <div
+          v-if="message.role === 'assistant' && hasMessageContent(message)"
+          class="d-assistant-message__footer"
+        >
+          <q-btn
+            flat dense
+            text-color="primary"
+            class="d-assistant-message__copy d-assistant-message__copy--assistant"
+            :icon="messageCopyIcon(message)"
+            :aria-label="t('assistant.copyMessage')"
+            @click="copyMessage(message)"
+          >
+            <q-tooltip>{{ t('assistant.copyMessage') }}</q-tooltip>
+          </q-btn>
+
+          <q-chip
+            v-if="messageHasSources(message)"
+            clickable
+            class="d-assistant-sources-chip"
+            :ripple="false"
+          >
+            <span class="d-assistant-sources-chip__avatars">
+              <q-avatar
+                v-for="(source, sourceIndex) in sourceAvatars"
+                :key="source.id"
+                class="d-assistant-sources-chip__avatar"
+                :style="{ zIndex: sourceAvatars.length - sourceIndex }"
+                size="24px"
+              >
+                <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
+              </q-avatar>
+            </span>
+            <span class="d-assistant-sources-chip__label">{{ sourcesLabel }}</span>
+            <q-icon name="expand_more" size="16px" />
+
+            <q-menu
+              anchor="top left"
+              self="bottom left"
+              :offset="[0, 8]"
+              class="d-assistant-sources-menu"
+            >
+              <q-list separator class="d-assistant-sources-menu__list">
+                <q-item-label header class="d-assistant-sources-menu__header">
+                  {{ t('assistant.sources') }}
+                </q-item-label>
+                <q-item
+                  v-for="source in sources"
+                  :key="source.id"
+                  v-close-popup
+                  clickable
+                  tag="a"
+                  :href="sourceHref(source)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <q-item-section avatar>
+                    <q-avatar size="28px" class="d-assistant-sources-menu__avatar">
+                      <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
+                    </q-avatar>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label lines="1">{{ source.title }}</q-item-label>
+                    <q-item-label v-if="source.meta" caption lines="1">{{ source.meta }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-icon name="open_in_new" size="16px" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-chip>
+        </div>
+
+        <div
+          v-else-if="message.role === 'user' && hasMessageContent(message)"
+          class="d-assistant-message__footer d-assistant-message__footer--user"
+        >
+          <div class="d-assistant-message__hoverlayer">
+            <q-btn
+              flat dense
+              text-color="primary"
+              class="d-assistant-message__copy d-assistant-message__copy--user"
+              :icon="messageCopyIcon(message)"
+              :aria-label="t('assistant.copyMessage')"
+              @click="copyMessage(message)"
+            >
+              <q-tooltip>{{ t('assistant.copyMessage') }}</q-tooltip>
+            </q-btn>
+          </div>
+        </div>
       </div>
 
       <div v-if="isThinking" class="d-assistant-message d-assistant-message--assistant">
@@ -229,64 +517,21 @@ watch(assistant.sources, scrollToBottom, { deep: true })
       <span>{{ assistant.error.value }}</span>
     </div>
 
-    <div v-if="hasSources" class="d-assistant-panel__sources">
-      <q-chip
-        clickable
-        class="d-assistant-sources-chip"
-        :ripple="false"
-      >
-        <span class="d-assistant-sources-chip__avatars">
-          <q-avatar
-            v-for="(source, index) in sourceAvatars"
-            :key="source.id"
-            class="d-assistant-sources-chip__avatar"
-            :style="{ zIndex: sourceAvatars.length - index }"
-            size="24px"
-          >
-            <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
-          </q-avatar>
-        </span>
-        <span class="d-assistant-sources-chip__label">{{ sourcesLabel }}</span>
-        <q-icon name="expand_more" size="16px" />
-
-        <q-menu
-          anchor="top left"
-          self="bottom left"
-          :offset="[0, 8]"
-          class="d-assistant-sources-menu"
-        >
-          <q-list separator class="d-assistant-sources-menu__list">
-            <q-item-label header class="d-assistant-sources-menu__header">
-              {{ t('assistant.sources') }}
-            </q-item-label>
-            <q-item
-              v-for="source in assistant.sources.value"
-              :key="source.id"
-              v-close-popup
-              clickable
-              tag="a"
-              :href="sourceHref(source)"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <q-item-section avatar>
-                <q-avatar size="28px" class="d-assistant-sources-menu__avatar">
-                  <img :src="faviconFor(source)" :alt="source.title" loading="lazy">
-                </q-avatar>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label lines="1">{{ source.title }}</q-item-label>
-                <q-item-label v-if="source.meta" caption lines="1">{{ source.meta }}</q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-icon name="open_in_new" size="16px" />
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-menu>
-      </q-chip>
-    </div>
   </q-scroll-area>
+
+  <q-btn
+    v-if="showScrollToBottom && assistant.hasMessages.value"
+    round
+    unelevated
+    color="primary"
+    text-color="white"
+    class="d-assistant-panel__scroll-bottom"
+    icon="keyboard_arrow_down"
+    aria-label="Scroll to bottom"
+    @click="scrollToBottomAction"
+  >
+    <q-tooltip>Scroll to bottom</q-tooltip>
+  </q-btn>
 
   <footer class="d-assistant-panel__composer">
     <div v-if="!assistant.hasMessages.value" class="d-assistant-panel__prompts">
@@ -384,11 +629,15 @@ watch(assistant.sources, scrollToBottom, { deep: true })
       background: linear-gradient(180deg, rgba(27,27,28,0), rgba(41, 24, 20, 0.72) 34%, #1b1b1c 100%)
 
     .d-assistant-message--assistant .d-assistant-message__content,
+    .d-assistant-panel__older-action,
     .d-assistant-panel__prompt,
     .d-assistant-sources-chip
       background: rgba(255, 255, 255, 0.045)
       color: rgba(255, 255, 255, 0.86)
       border-color: rgba(255, 255, 255, 0.12)
+
+    .d-assistant-message__copy
+      color: rgba(255, 255, 255, 0.84)
 
     .d-assistant-sources-chip__avatar
       border-color: #1b1b1c
@@ -489,8 +738,21 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     background: rgba(14, 165, 233, 0.12)
 
   &__messages
-    padding: 16px 14px 14px
+    padding: 16px 14px 8px
     overflow-x: hidden
+
+  &__older
+    display: flex
+    justify-content: center
+    margin: 0 0 12px
+
+  &__older-action
+    min-height: 32px
+    padding: 0 12px
+    border: 1px solid rgba(15, 23, 42, 0.12)
+    background: rgba(255, 255, 255, 0.82)
+    border-radius: 8px
+    font-weight: 700
 
   &__error
     margin: 0 14px 96px
@@ -502,6 +764,14 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     color: #b45309
     background: rgba(251, 191, 36, 0.12)
     border-radius: 8px
+
+  &__scroll-bottom
+    position: absolute
+    left: 50%
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px))
+    transform: translateX(-50%)
+    z-index: 4
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.28)
 
   &__sources
     margin: 0 14px 0
@@ -577,24 +847,39 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 
 .d-assistant-message
   display: flex
+  flex-direction: column
+  align-items: flex-start
   margin-bottom: 10px
   min-width: 0
   overflow-x: hidden
+  overflow-y: hidden
+  position: relative
 
   &--user
-    justify-content: flex-end
+    align-items: flex-end
 
     .d-assistant-message__content
       color: white
       background: var(--q-primary)
 
+    &:hover .d-assistant-message__hoverlayer .d-assistant-message__copy,
+    &:focus-within .d-assistant-message__hoverlayer .d-assistant-message__copy,
+    .d-assistant-message__hoverlayer:hover .d-assistant-message__copy,
+    .d-assistant-message__hoverlayer:focus-within .d-assistant-message__copy
+      opacity: 1
+      pointer-events: auto
+
   &--assistant
-    justify-content: flex-start
+    align-items: flex-start
 
     .d-assistant-message__content
-      background: rgba(255, 255, 255, 0.78)
-      border: 1px solid rgba(15, 23, 42, 0.1)
-      padding: 12px 14px !important
+      background: none !important
+      border: none
+      padding: 0 !important
+      max-width: 100%
+
+    .d-assistant-message__footer
+      justify-content: flex-start
 
   &__content
     max-width: 88%
@@ -639,6 +924,61 @@ watch(assistant.sources, scrollToBottom, { deep: true })
         max-width: 100%
         height: auto
 
+  &__footer
+    width: 88%
+    max-width: 88%
+    min-width: 0
+    display: flex
+    align-items: center
+    gap: 6px
+    margin-top: 5px
+
+    .d-assistant-sources-chip
+      flex: 0 1 auto
+      max-width: calc(100% - 38px)
+
+    &--user
+      width: auto
+      max-width: none
+      min-width: 30px
+      height: 30px
+      align-self: flex-end
+      align-items: center
+      justify-content: center
+
+  &__copy
+    flex: 0 0 auto
+    width: 30px
+    height: 30px
+    min-height: 30px
+    min-width: 30px
+    padding: 0
+    border-radius: 6px
+
+    .q-btn__content
+      line-height: 1
+
+      i
+        font-size: 17px !important
+        margin-left: 3px
+
+    &--assistant
+      margin-left: -2px
+
+  &__hoverlayer
+    display: flex
+    align-items: center
+    justify-content: center
+    width: 30px
+    height: 30px
+    min-width: 30px
+    min-height: 30px
+
+    .d-assistant-message__copy
+      opacity: 0
+      pointer-events: none
+      transition: opacity 0.14s ease
+
   &__thinking
     display: flex
     align-items: center
@@ -649,6 +989,7 @@ watch(assistant.sources, scrollToBottom, { deep: true })
 
 .d-assistant-sources-chip
   max-width: 100%
+  min-width: 0
   height: auto
   min-height: 34px
   padding: 4px 10px 4px 6px
@@ -688,6 +1029,8 @@ watch(assistant.sources, scrollToBottom, { deep: true })
     margin: 0 2px 0 8px
     font-size: 0.8rem
     white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
 
 .d-assistant-sources-menu
   max-width: min(360px, 90vw)

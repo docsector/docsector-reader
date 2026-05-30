@@ -1,3 +1,5 @@
+import { dedupeAssistantSources } from './stream'
+
 export const ASSISTANT_SESSION_STORAGE_KEY = 'docsector.assistant.session.v1'
 
 const MAX_PERSISTED_MESSAGES = 40
@@ -31,7 +33,7 @@ export function normalizeAssistantSession (session = {}) {
     .filter(Boolean)
     .slice(-MAX_PERSISTED_MESSAGES)
 
-  const sources = (Array.isArray(session?.sources) ? session.sources : [])
+  const sources = dedupeAssistantSources((Array.isArray(session?.sources) ? session.sources : [])
     .map((source, index) => {
       const key = cleanString(source?.key || '')
       const text = cleanString(source?.text || '')
@@ -48,7 +50,7 @@ export function normalizeAssistantSession (session = {}) {
         score: Number.isFinite(score) ? score : 0
       }
     })
-    .filter(Boolean)
+    .filter(Boolean))
     .slice(0, MAX_PERSISTED_SOURCES)
 
   return { messages, sources }

@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
@@ -11,6 +11,10 @@ const assistantMessages = ref([])
 const assistantSources = ref([])
 let assistantSessionReady = false
 let assistantSessionWatcherReady = false
+let assistantSessionPersistTimer = null
+let assistantSessionPersistencePaused = false
+
+const ASSISTANT_SESSION_PERSIST_DEBOUNCE = 180
 
 function createMessage (role, content = '') {
   return {
@@ -27,10 +31,47 @@ function getCompletionText (payload) {
     || ''
 }
 
-function persistAssistantSession () {
+function persistAssistantSessionNow () {
   saveAssistantSession({
     messages: assistantMessages.value,
     sources: assistantSources.value
+  })
+}
+
+function cancelPersistAssistantSession () {
+  if (assistantSessionPersistTimer !== null) {
+    clearTimeout(assistantSessionPersistTimer)
+    assistantSessionPersistTimer = null
+  }
+}
+
+function schedulePersistAssistantSession ({ immediate = false } = {}) {
+  if (assistantSessionPersistencePaused) {
+    return
+  }
+
+  cancelPersistAssistantSession()
+
+  if (immediate || typeof window === 'undefined') {
+    persistAssistantSessionNow()
+    return
+  }
+
+  assistantSessionPersistTimer = window.setTimeout(() => {
+    assistantSessionPersistTimer = null
+    persistAssistantSessionNow()
+  }, ASSISTANT_SESSION_PERSIST_DEBOUNCE)
+}
+
+async function yieldAssistantStreamPaint () {
+  await nextTick()
+
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  await new Promise(resolve => {
+    window.setTimeout(resolve, 0)
   })
 }
 
@@ -43,7 +84,9 @@ function ensureAssistantSession () {
   }
 
   if (!assistantSessionWatcherReady) {
-    watch([assistantMessages, assistantSources], persistAssistantSession, { deep: true })
+    watch([assistantMessages, assistantSources], () => {
+      schedulePersistAssistantSession()
+    }, { deep: true })
     assistantSessionWatcherReady = true
   }
 }
@@ -63,6 +106,7 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     messages.value = []
     sources.value = []
     error.value = ''
+    cancelPersistAssistantSession()
     clearAssistantSession()
   }
 
@@ -99,9 +143,15 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
         for (const event of events) {
           const delta = extractAssistantStreamDelta(event)
           if (delta.done) return
+          const hadContent = delta.content.length > 0
+          const hadChunks = delta.chunks.length > 0
           appendAssistantContent(assistantMessage, delta.content)
-          if (delta.chunks.length > 0) {
+          if (hadChunks) {
             sources.value = delta.chunks
+          }
+
+          if (hadContent || hadChunks) {
+            await yieldAssistantStreamPaint()
           }
         }
       }
@@ -111,9 +161,15 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
       const events = parseServerSentEvents(`${buffer}\n\n`)
       for (const event of events) {
         const delta = extractAssistantStreamDelta(event)
+        const hadContent = delta.content.length > 0
+        const hadChunks = delta.chunks.length > 0
         appendAssistantContent(assistantMessage, delta.content)
-        if (delta.chunks.length > 0) {
+        if (hadChunks) {
           sources.value = delta.chunks
+        }
+
+        if (hadContent || hadChunks) {
+          await yieldAssistantStreamPaint()
         }
       }
     }
@@ -123,6 +179,8 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     const prompt = String(content || '').trim()
     if (!prompt || loading.value) return
 
+    assistantSessionPersistencePaused = true
+    cancelPersistAssistantSession()
     error.value = ''
     sources.value = []
 
@@ -165,7 +223,7 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
       }
 
       const contentType = response.headers.get('content-type') || ''
-      if (contentType.includes('text/event-stream') && response.body) {
+      if (response.body && (contentType.includes('text/event-stream') || contentType.trim() === '')) {
         await consumeStream(response, liveAssistantMessage)
       } else {
         const payload = await response.json()
@@ -184,6 +242,10 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     } finally {
       loading.value = false
       abortController.value = null
+      assistantSessionPersistencePaused = false
+      // Persist once after the streamed response settles; writing the whole
+      // session on every chunk can block paints and make streaming appear buffered.
+      schedulePersistAssistantSession({ immediate: true })
     }
   }
 

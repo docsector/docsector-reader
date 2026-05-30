@@ -16,10 +16,12 @@ const JSON_HEADERS = {
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream; charset=utf-8',
   'Cache-Control': 'no-cache, no-store',
+  'X-Accel-Buffering': 'no',
   Connection: 'keep-alive'
 }
 
 const CURRENT_PAGE_MARKDOWN_MAX_LENGTH = 7000
+const STREAM_PACE_DELAY_MS = 24
 
 function jsonResponse (body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -30,6 +32,119 @@ function jsonResponse (body, status = 200) {
 
 function errorResponse (code, message, status = 500) {
   return jsonResponse({ error: { code, message } }, status)
+}
+
+function delay (milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+function collectSseData (block = '') {
+  const data = []
+
+  for (const line of String(block || '').split(/\r?\n/)) {
+    if (line.startsWith('data:')) {
+      data.push(line.slice(5).trimStart())
+    }
+  }
+
+  return data.join('\n')
+}
+
+function sseBlockHasAssistantContent (block = '') {
+  const data = collectSseData(block)
+  if (!data || data === '[DONE]') {
+    return false
+  }
+
+  try {
+    const payload = JSON.parse(data)
+    const content = payload?.choices?.[0]?.delta?.content
+      || payload?.choices?.[0]?.message?.content
+      || payload?.response
+      || ''
+
+    return typeof content === 'string' && content.length > 0
+  } catch {
+    return data.length > 0
+  }
+}
+
+function resultBodyStream (result) {
+  if (result instanceof Response) {
+    return result.body
+  }
+
+  if (result instanceof ReadableStream) {
+    return result
+  }
+
+  if (result?.body instanceof ReadableStream) {
+    return result.body
+  }
+
+  return null
+}
+
+function encodeSseData (payload) {
+  return `data: ${JSON.stringify(payload)}\n\n`
+}
+
+function encodeSseDone () {
+  return 'data: [DONE]\n\n'
+}
+
+async function writePacedSseStream (source, controller) {
+  const reader = source.getReader()
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let buffer = ''
+  let reading = true
+
+  while (reading) {
+    const { done, value } = await reader.read()
+    if (done) {
+      reading = false
+      break
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+    const parts = buffer.split(/\r?\n\r?\n/)
+    buffer = parts.pop() || ''
+
+    for (const part of parts) {
+      if (!part.trim()) continue
+
+      controller.enqueue(encoder.encode(`${part}\n\n`))
+      if (sseBlockHasAssistantContent(part)) {
+        await delay(STREAM_PACE_DELAY_MS)
+      }
+    }
+  }
+
+  buffer += decoder.decode()
+  if (buffer.trim()) {
+    controller.enqueue(encoder.encode(`${buffer}\n\n`))
+  }
+}
+
+async function writeAssistantStreamResult (result, controller) {
+  const encoder = new TextEncoder()
+  const stream = resultBodyStream(result)
+
+  if (stream) {
+    await writePacedSseStream(stream, controller)
+    return
+  }
+
+  controller.enqueue(encoder.encode(encodeSseData(result)))
+  controller.enqueue(encoder.encode(encodeSseDone()))
+}
+
+function streamErrorPayload (error) {
+  const message = error?.message || 'Assistant request failed.'
+  return {
+    response: message
+  }
 }
 
 function normalizeMessages (messages) {
@@ -313,6 +428,27 @@ async function createAssistantResponse (payload, result) {
   return jsonResponse(result)
 }
 
+function createAssistantStreamResponse (env, body) {
+  const encoder = new TextEncoder()
+
+  const stream = new ReadableStream({
+    async start (controller) {
+      try {
+        controller.enqueue(encoder.encode(': connected\n\n'))
+        const { result } = await runAssistant(env, body)
+        await writeAssistantStreamResult(result, controller)
+      } catch (error) {
+        controller.enqueue(encoder.encode(encodeSseData(streamErrorPayload(error))))
+        controller.enqueue(encoder.encode(encodeSseDone()))
+      } finally {
+        controller.close()
+      }
+    }
+  })
+
+  return new Response(stream, { headers: SSE_HEADERS })
+}
+
 export async function onRequestOptions () {
   return new Response(null, {
     status: 204,
@@ -335,6 +471,13 @@ export async function onRequestPost (context) {
   }
 
   try {
+    if (ASSISTANT_CONFIG.aiSearch?.stream !== false) {
+      return createAssistantStreamResponse(context.env, {
+        ...body,
+        request: context.request
+      })
+    }
+
     const { payload, result } = await runAssistant(context.env, {
       ...body,
       request: context.request

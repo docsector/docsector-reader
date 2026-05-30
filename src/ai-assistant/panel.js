@@ -12,6 +12,21 @@ export function listVisibleAssistantMessages(messages = []) {
   })
 }
 
+export const ASSISTANT_MESSAGE_WINDOW_SIZE = 60
+export const ASSISTANT_MESSAGE_WINDOW_STEP = 40
+
+export function getAssistantMessageWindow(messages = [], limit = ASSISTANT_MESSAGE_WINDOW_SIZE) {
+  const visibleMessages = listVisibleAssistantMessages(messages)
+  const safeLimit = Math.max(1, Number(limit) || ASSISTANT_MESSAGE_WINDOW_SIZE)
+  const hiddenCount = Math.max(0, visibleMessages.length - safeLimit)
+
+  return {
+    messages: hiddenCount > 0 ? visibleMessages.slice(hiddenCount) : visibleMessages,
+    hiddenCount,
+    total: visibleMessages.length
+  }
+}
+
 export function isAssistantThinkingState({ loading = false, messages = [] } = {}) {
   if (!loading) {
     return false
