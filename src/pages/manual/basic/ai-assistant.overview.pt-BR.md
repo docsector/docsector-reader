@@ -24,7 +24,7 @@ export default {
     endpoint: '/assistant',
     aiSearch: {
       binding: 'AI_SEARCH',
-      instanceName: 'docs-search',
+      instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
       retrievalType: 'hybrid',
@@ -34,6 +34,8 @@ export default {
   }
 }
 ```
+
+Defina `AI_SEARCH_INSTANCE_NAME` nas variáveis de ambiente do Cloudflare Pages em deploy, ou em `.dev.vars` quando usar `wrangler pages dev` localmente.
 
 ## Cloudflare AI Search
 
