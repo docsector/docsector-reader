@@ -1,5 +1,6 @@
 .DS_Store
 .thumbs.db
+.wrangler
 node_modules
 
 # Quasar core related directories
