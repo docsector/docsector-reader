@@ -3,17 +3,34 @@
   <q-header class="d-header" :class="showSidebar ? 'left-btn' : 'd-header--no-sidebar'" elevated>
     <q-toolbar color="primary">
       <q-btn v-if="showSidebar" class="filled" square icon="menu" aria-label="Toggle Menu" @click="toogleMenu" />
-      <q-toolbar-title class="text-center">
-        <img
-          v-if="branding.logo"
-          :src="branding.logo"
-          :alt="branding.name"
-          height="26"
-          style="vertical-align: middle;"
-          class="q-mr-sm"
-        />
-        <q-icon class="q-mb-xs q-mr-sm" :name="headerTitleIcon" />
-        {{ headerTitleText }}
+      <q-toolbar-title
+        class="d-header__brand-slot row no-wrap items-stretch self-stretch q-pa-none"
+        :class="$q.screen.lt.sm ? 'justify-start' : 'justify-center'"
+      >
+        <q-btn
+          class="filled d-header__brand"
+          :class="$q.screen.lt.sm ? 'q-px-sm' : 'q-px-md'"
+          align="left"
+          no-caps
+          stretch
+          to="/"
+          :aria-label="brandAriaLabel"
+        >
+          <img
+            v-if="branding.logo"
+            :src="branding.logo"
+            :alt="brandName"
+            height="26"
+            class="d-header__brand-logo q-mr-sm"
+          />
+          <span class="d-header__brand-text col column justify-center no-wrap">
+            <span class="d-header__brand-name ellipsis text-left">{{ brandName }}</span>
+            <span
+              v-if="brandVersion"
+              class="d-header__brand-version text-caption ellipsis text-left"
+            >{{ brandVersion }}</span>
+          </span>
+        </q-btn>
       </q-toolbar-title>
       <q-btn
         v-if="assistantEnabled"
@@ -66,24 +83,27 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
-import { useMeta, colors } from 'quasar'
+import { useMeta, colors, useQuasar } from 'quasar'
 
 import DMenu from '../components/DMenu.vue'
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
-import { pageTitleI18nPath } from '../i18n/path'
 import { resolveRoutePageLayout } from '../page-layout'
 
 defineOptions({ name: 'LayoutDefault' })
 
 const branding = docsectorConfig.branding || {}
+const brandName = branding.name || 'Docsector'
+const brandVersion = typeof branding.version === 'string' ? branding.version.trim() : ''
+const brandAriaLabel = `Open ${brandName} home`
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantEnabled = assistantConfig.enabled === true
 
 const route = useRoute()
 const router = useRouter()
 const store = useStore()
+const $q = useQuasar()
 const { t, locale } = useI18n()
 
 const layout = ref({
@@ -99,18 +119,6 @@ watch(showSidebar, (value) => {
     layout.value.menu = false
   }
 }, { immediate: true })
-
-const headerTitleIcon = computed(() => {
-  return route.matched[0].meta.icon ?? route.meta.icon
-})
-
-const headerTitleText = computed(() => {
-  if (store.state.i18n.base) {
-    return t(pageTitleI18nPath(store.state.i18n.base))
-  } else {
-    return t(`menu.${route.matched[1].meta.menu}`)
-  }
-})
 
 const defaultBookTabColors = Object.freeze({
   active: 'white',
@@ -371,6 +379,24 @@ store.commit('page/resetAnchors')
   &.left-btn
     .q-toolbar
       padding: 0
+  .d-header__brand
+    min-width: 0
+    max-width: 100%
+  .d-header__brand-logo
+    display: block
+    flex-shrink: 0
+  .d-header__brand-text
+    min-width: 0
+    line-height: 1
+  .d-header__brand-name
+    display: block
+    line-height: 0.95rem
+  .d-header__brand-version
+    display: block
+    margin-top: -2px
+    font-size: 10px
+    line-height: 0.75rem
+    opacity: 0.8
   .q-tabs
     margin-top: 2px
   .d-book-tabs-separator
