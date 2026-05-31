@@ -639,6 +639,8 @@ watch(() => route.fullPath, () => {
     overflow: auto
     box-shadow: -16px 0 40px rgba(15, 23, 42, 0.22)
 
+.d-mobile-anchor-dialog__panel
+  opacity: 0.8
 body.body--dark
   .d-mobile-anchor-dialog__panel
     background: rgba(15, 23, 42, 0.9)

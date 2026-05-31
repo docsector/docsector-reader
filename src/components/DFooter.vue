@@ -2,13 +2,19 @@
   <footer class="d-footer" role="contentinfo">
     <div class="d-footer__content">
       <span class="d-footer__label">Powered by</span>
-      <a
+      <q-btn
         class="d-footer__brand"
+        unelevated
+        dense
+        no-caps
+        color="white"
+        text-color="dark"
+        label="Docsector"
         href="https://docsector.com"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open Docsector website"
-      >Docsector</a>
+      />
     </div>
   </footer>
 </template>
@@ -21,7 +27,7 @@ defineOptions({ name: 'DFooter' })
 .d-footer
   width: 100%
   background: var(--q-primary, #655529)
-  color: #ffffff
+  color: #ffffff !important
 
   .d-footer__content
     max-width: 1200px
@@ -39,13 +45,10 @@ defineOptions({ name: 'DFooter' })
     opacity: 0.84
 
   .d-footer__brand
-    font-weight: 700
-    color: inherit
-    text-decoration: none
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1)
 
-    &:hover,
-    &:focus-visible
-      text-decoration: underline
+    .q-btn__content
+      font-weight: 700
 
 @media (max-width: 599px)
   .d-footer
