@@ -144,6 +144,7 @@ function getPagesRegistryFilesForRoot (root) {
 function normalizeBookConfig (rawConfig = {}, fallbackId = 'manual', index = 0) {
   const resolvedId = rawConfig.id || fallbackId || `book-${index + 1}`
   const label = rawConfig.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
+  const layouts = rawConfig.layouts ?? rawConfig.layout
 
   return {
     ...rawConfig,
@@ -151,7 +152,8 @@ function normalizeBookConfig (rawConfig = {}, fallbackId = 'manual', index = 0) 
     label,
     icon: rawConfig.icon || 'menu_book',
     order: rawConfig.order ?? (index + 1),
-    color: normalizeBookColorConfig(rawConfig.color)
+    color: normalizeBookColorConfig(rawConfig.color),
+    ...(layouts !== undefined ? { layouts } : {})
   }
 }
 
@@ -704,6 +706,7 @@ export const booksByVersion = entries.reduce((accumulator, entry, index) => {
     icon: config.icon || 'menu_book',
     order: config.order ?? (index + 1),
     color: normalizeBookColor(config.color),
+    ...(config.layouts !== undefined || config.layout !== undefined ? { layouts: config.layouts ?? config.layout } : {}),
     version: version.id,
     versionPrefix: version.routePrefix
   }

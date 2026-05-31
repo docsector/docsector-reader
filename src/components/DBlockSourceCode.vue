@@ -54,6 +54,7 @@ const copyBtnIcon = ref('content_copy')
 const codeRef = ref(null)
 const activeTab = ref(0)
 const lineAnchorTopOffset = 34
+const lineAnchorScrollRetryDelay = 500
 
 const coloring = computed(() => $q.dark.isActive ? 'dark' : 'white')
 const anchor = computed(() => printToLetter(props.index + 1))
@@ -171,6 +172,13 @@ function buildLineHref(line) {
   return resolveSourceCodeLineHref(router, route.path, route.query, buildLineAnchorId(line))
 }
 
+function scrollToLineAnchor(hash) {
+  scrollToAnchor(hash, false)
+  window.setTimeout(() => {
+    scrollToAnchor(hash, false)
+  }, lineAnchorScrollRetryDelay)
+}
+
 async function navigateToLineAnchor(event, line) {
   if (!shouldHandleSourceCodeLineActivation(event)) {
     return
@@ -181,9 +189,13 @@ async function navigateToLineAnchor(event, line) {
   event.preventDefault()
 
   if (route.hash === hash) {
-    scrollToAnchor(hash, false)
+    scrollToLineAnchor(hash)
     return
   }
+
+  window.setTimeout(() => {
+    scrollToAnchor(hash, false)
+  }, lineAnchorScrollRetryDelay)
 
   await router.push({
     path: route.path,
@@ -192,7 +204,7 @@ async function navigateToLineAnchor(event, line) {
   })
 
   await nextTick()
-  scrollToAnchor(hash, false)
+  scrollToLineAnchor(hash)
 }
 
 function printToLetter(number) {

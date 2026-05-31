@@ -226,6 +226,7 @@ export function createDocsector (config = {}) {
 
     homePage: {
       source: 'local',
+      layout: 'default',
       remoteReadmeUrl: null,
       timeoutMs: 8000,
       fallbackToLocal: true,
@@ -237,10 +238,12 @@ export function createDocsector (config = {}) {
 /**
  * Define a Docsector book entry for the pages registry.
  *
- * @param {Object} config - Book configuration (id, label, icon, order, color)
+ * @param {Object} config - Book configuration (id, label, icon, order, color, layout)
  * @param {Object|string} [config.color] - Tab text color settings
  * @param {string} [config.color.active] - Active tab text color token (Quasar color key, CSS var, or CSS color)
  * @param {string} [config.color.inactive] - Inactive tab text color token (Quasar color key, CSS var, or CSS color)
+ * @param {string|Object} [config.layout] - Page layout preset for pages in the book (`default` or `fullwidth`)
+ * @param {string|Object} [config.layouts] - Alias for `layout`, useful when passing explicit layout flags
  * @returns {Object} Normalized book definition
  */
 export function defineBook (config = {}) {
@@ -251,7 +254,8 @@ export function defineBook (config = {}) {
   return {
     ...config,
     ...(resolvedId ? { id: resolvedId } : {}),
-    ...(resolvedLabel ? { label: resolvedLabel } : {})
+    ...(resolvedLabel ? { label: resolvedLabel } : {}),
+    ...(config.layouts === undefined && config.layout !== undefined ? { layouts: config.layout } : {})
   }
 }
 

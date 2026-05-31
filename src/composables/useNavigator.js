@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
 
 import { DEFAULT_ACTIVE_ANCHOR_OFFSET, getActiveAnchorId } from './useActiveAnchor'
+import { ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY, getAnchorScrollExtraBottom, setAnchorScrollExtraBottom } from './anchor-scroll-state'
 
 export default function useNavigator() {
   const store = useStore()
@@ -49,7 +50,26 @@ export default function useNavigator() {
     return 0
   }
 
-  const resolveAnchorScrollState = (anchorEl) => {
+  const syncAnchorScrollExtraBottom = (scrollTarget, offsetTop) => {
+    if (!(scrollTarget instanceof HTMLElement)) {
+      return
+    }
+
+    const extraBottom = getAnchorScrollExtraBottom({
+      offsetTop,
+      scrollHeight: scrollTarget.scrollHeight,
+      clientHeight: scrollTarget.clientHeight,
+      currentExtraBottom: Number.parseFloat(scrollTarget.style.getPropertyValue(ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY) || '')
+    })
+
+    setAnchorScrollExtraBottom(scrollTarget, extraBottom)
+
+    if (extraBottom > 0) {
+      void scrollTarget.scrollHeight
+    }
+  }
+
+  const resolveAnchorScrollState = (anchorEl, { syncExtraBottom = true } = {}) => {
     if (!(anchorEl instanceof HTMLElement)) {
       return null
     }
@@ -61,9 +81,15 @@ export default function useNavigator() {
     const targetRectTop = getScrollTargetRectTop(scrollTarget)
     const anchorTopOffset = getAnchorTopOffset(anchorEl)
 
+    const offsetTop = Math.max(0, ((anchorRect.top - targetRectTop) + scrollTop) - anchorTopOffset)
+
+    if (syncExtraBottom) {
+      syncAnchorScrollExtraBottom(scrollTarget, offsetTop)
+    }
+
     return {
       scrollTarget,
-      offsetTop: Math.max(0, ((anchorRect.top - targetRectTop) + scrollTop) - anchorTopOffset)
+      offsetTop
     }
   }
 
@@ -155,7 +181,7 @@ export default function useNavigator() {
         const Anchor = document.getElementById(domAnchorId)
 
         if (Anchor !== null && typeof Anchor === 'object') {
-          return resolveAnchorScrollState(Anchor)?.offsetTop
+          return resolveAnchorScrollState(Anchor, { syncExtraBottom: false })?.offsetTop
         }
 
         return undefined

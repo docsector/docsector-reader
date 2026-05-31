@@ -117,6 +117,7 @@ export default {
   // @ Home page source
   homePage: {
     source: 'remote-readme',
+    layout: 'default',
     remoteReadmeUrl: 'https://raw.githubusercontent.com/docsector/docsector-reader/main/README.md',
     timeoutMs: 8000,
     fallbackToLocal: true

@@ -1,5 +1,7 @@
 import { pageEntries, versions } from 'virtual:docsector-books'
 import boot from 'pages/boot'
+import docsectorConfig from 'docsector.config.js'
+import { resolveHomePageLayout, resolvePageLayout } from '../page-layout'
 
 const normalizeInternalLink = (linkTo) => {
   const normalized = String(linkTo || '').trim()
@@ -89,6 +91,7 @@ for (const entry of pageEntries || []) {
 
   const topPage = config.book ?? config.type ?? entry?.book ?? 'manual'
   const routePath = normalizeRoutePath(`${entry?.versionPrefix || ''}/${topPage}${path}`)
+  const layouts = resolvePageLayout(entry?.bookConfig?.layouts ?? entry?.bookConfig?.layout, config.layouts ?? config.layout)
   const hasInternalLink = typeof config?.link?.to === 'string' && config.link.to.trim().length > 0
   const internalLinkTo = hasInternalLink ? normalizeVersionedInternalLink(config.link.to, entry?.versionPrefix || '') : null
   const linkedConfig = hasInternalLink
@@ -167,6 +170,7 @@ for (const entry of pageEntries || []) {
       sourceRoot: entry.sourceRoot || '',
       sourcePathBase: buildSourcePathBase(entry, topPage, path),
       pagePath: path,
+      layouts,
       i18nSegments: entry.i18nSegments || [topPage, ...String(path).replace(/^\//, '').split('/').filter(Boolean)],
       menuGroupPath: String(path).replace(/^\//, '').split('/').filter(Boolean)[0] || '',
       unversionedPath: entry.unversionedPath || `/${topPage}${path}`
@@ -201,10 +205,7 @@ const routes = [
         }
       },
       meta: boot.meta,
-      layouts: {
-        footer: false,
-        submenu: false
-      },
+      layouts: resolveHomePageLayout(docsectorConfig.homePage),
       pages: {}
     },
     children: [

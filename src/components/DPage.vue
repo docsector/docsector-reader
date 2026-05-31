@@ -8,8 +8,10 @@ import docsectorConfig from 'docsector.config.js'
 
 import useNavigator from '../composables/useNavigator'
 import { getReadingProgressState } from '../composables/useReadingProgress'
+import { ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY } from '../composables/anchor-scroll-state'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { getAssistantRightRailState } from '../ai-assistant/layout'
+import { resolveRoutePageLayout } from '../page-layout'
 
 import DPageAnchor from './DPageAnchor.vue'
 import DAssistantPanel from './DAssistantPanel.vue'
@@ -21,7 +23,7 @@ const route = useRoute()
 const $q = useQuasar()
 const { locale } = useI18n()
 
-const { scrolling, navigate } = useNavigator()
+const { scrolling, navigate, anchor: scrollToAnchor } = useNavigator()
 
 const props = defineProps({
   disableNav: {
@@ -41,8 +43,14 @@ const pageMinHeight = ref('calc(100vh - 86px)')
 const submenuHeight = ref('36px')
 const pageBottomInset = ref('0px')
 const readingProgress = ref(getReadingProgressState())
+const routeHashScrollTimeout = ref(null)
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantEnabled = assistantConfig.enabled === true
+const pageLayout = computed(() => resolveRoutePageLayout(route))
+const showSubmenu = computed(() => pageLayout.value.submenu)
+const showToc = computed(() => pageLayout.value.toc)
+const showPageMeta = computed(() => !props.disableNav && pageLayout.value.footer)
+const isFullwidthContent = computed(() => pageLayout.value.contentWidth === 'fullwidth')
 
 const getPageScrollContainer = () => {
   return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
@@ -67,19 +75,19 @@ const updatePageMinHeight = () => {
   const pageContainerEl = pageContainer.value?.$el || pageContainer.value
   const submenuEl = submenu.value?.$el || submenu.value
 
-  if (!pageContainerEl || !submenuEl) {
+  if (!pageContainerEl) {
     return
   }
 
   const pageContainerStyles = window.getComputedStyle(pageContainerEl)
   const headerHeight = Number.parseFloat(pageContainerStyles.paddingTop) || 0
-  const measuredSubmenuHeight = submenuEl.offsetHeight || 0
+  const measuredSubmenuHeight = showSubmenu.value ? (submenuEl?.offsetHeight || 0) : 0
   const isMobile = $q.screen.lt.md
-  const totalOffset = Math.max(0, Math.round(headerHeight + (isMobile ? 0 : measuredSubmenuHeight)))
+  const totalOffset = Math.max(0, Math.round(headerHeight + (isMobile || !showSubmenu.value ? 0 : measuredSubmenuHeight)))
 
   pageMinHeight.value = `calc(100vh - ${totalOffset}px)`
-  submenuHeight.value = `${Math.max(36, Math.round(measuredSubmenuHeight))}px`
-  pageBottomInset.value = isMobile ? submenuHeight.value : '0px'
+  submenuHeight.value = `${showSubmenu.value ? Math.max(36, Math.round(measuredSubmenuHeight)) : 0}px`
+  pageBottomInset.value = isMobile && showSubmenu.value ? submenuHeight.value : '0px'
   syncReadingProgress()
 }
 
@@ -89,6 +97,22 @@ const schedulePageMinHeightUpdate = () => {
       updatePageMinHeight()
     })
   })
+}
+
+const scheduleRouteHashScroll = () => {
+  if (routeHashScrollTimeout.value) {
+    clearTimeout(routeHashScrollTimeout.value)
+    routeHashScrollTimeout.value = null
+  }
+
+  if (showToc.value || !route.hash) {
+    return
+  }
+
+  routeHashScrollTimeout.value = setTimeout(() => {
+    scrollToAnchor(route.hash, false)
+    routeHashScrollTimeout.value = null
+  }, 500)
 }
 
 const overview = computed(() => route.matched[0].path)
@@ -123,7 +147,7 @@ const shouldShowBackToTopControl = computed(() => {
   return props.showBackToTopControl && readingProgress.value.hasOverflow && readingProgress.value.isVisible
 })
 const rightRailState = computed(() => getAssistantRightRailState({
-  tocOpen: layoutMeta.value,
+  tocOpen: showToc.value && layoutMeta.value,
   assistantOpen: assistantEnabled && layoutAssistant.value,
   screenWidth: $q.screen.width,
   assistantWidth: assistantWidth.value,
@@ -137,8 +161,8 @@ const mobileAssistantOpen = computed({
   set: (value) => { layoutAssistant.value = value }
 })
 const mobileTocOpen = computed({
-  get: () => rightRailState.value.isMobile && layoutMeta.value,
-  set: (value) => { layoutMeta.value = value }
+  get: () => showToc.value && rightRailState.value.isMobile && layoutMeta.value,
+  set: (value) => { layoutMeta.value = showToc.value && value }
 })
 const backToTopRightOffset = computed(() => {
   return rightRailState.value.backToTopRightOffset
@@ -157,6 +181,7 @@ const currentPageTitle = computed(() => {
 })
 
 const toggleSectionsTree = () => {
+  if (!showToc.value) return
   layoutMeta.value = !layoutMeta.value
 }
 
@@ -218,6 +243,8 @@ const subroute = (to) => {
 }
 
 const resetPageScroll = () => {
+  getPageScrollContainer()?.style.removeProperty(ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY)
+
   if (pageScrollArea.value !== null) {
     pageScrollArea.value.setScrollPosition('vertical', 0, 0)
   }
@@ -331,12 +358,18 @@ onMounted(() => {
   window.addEventListener('resize', schedulePageMinHeightUpdate)
   nextTick(() => {
     schedulePageMinHeightUpdate()
+    scheduleRouteHashScroll()
   })
 
   router.beforeEach((to, from, next) => {
-    resetPageScroll()
+    const sameEffectivePage = isSameEffectivePage(from, to)
+    const hashOnlyNavigation = sameEffectivePage && to.hash !== ''
 
-    if (to.hash === '' && !isSameEffectivePage(from, to)) {
+    if (!hashOnlyNavigation) {
+      resetPageScroll()
+    }
+
+    if (to.hash === '' && !sameEffectivePage) {
       store.commit('page/resetAnchor')
       store.commit('page/resetAnchors')
       store.commit('page/resetNodes')
@@ -349,12 +382,17 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleMainScrollKeys)
   window.removeEventListener('resize', schedulePageMinHeightUpdate)
+
+  if (routeHashScrollTimeout.value) {
+    clearTimeout(routeHashScrollTimeout.value)
+  }
 })
 
 watch(() => route.fullPath, () => {
   nextTick(() => {
     schedulePageMinHeightUpdate()
     syncReadingProgress(0)
+    scheduleRouteHashScroll()
   })
 })
 </script>
@@ -368,8 +406,13 @@ watch(() => route.fullPath, () => {
     '--d-submenu-height': submenuHeight,
     '--d-page-bottom-inset': pageBottomInset
   }"
+  :class="[
+    `d-page-layout--${pageLayout.mode}`,
+    isFullwidthContent ? 'd-page-layout--fullwidth-content' : 'd-page-layout--contained-content'
+  ]"
 >
   <q-toolbar
+    v-if="showSubmenu"
     id="submenu"
     ref="submenu"
     class="bg-grey-8 text-white"
@@ -401,7 +444,7 @@ watch(() => route.fullPath, () => {
           />
         </q-btn-group>
       </q-toolbar-title>
-      <q-btn class="d-submenu__toggle" :class="layoutMeta ? 'active' : null" @click="toggleSectionsTree" icon="account_tree">
+      <q-btn v-if="showToc" class="d-submenu__toggle" :class="layoutMeta ? 'active' : null" @click="toggleSectionsTree" icon="account_tree">
         <q-tooltip>{{ $t('page.edit.anchor') }}</q-tooltip>
       </q-btn>
     </div>
@@ -409,10 +452,10 @@ watch(() => route.fullPath, () => {
 
   <q-page id="page">
     <q-scroll-area class="content" :class="main" ref="pageScrollArea">
-      <div id="scroll-container" @click="handleContentAnchorClick">
+      <div id="scroll-container" :class="isFullwidthContent ? 'd-scroll-container--fullwidth' : null" @click="handleContentAnchorClick">
         <slot />
       </div>
-      <d-page-meta v-if="!disableNav" />
+      <d-page-meta v-if="showPageMeta" />
       <q-scroll-observer @scroll="handlePageScroll" :debounce="300" />
     </q-scroll-area>
   </q-page>
@@ -456,10 +499,10 @@ watch(() => route.fullPath, () => {
     @update:model-value="setRightRailOpen"
   >
     <div class="d-right-rail">
-      <div v-if="rightRailState.showToc" class="d-right-rail__toc" :style="{ width: `${rightRailState.tocWidth}px` }">
+      <div v-if="showToc && rightRailState.showToc" class="d-right-rail__toc" :style="{ width: `${rightRailState.tocWidth}px` }">
         <d-page-anchor id="anchor" />
       </div>
-      <q-separator v-if="rightRailState.showToc && rightRailState.showAssistant" vertical />
+      <q-separator v-if="showToc && rightRailState.showToc && rightRailState.showAssistant" vertical />
       <d-assistant-panel
         v-if="rightRailState.showAssistant"
         class="d-right-rail__assistant"
@@ -475,6 +518,7 @@ watch(() => route.fullPath, () => {
   </q-drawer>
 
   <q-dialog
+    v-if="showToc"
     v-model="mobileTocOpen"
     position="right"
     square
@@ -524,7 +568,7 @@ watch(() => route.fullPath, () => {
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 15px
-  padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + env(safe-area-inset-bottom, 0px))
+  padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + var(--d-anchor-scroll-extra-bottom, 0px) + env(safe-area-inset-bottom, 0px))
 
 #page
   min-height: var(--d-page-min-height, calc(100vh - 86px)) !important
@@ -597,6 +641,11 @@ body.body--dark
   width: 100%
   max-width: 1200px
   margin: auto
+
+#page-container.d-page-layout--fullwidth-content
+  #scroll-container,
+  #d-page-meta
+    max-width: none
 
 #submenu
   min-height: 36px

@@ -1,8 +1,8 @@
 <template>
 <q-layout view="lHh LpR lFf">
-  <q-header class="d-header left-btn" elevated>
+  <q-header class="d-header" :class="showSidebar ? 'left-btn' : 'd-header--no-sidebar'" elevated>
     <q-toolbar color="primary">
-      <q-btn class="filled" square icon="menu" aria-label="Toggle Menu" @click="toogleMenu" />
+      <q-btn v-if="showSidebar" class="filled" square icon="menu" aria-label="Toggle Menu" @click="toogleMenu" />
       <q-toolbar-title class="text-center">
         <img
           v-if="branding.logo"
@@ -53,7 +53,7 @@
     </q-tabs>
   </q-header>
 
-  <q-drawer elevated show-if-above side="left" v-model="layout.menu">
+  <q-drawer v-if="showSidebar" elevated show-if-above side="left" v-model="layout.menu">
     <d-menu />
   </q-drawer>
 
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
@@ -73,6 +73,7 @@ import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { pageTitleI18nPath } from '../i18n/path'
+import { resolveRoutePageLayout } from '../page-layout'
 
 defineOptions({ name: 'LayoutDefault' })
 
@@ -89,7 +90,15 @@ const layout = ref({
   menu: false
 })
 
+const pageLayout = computed(() => resolveRoutePageLayout(route))
+const showSidebar = computed(() => pageLayout.value.sidebar)
 const assistantOpen = computed(() => store.state.layout.assistant)
+
+watch(showSidebar, (value) => {
+  if (!value) {
+    layout.value.menu = false
+  }
+}, { immediate: true })
 
 const headerTitleIcon = computed(() => {
   return route.matched[0].meta.icon ?? route.meta.icon
