@@ -2,7 +2,13 @@
   <footer class="d-footer" role="contentinfo">
     <div class="d-footer__content">
       <span class="d-footer__label">Powered by</span>
-      <span class="d-footer__brand">Docsector</span>
+      <a
+        class="d-footer__brand"
+        href="https://docsector.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open Docsector website"
+      >Docsector</a>
     </div>
   </footer>
 </template>
@@ -34,6 +40,12 @@ defineOptions({ name: 'DFooter' })
 
   .d-footer__brand
     font-weight: 700
+    color: inherit
+    text-decoration: none
+
+    &:hover,
+    &:focus-visible
+      text-decoration: underline
 
 @media (max-width: 599px)
   .d-footer
