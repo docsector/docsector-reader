@@ -1,10 +1,16 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { useStore } from 'vuex'
 import Prism from './code-block-highlighting'
+import {
+  buildSourceCodeLineAnchorId,
+  resolveSourceCodeLineHref,
+  shouldHandleSourceCodeLineActivation
+} from './source-code-anchor'
 import { countRenderedCodeLines } from './source-code-lines'
 import { looksLikeFileName, resolveFileIconUrl } from '../composables/useFileIcon'
+import useNavigator from '../composables/useNavigator'
 
 defineOptions({
   name: 'DBlockSourceCode'
@@ -38,15 +44,17 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
-const store = useStore()
+const route = useRoute()
+const router = useRouter()
+const { anchor: scrollToAnchor } = useNavigator()
 
 const copyBtnDisabled = ref(false)
 const copyBtnColor = ref(null)
 const copyBtnIcon = ref('content_copy')
 const codeRef = ref(null)
 const activeTab = ref(0)
+const lineAnchorTopOffset = 34
 
-const href = computed(() => `${store.state.page.absolute}#${anchor.value}`)
 const coloring = computed(() => $q.dark.isActive ? 'dark' : 'white')
 const anchor = computed(() => printToLetter(props.index + 1))
 
@@ -155,6 +163,38 @@ function copyCode() {
   }
 }
 
+function buildLineAnchorId(line) {
+  return buildSourceCodeLineAnchorId(anchor.value, line)
+}
+
+function buildLineHref(line) {
+  return resolveSourceCodeLineHref(router, route.path, route.query, buildLineAnchorId(line))
+}
+
+async function navigateToLineAnchor(event, line) {
+  if (!shouldHandleSourceCodeLineActivation(event)) {
+    return
+  }
+
+  const hash = `#${buildLineAnchorId(line)}`
+
+  event.preventDefault()
+
+  if (route.hash === hash) {
+    scrollToAnchor(hash, false)
+    return
+  }
+
+  await router.push({
+    path: route.path,
+    query: route.query,
+    hash
+  })
+
+  await nextTick()
+  scrollToAnchor(hash, false)
+}
+
 function printToLetter(number) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let result = ''
@@ -245,9 +285,9 @@ function printToLetter(number) {
     <div class="code" :class="coloring">
       <div class="lines" v-if="lines && lines > 1">
         <template v-for="(line, index) in lines" :key="index">
-          <a class="line" :href="href+line">
+          <a class="line" :href="buildLineHref(line)" @click="navigateToLineAnchor($event, line)">
             <i class="fa fa-link" aria-hidden="true" data-hidden="true"></i>
-            <span :id="`${anchor}${line}`">{{ line }}</span>
+            <span :id="buildLineAnchorId(line)" :data-anchor-offset-top="lineAnchorTopOffset">{{ line }}</span>
           </a>
         </template>
       </div>

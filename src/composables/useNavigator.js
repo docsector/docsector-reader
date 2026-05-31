@@ -11,6 +11,62 @@ export default function useNavigator() {
   const route = useRoute()
   const selected = ref(null)
 
+  const normalizeScrollTarget = (target) => {
+    if (target === document.body || target === document.documentElement) {
+      return window
+    }
+
+    return target
+  }
+
+  const getScrollTargetTop = (target) => {
+    if (target === window) {
+      return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+    }
+
+    return target?.scrollTop || 0
+  }
+
+  const getScrollTargetRectTop = (target) => {
+    if (target === window) {
+      return 0
+    }
+
+    return target?.getBoundingClientRect?.().top || 0
+  }
+
+  const getAnchorTopOffset = (anchorEl) => {
+    if (!(anchorEl instanceof HTMLElement)) {
+      return 0
+    }
+
+    const explicitOffset = Number.parseFloat(anchorEl.dataset.anchorOffsetTop || '')
+
+    if (Number.isFinite(explicitOffset)) {
+      return Math.max(0, explicitOffset)
+    }
+
+    return 0
+  }
+
+  const resolveAnchorScrollState = (anchorEl) => {
+    if (!(anchorEl instanceof HTMLElement)) {
+      return null
+    }
+
+    const pageScrollContainer = anchorEl.closest('.q-scrollarea__container')
+    const scrollTarget = normalizeScrollTarget(pageScrollContainer || scroll.getScrollTarget(anchorEl))
+    const anchorRect = anchorEl.getBoundingClientRect()
+    const scrollTop = getScrollTargetTop(scrollTarget)
+    const targetRectTop = getScrollTargetRectTop(scrollTarget)
+    const anchorTopOffset = getAnchorTopOffset(anchorEl)
+
+    return {
+      scrollTarget,
+      offsetTop: Math.max(0, ((anchorRect.top - targetRectTop) + scrollTop) - anchorTopOffset)
+    }
+  }
+
   const normalizeDomAnchorId = (id) => {
     if (id === null || id === undefined || id === false) {
       return ''
@@ -62,10 +118,11 @@ export default function useNavigator() {
     const Anchor = document.getElementById(anchorId)
 
     if (Anchor !== null && typeof Anchor === 'object') {
-      const ScrollTarget = scroll.getScrollTarget(Anchor)
-      const AnchorOffsetTop = Anchor.offsetTop
+      const scrollState = resolveAnchorScrollState(Anchor)
 
-      scroll.setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
+      if (scrollState !== null) {
+        scroll.setVerticalScrollPosition(scrollState.scrollTarget, scrollState.offsetTop, 300)
+      }
 
       setTimeout(() => {
         store.commit('page/setScrolling', true)
@@ -98,7 +155,7 @@ export default function useNavigator() {
         const Anchor = document.getElementById(domAnchorId)
 
         if (Anchor !== null && typeof Anchor === 'object') {
-          return Anchor.offsetTop
+          return resolveAnchorScrollState(Anchor)?.offsetTop
         }
 
         return undefined
