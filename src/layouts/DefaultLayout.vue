@@ -75,6 +75,8 @@
   </q-drawer>
 
   <router-view />
+
+  <d-footer-host />
 </q-layout>
 </template>
 
@@ -86,6 +88,7 @@ import { useI18n } from 'vue-i18n'
 import { useMeta, colors, useQuasar } from 'quasar'
 
 import DMenu from '../components/DMenu.vue'
+import DFooterHost from '../components/DFooterHost.vue'
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'

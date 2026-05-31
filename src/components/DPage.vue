@@ -15,6 +15,7 @@ import { resolveRoutePageLayout } from '../page-layout'
 
 import DPageAnchor from './DPageAnchor.vue'
 import DAssistantPanel from './DAssistantPanel.vue'
+import DFooterOutlet from './DFooterOutlet.vue'
 import DPageMeta from './DPageMeta.vue'
 
 const store = useStore()
@@ -456,6 +457,7 @@ watch(() => route.fullPath, () => {
         <slot />
       </div>
       <d-page-meta v-if="showPageMeta" />
+      <d-footer-outlet />
       <q-scroll-observer @scroll="handlePageScroll" :debounce="300" />
     </q-scroll-area>
   </q-page>
@@ -563,12 +565,16 @@ watch(() => route.fullPath, () => {
   min-height: var(--d-page-min-height, calc(100vh - 86px))
 
 .content > div.scroll > div.q-scrollarea__content
+  --d-page-content-padding-x: 15px
+  --d-page-content-padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + var(--d-anchor-scroll-extra-bottom, 0px) + env(safe-area-inset-bottom, 0px))
+  --d-footer-outlet-padding-x: var(--d-page-content-padding-x)
+  --d-footer-outlet-padding-bottom: var(--d-page-content-padding-bottom)
   max-width: 100%
   box-sizing: border-box
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
-  padding: 15px
-  padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + var(--d-anchor-scroll-extra-bottom, 0px) + env(safe-area-inset-bottom, 0px))
+  padding: var(--d-page-content-padding-x)
+  padding-bottom: var(--d-page-content-padding-bottom)
 
 #page
   min-height: var(--d-page-min-height, calc(100vh - 86px)) !important
@@ -646,6 +652,12 @@ body.body--dark
   #scroll-container,
   #d-page-meta
     max-width: none
+
+  #d-page-meta > .row,
+  #d-page-meta > #d-page-nav
+    padding-left: 15px
+    padding-right: 15px
+    box-sizing: border-box
 
 #submenu
   min-height: 36px

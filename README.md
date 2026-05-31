@@ -59,9 +59,10 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, preserve the assistant panel open state across reloads, include per-message copy actions, and show a floating quick return to the bottom
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
-- 🏷️ **Clickable Header Branding** — The configured `branding.logo`, `branding.name`, and `branding.version` render as a home link in the global header, centered on desktop and aligned left on mobile, stacking the version as a caption below the product name
+- 🏷️ **Clickable Header Branding** — The configured `branding.logo` and `branding.name` render as a home link in the global header, aligned left on desktop with a compact mobile treatment
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 📐 **Book Layout Presets** — Configure books with the default documentation chrome or a `fullwidth` layout that keeps the header and book tabs while removing the sidebar, subpage toolbar, and Table of Contents
+- 🦶 **Global Branding Footer** — Built-in `Powered by Docsector` footer renders across documentation and system pages, while respecting each page's own scroll container for full-width layout integration without double scrollbars
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
 - 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and dock to the bottom on mobile
 - ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress that stays above the mobile subpage toolbar

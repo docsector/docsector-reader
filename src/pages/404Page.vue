@@ -9,7 +9,12 @@
         <strong>(404)</strong>
       </p>
       <q-btn color="secondary" style="width:200px;" @click="$router.push('/')">Go home</q-btn>
+      <d-footer-outlet />
     </q-scroll-area>
   </q-page>
 </q-page-container>
 </template>
+
+<script setup>
+import DFooterOutlet from 'components/DFooterOutlet.vue'
+</script>
