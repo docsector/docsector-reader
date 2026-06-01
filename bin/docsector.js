@@ -437,7 +437,10 @@ export default {
   label: 'Guide',
   icon: 'school',
   order: 1,
-  color: 'secondary'
+  color: {
+    active: 'white',
+    inactive: 'white'
+  }
 }
 `
 

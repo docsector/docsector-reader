@@ -733,6 +733,8 @@ npm install
 
 This creates a minimal project with `quasar.config.js`, `docsector.config.js`, `src/pages/`, `src/i18n/`, and `public/` — all powered by the docsector-reader engine.
 
+The scaffolded `quasar.config.js` delegates to `createQuasarConfig()`, which registers Docsector virtual registries and keeps the engine router out of Vite dependency optimization so modules like `virtual:docsector-books` resolve during dev and build.
+
 ### 💻 Development
 
 ```bash

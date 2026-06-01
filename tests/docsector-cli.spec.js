@@ -15,6 +15,23 @@ const runCli = (cwd, args = []) =>
   })
 
 describe('docsector CLI', () => {
+  it('scaffolds guide book tabs with Docsector white colors', () => {
+    const projectDir = mkdtempSync(join(tmpdir(), 'docsector-init-book-color-'))
+    const projectName = 'DocsBookColor'
+
+    try {
+      runCli(projectDir, ['init', projectName])
+
+      const bookSource = readFileSync(join(projectDir, projectName, 'src/pages/guide.book.js'), 'utf-8')
+
+      expect(bookSource).toContain("active: 'white'")
+      expect(bookSource).toContain("inactive: 'white'")
+      expect(bookSource).not.toContain("color: 'secondary'")
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
   it('installs the built-in authoring skill for older scaffolded projects', () => {
     const projectDir = mkdtempSync(join(tmpdir(), 'docsector-install-skill-'))
 

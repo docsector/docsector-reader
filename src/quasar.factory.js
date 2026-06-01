@@ -74,6 +74,28 @@ function normalizePathForMatch (path) {
 
 const CURRENT_VERSION_KEY = '__current__'
 
+const DOCSECTOR_VIRTUAL_MODULE_IDS = Object.freeze([
+  'virtual:docsector-books',
+  'virtual:docsector-homepage-override',
+  'virtual:docsector-code-examples',
+  'virtual:docsector-git-dates'
+])
+
+const DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE = Object.freeze([
+  '@docsector/docsector-reader',
+  '@docsector/docsector-reader/src/App.vue',
+  '@docsector/docsector-reader/src/router/index',
+  '@docsector/docsector-reader/src/router/index.js',
+  '@docsector/docsector-reader/src/router/routes',
+  '@docsector/docsector-reader/src/router/routes.js',
+  'node_modules/@docsector/docsector-reader/src/App.vue',
+  'node_modules/@docsector/docsector-reader/src/router/index',
+  'node_modules/@docsector/docsector-reader/src/router/index.js',
+  'node_modules/@docsector/docsector-reader/src/router/routes',
+  'node_modules/@docsector/docsector-reader/src/router/routes.js',
+  ...DOCSECTOR_VIRTUAL_MODULE_IDS
+])
+
 function trimSlashes (value) {
   return String(value || '').replace(/^\/+|\/+$/g, '')
 }
@@ -3203,21 +3225,23 @@ export function createQuasarConfig (options = {}) {
           ...(viteConf.optimizeDeps.include || []),
           'vue', 'vue-router', 'vuex', 'vue-i18n',
           'prismjs', 'markdown-it', 'markdown-it-attrs',
+          'markdown-it-task-lists', 'markdown-it-texmath',
           'hjson', 'q-colorize-mixin', 'mermaid'
         ]
 
-        // Exclude boot files and the router from pre-bundling.
+        // Exclude boot files and Docsector runtime entry points from pre-bundling.
         // Boot files (especially boot/i18n) import the consumer's src/i18n/index.js
         // which uses import.meta.glob — a compile-time Vite directive that only
         // works in source files. If pre-bundled, the glob calls become dead code
         // and no i18n messages are loaded.
-        // The router is excluded because routes.js imports consumer content via
-        // the `pages` alias. If pre-bundled, consumer content gets embedded in
-        // the optimizer cache whose hash doesn't track source file changes,
-        // causing stale routes after editing page registry files.
+        // In consumer mode, the package router also imports Vite virtual modules
+        // and consumer content via the `pages` alias. If pre-bundled, Vite can
+        // try resolving those virtual IDs before Docsector's plugins handle them,
+        // or embed stale consumer registry content in the optimizer cache.
         viteConf.optimizeDeps.exclude = [
           ...(viteConf.optimizeDeps.exclude || []),
-          'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios'
+          'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios',
+          ...(!isStandalone ? DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE : [])
         ]
 
         if (!isStandalone) {
