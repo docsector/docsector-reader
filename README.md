@@ -46,6 +46,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📋 **Clickable Inline Code** — Backtick-rendered inline code snippets are clickable across pages, subpages, and AI assistant answers
 - 🔽 **Nested Markdown Lists** — Ordered and unordered lists preserve sublist hierarchy across multiple indentation levels
 - ☑️ **Markdown Task Lists** — GitBook-style `- [ ]` and `- [x]` items render as read-only checkboxes with nested subtasks
+- ⌨️ **Keyboard Shortcut Keycaps** — Author GitBook-style shortcuts with raw `<kbd>...</kbd>` tags, rendered consistently across docs and AI assistant answers
 - 🖼️ **Block Image Captions & Zoom** — Standalone Markdown images render as zoomable figures, and raw `figure` / `picture` markup supports separate alt text and captions
 - 🧱 **Raw HTML in Markdown** — Renders inline and block HTML tags inside markdown sections (including homepage remote README content)
 - 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching

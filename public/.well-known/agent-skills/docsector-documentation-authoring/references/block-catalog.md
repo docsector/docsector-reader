@@ -309,9 +309,11 @@ Use raw HTML only when Markdown is not expressive enough or when authoring Docse
 <div data-kind="secondary-note">
   This block uses raw HTML inside the page source.
 </div>
+
+Press <kbd>⌘</kbd> + <kbd>B</kbd> to toggle bold text.
 ```
 
-Prefer plain Markdown first. Keep raw markup readable because documentation content still needs maintenance.
+Prefer plain Markdown first. Use `<kbd>...</kbd>` for keyboard shortcuts that should read like GitBook-style keycaps. Keep raw markup readable because documentation content still needs maintenance.
 
 ## Renderer and Parser References
 

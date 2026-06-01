@@ -875,8 +875,8 @@ export default {
     },
     metadata: {
       tags: {
-        'en-US': 'raw html markup inline block custom elements markdown',
-        'pt-BR': 'html bruto marcação inline bloco elementos customizados markdown'
+        'en-US': 'raw html markup inline block custom elements markdown keyboard shortcut shortcuts kbd keycap gitbook',
+        'pt-BR': 'html bruto marcação inline bloco elementos customizados markdown teclado atalho atalhos kbd keycap gitbook'
       }
     }
   },

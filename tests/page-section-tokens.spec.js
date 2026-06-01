@@ -800,6 +800,19 @@ External caption.
     expect(tokens[0].content).toContain('and after.')
   })
 
+  it('preserves keyboard shortcut html inline inside paragraph content', () => {
+    const tokens = tokenizePageSectionSource('Press <kbd>⌘</kbd> + <kbd>B</kbd> to toggle bold text.')
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('Press')
+    expect(tokens[0].content).toContain('<kbd>⌘</kbd>')
+    expect(tokens[0].content).toContain('<kbd>B</kbd>')
+    expect(tokens[0].content).toContain('toggle bold text.')
+  })
+
   it('normalizes raw figure blocks with separate alt and caption values', () => {
     const tokens = tokenizePageSectionSource(`
 <figure><img src="/images/gitbook.png" alt="The GitBook Logo"><figcaption><p>GitBook Logo</p></figcaption></figure>
@@ -1117,5 +1130,28 @@ Use \`<d-block-file src="/files/manual/example.pdf" />\` in docs.
       info: 'html'
     })
     expect(tokens[1].content).toContain('<d-block-file src="/files/manual/example.pdf" />')
+  })
+
+  it('keeps keyboard shortcut html literal inside inline and fenced code', () => {
+    const tokens = tokenizePageSectionSource(`
+Use \`<kbd>⌘</kbd> + <kbd>B</kbd>\` in docs.
+
+~~~html
+<kbd>⌘</kbd> + <kbd>B</kbd>
+~~~
+`)
+
+    expect(tokens).toHaveLength(2)
+    expect(tokens[0]).toMatchObject({
+      tag: 'p'
+    })
+    expect(tokens[0].content).toContain('data-docsector-inline-code-copy=""')
+    expect(tokens[0].content).toContain('&lt;kbd&gt;⌘&lt;/kbd&gt; + &lt;kbd&gt;B&lt;/kbd&gt;')
+    expect(tokens[0].content).not.toContain('<kbd>⌘</kbd>')
+    expect(tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'html'
+    })
+    expect(tokens[1].content).toContain('<kbd>⌘</kbd> + <kbd>B</kbd>')
   })
 })
