@@ -82,16 +82,16 @@ export default {
       namespace: '',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
-      model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      model: '@cf/meta/llama-4-scout-17b-16e-instruct',
       retrievalType: 'vector',
-      maxResults: 6,
+      maxResults: 10,
       matchThreshold: 0.4,
       contextExpansion: 1,
       queryRewrite: {
         enabled: true
       },
       reranking: {
-        enabled: false,
+        enabled: true,
         model: '@cf/baai/bge-reranker-base',
         matchThreshold: 0.4
       },
