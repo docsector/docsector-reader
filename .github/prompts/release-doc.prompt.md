@@ -16,6 +16,7 @@ description: 'Release a new version: update README, publish to NPM, and update b
 3. **Update README.md**
    - Add any new features to the `✨ Features` section that were implemented since the last release.
    - Keep the existing style: emoji + bold title + dash + description.
+   - Only update if necessary to reflect new features or changes in the release. Do not remove existing features from the README.
 
 4. **Bump version with `npm version` in the `docsector-reader` project root**
    - For a patch release (bug fixes): `npm version patch --no-git-tag-version`

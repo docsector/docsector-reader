@@ -78,6 +78,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback and automatic primary-title handoff when the remote README already provides the project heading
 - 🔗 **GitHub-Compatible Heading Anchors** — Markdown headings use GitHub-style slugs so standard README Table of Contents links work inside Docsector
 - 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
+- 🤖 **Scaffolded AI Assistant Config** — New consumer projects include a ready-to-enable `aiAssistant` example in `docsector.config.js` so the built-in assistant is visible in the default scaffold
 - 🧰 **Scaffolded Dev Reliability** — New consumer projects protect Docsector virtual registries and Markdown CommonJS plugins from Vite optimizer edge cases during dev and build
 - 📖 **Expandable Markdown Sections** — Use `<d-block-expandable title="...">...</d-block-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 1️⃣ **Stepper Guides** — Use `<d-block-stepper>` with nested `<d-block-step title="...">...</d-block-step>` items to render native Quasar vertical steppers with rich Markdown and optional per-step icon overrides
