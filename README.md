@@ -34,6 +34,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
 - 🌐 **WebMCP Browser Tools** — Optional registration of in-page tools via `navigator.modelContext` for browser agents
 - 🤖 **AI Assistant Panel** — Optional documentation assistant drawer backed by Cloudflare AI Search through an internal same-origin endpoint
+- 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
@@ -77,9 +78,6 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback and automatic primary-title handoff when the remote README already provides the project heading
 - 🔗 **GitHub-Compatible Heading Anchors** — Markdown headings use GitHub-style slugs so standard README Table of Contents links work inside Docsector
-- 🧬 **Scaffolded Homepage Override Wiring** — New consumer projects automatically wire `virtual:docsector-homepage-override` into i18n message building
-- 🤖 **Scaffolded AI Assistant Config** — New consumer projects include a ready-to-enable `aiAssistant` example in `docsector.config.js` so the built-in assistant is visible in the default scaffold
-- 🧰 **Scaffolded Dev Reliability** — New consumer projects protect Docsector virtual registries and Markdown CommonJS plugins from Vite optimizer edge cases during dev and build
 - 📖 **Expandable Markdown Sections** — Use `<d-block-expandable title="...">...</d-block-expandable>` to collapse secondary content while keeping rich Markdown support inside the body
 - 1️⃣ **Stepper Guides** — Use `<d-block-stepper>` with nested `<d-block-step title="...">...</d-block-step>` items to render native Quasar vertical steppers with rich Markdown and optional per-step icon overrides
 - 🕒 **Timeline Updates** — Use `<d-block-timeline>` with nested `<d-block-timeline-item date="...">...</d-block-timeline-item>` entries and optional `<d-block-timeline-tag>` labels to publish GitBook-inspired changelog items with direct-link anchors, tag icons/colors, and rich Markdown bodies
@@ -88,13 +86,11 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Quick Links Custom Element** — Use `<d-block-quick-links>` and `<d-block-quick-link>` in Markdown to render rich home navigation cards
 - 🗂️ **Cards Custom Element** — Use `<d-block-cards>` and `<d-block-card>` in Markdown to render linked content cards with optional cover images
 - 🧾 **API JSON Reference Block** — Use `<d-block-api src="..." />` in Markdown to render Quasar-compatible API reference UIs from public JSON assets without inventing a new schema
-- 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🧠 **Docsector Authoring Skill Docs** — Documents the built-in `SKILL.md` and reference files so agents can learn Docsector blocks, page patterns, MCP lookup, and WebMCP tools from a public manual page
 - 🗃️ **Multi-Version History** — Archive older major versions under `src/pages/.old/<version>/` and expose them at prefixed routes (e.g. `/v0.x/guide/...`) while keeping the current docs at unprefixed routes
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
 - 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
-- 📏 **Accurate Source Code Line Counts** — Code example headers count visible lines correctly across LF, CRLF, and terminal newlines without inflating the total
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
