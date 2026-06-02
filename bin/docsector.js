@@ -182,6 +182,46 @@ export default {
   defaultLanguage: 'en-US'
 
   // --- AI configs ---
+  // @ AI Assistant (optional)
+  // Customize the built-in AI assistant or disable it if not needed.
+  // aiAssistant: {
+  //   enabled: true,
+  //   provider: 'aiSearch',
+  //   endpoint: '/assistant',
+  //   ui: {
+  //     title: 'Docsector AI Assistant',
+  //     subtitle: 'Ask, search, or explore the documentation.',
+  //     drawerWidth: 380,
+  //     wideBreakpoint: 1280,
+  //     showCitations: true,
+  //     suggestedPrompts: [
+  //       'How do I get started?',
+  //       'Summarize this page.',
+  //       'Where is the related API reference?'
+  //     ]
+  //   },
+  //   aiSearch: {
+  //     binding: 'AI_SEARCH',
+  //     instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
+  //     namespace: '',
+  //     accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
+  //     apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
+  //     model: '@cf/meta/llama-4-scout-17b-16e-instruct',
+  //     retrievalType: 'vector',
+  //     maxResults: 10,
+  //     matchThreshold: 0.4,
+  //     contextExpansion: 1,
+  //     queryRewrite: {
+  //       enabled: false
+  //     },
+  //     reranking: {
+  //       enabled: false,
+  //       model: '@cf/baai/bge-reranker-base',
+  //       matchThreshold: 0.4
+  //     },
+  //     stream: true
+  //   }
+  // },
 
   // @ MCP (Model Context Protocol)
   // Uncomment to enable an MCP server at /mcp for AI assistant integration.
