@@ -24,7 +24,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '4.5.3'
+const VERSION = '4.5.4'
 const AUTHORING_SKILL_NAME = 'docsector-documentation-authoring'
 const AUTHORING_SKILL_DESCRIPTION = 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.'
 const AUTHORING_SKILL_PUBLIC_PATH = `/.well-known/agent-skills/${AUTHORING_SKILL_NAME}/SKILL.md`
@@ -157,6 +157,32 @@ export default {
   // sitemap.xml is still generated with root-relative URLs when omitted.
   // siteUrl: 'https://docs.example.com',
 
+  // @ Home page source (optional)
+  // Use a remote README.md as homepage content at build-time.
+  // Falls back to local src/pages/Homepage.{lang}.md on fetch failure by default.
+  // homePage: {
+  //   source: 'remote-readme', // 'local' | 'remote-readme'
+  //   remoteReadmeUrl: 'https://raw.githubusercontent.com/your-org/your-repo/main/README.md',
+  //   timeoutMs: 8000,
+  //   fallbackToLocal: true
+  // },
+
+  // --- Language configs ---
+
+  // @ Languages
+  languages: [
+    {
+      image: '/images/flags/united-states-of-america.png',
+      label: 'English (US)',
+      value: 'en-US'
+    }
+  ],
+
+  // @ Default language
+  defaultLanguage: 'en-US'
+
+  // --- AI configs ---
+
   // @ MCP (Model Context Protocol)
   // Uncomment to enable an MCP server at /mcp for AI assistant integration.
   // Requires Cloudflare Pages Functions (or compatible serverless platform).
@@ -195,16 +221,6 @@ export default {
   //     navigateTo: true,
   //     copyCurrentPage: true
   //   }
-  // },
-
-  // @ Home page source (optional)
-  // Use a remote README.md as homepage content at build-time.
-  // Falls back to local src/pages/Homepage.{lang}.md on fetch failure by default.
-  // homePage: {
-  //   source: 'remote-readme', // 'local' | 'remote-readme'
-  //   remoteReadmeUrl: 'https://raw.githubusercontent.com/your-org/your-repo/main/README.md',
-  //   timeoutMs: 8000,
-  //   fallbackToLocal: true
   // },
 
   // @ Homepage Link headers for agent discovery (optional)
@@ -270,19 +286,7 @@ export default {
   //       url: '${AUTHORING_SKILL_PUBLIC_PATH}'
   //     }
   //   ]
-  // },
-
-  // @ Languages
-  languages: [
-    {
-      image: '/images/flags/united-states-of-america.png',
-      label: 'English (US)',
-      value: 'en-US'
-    }
-  ],
-
-  // @ Default language
-  defaultLanguage: 'en-US'
+  // }
 }
 `
 
@@ -638,7 +642,6 @@ const TEMPLATE_ROBOTS_TXT = `\
 User-agent: *
 Allow: /
 Content-Signal: ai-train=yes, search=yes, ai-input=yes
-Sitemap: /sitemap.xml
 
 # Explicitly allow AI crawlers
 # OpenAI
@@ -793,7 +796,7 @@ npm run build
 \`\`\`
 
 The optimized SPA output will be in \`dist/spa/\`.
-Docsector also generates \`dist/spa/sitemap.xml\` and keeps \`robots.txt\` discoverable with \`Sitemap: /sitemap.xml\`. Set \`siteUrl\` in \`docsector.config.js\` when you want absolute sitemap URLs.
+Docsector also generates \`dist/spa/sitemap.xml\` and appends \`Sitemap: /sitemap.xml\` to the end of \`dist/spa/robots.txt\` during build. Set \`siteUrl\` in \`docsector.config.js\` when you want absolute sitemap URLs.
 `
 
 // =============================================================================

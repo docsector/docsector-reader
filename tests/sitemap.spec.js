@@ -31,14 +31,31 @@ describe('sitemap generation', () => {
 })
 
 describe('robots sitemap discovery', () => {
-  it('adds sitemap discovery without duplicating equivalent entries', () => {
+  it('moves sitemap discovery to the end without duplicating equivalent entries', () => {
     const robots = appendSitemapsToRobots('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', {
       siteUrl: 'https://docs.example.com',
       sitemaps: ['/sitemap.xml', '/ai-search-sitemap.xml']
     })
 
     expect(robots.match(/Sitemap:/g)).toHaveLength(2)
-    expect(robots).toContain('Sitemap: /sitemap.xml')
-    expect(robots).toContain('Sitemap: https://docs.example.com/ai-search-sitemap.xml')
+    expect(robots).toBe('User-agent: *\nAllow: /\n\nSitemap: https://docs.example.com/sitemap.xml\nSitemap: https://docs.example.com/ai-search-sitemap.xml\n')
+  })
+
+  it('appends sitemap discovery at the end of existing bot blocks', () => {
+    const robots = appendSitemapsToRobots('User-agent: *\nAllow: /\n\nUser-agent: Cloudflare-AI-Search\nAllow: /\n', {
+      siteUrl: 'https://docs.example.com',
+      sitemaps: ['/sitemap.xml']
+    })
+
+    expect(robots).toBe('User-agent: *\nAllow: /\n\nUser-agent: Cloudflare-AI-Search\nAllow: /\n\nSitemap: https://docs.example.com/sitemap.xml\n')
+  })
+
+  it('preserves explicitly configured extra sitemaps while moving them to the end', () => {
+    const robots = appendSitemapsToRobots('User-agent: *\nAllow: /\nSitemap: /ai-search-sitemap.xml\n\nUser-agent: Cloudflare-AI-Search\nAllow: /\n', {
+      siteUrl: 'https://docs.example.com',
+      sitemaps: ['/sitemap.xml']
+    })
+
+    expect(robots).toBe('User-agent: *\nAllow: /\n\nUser-agent: Cloudflare-AI-Search\nAllow: /\n\nSitemap: https://docs.example.com/sitemap.xml\nSitemap: https://docs.example.com/ai-search-sitemap.xml\n')
   })
 })

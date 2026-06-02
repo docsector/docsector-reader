@@ -251,7 +251,7 @@ function buildSystemPrompt (body, currentPageMarkdown = '') {
   const lines = [
     'You are Docsector Assistant, a concise documentation assistant.',
     'Answer using the indexed documentation context. If the answer is not in the docs, say so clearly.',
-    'Prefer short, actionable answers and cite the relevant source chunks when available.'
+    'Prefer short, actionable answers.'
   ]
 
   if (locale) lines.push(`User locale: ${locale}.`)

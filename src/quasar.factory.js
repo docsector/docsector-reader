@@ -1958,6 +1958,16 @@ function collectStandardSitemapEntries ({ pagesDir, pageEntries = [], defaultLan
   return entries
 }
 
+export function getAdvertisedRobotsSitemapPaths ({ sitemapEnabled = true } = {}) {
+  const paths = []
+
+  if (sitemapEnabled) {
+    paths.push('/sitemap.xml')
+  }
+
+  return paths
+}
+
 /**
  * Create a Vite plugin that generates static `.md` files at build time.
  *
@@ -2461,9 +2471,7 @@ export async function onRequest (context) {
         }
       }
 
-      const robotsSitemapPaths = []
-      if (sitemapEnabled) robotsSitemapPaths.push('/sitemap.xml')
-      if (aiSearchSitemapGenerated) robotsSitemapPaths.push('/ai-search-sitemap.xml')
+      const robotsSitemapPaths = getAdvertisedRobotsSitemapPaths({ sitemapEnabled })
 
       if (robotsSitemapPaths.length > 0) {
         const robotsPath = resolve(distDir, 'robots.txt')

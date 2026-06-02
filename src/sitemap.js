@@ -76,28 +76,37 @@ export function appendSitemapsToRobots (robotsContent, { sitemaps = [], siteUrl 
     ? robotsContent
     : 'User-agent: *\nAllow: /\n'
 
-  const existingIdentities = new Set(
-    input
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map(line => line.match(/^\s*Sitemap\s*:\s*(.+?)\s*$/i)?.[1])
-      .filter(Boolean)
-      .map(normalizeSitemapIdentity)
-  )
+  const bodyLines = []
+  const existingSitemaps = []
 
-  const addedIdentities = new Set()
-  const sitemapLines = (Array.isArray(sitemaps) ? sitemaps : [sitemaps])
+  for (const line of input.replace(/\r\n/g, '\n').split('\n')) {
+    const sitemap = line.match(/^\s*Sitemap\s*:\s*(.+?)\s*$/i)?.[1]
+    if (sitemap) {
+      existingSitemaps.push(sitemap)
+      continue
+    }
+
+    bodyLines.push(line)
+  }
+
+  const seenIdentities = new Set()
+  const normalizedSitemaps = [
+    ...(Array.isArray(sitemaps) ? sitemaps : [sitemaps]),
+    ...existingSitemaps
+  ]
     .filter(Boolean)
     .map(sitemap => resolveSitemapUrl(sitemap, siteUrl))
     .filter(sitemap => {
       const identity = normalizeSitemapIdentity(sitemap)
-      if (existingIdentities.has(identity) || addedIdentities.has(identity)) return false
-      addedIdentities.add(identity)
+      if (seenIdentities.has(identity)) return false
+      seenIdentities.add(identity)
       return true
     })
-    .map(sitemap => `Sitemap: ${sitemap}`)
 
-  if (sitemapLines.length === 0) return input
+  if (normalizedSitemaps.length === 0) return input
 
-  return `${input.replace(/\s+$/g, '')}\n${sitemapLines.join('\n')}\n`
+  const body = bodyLines.join('\n').replace(/\s+$/g, '')
+  const sitemapLines = normalizedSitemaps.map(sitemap => `Sitemap: ${sitemap}`)
+
+  return `${body}\n\n${sitemapLines.join('\n')}\n`
 }

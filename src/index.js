@@ -179,7 +179,7 @@ export function createDocsector (config = {}) {
     },
 
     contentSignals: {
-      enabled: false,
+      enabled: true,
       aiTrain: 'yes',
       search: 'yes',
       aiInput: 'yes',
@@ -189,7 +189,7 @@ export function createDocsector (config = {}) {
     },
 
     agentSkills: {
-      enabled: false,
+      enabled: true,
       path: '/.well-known/agent-skills/index.json',
       schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
       skills: [],

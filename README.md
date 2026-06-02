@@ -27,7 +27,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, and others)
 - 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with root-relative URLs by default and absolute URLs when `siteUrl` is configured
-- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 24 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, etc.) and advertises `Sitemap: /sitemap.xml`
+- 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 24 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, etc.), and the build appends `Sitemap: /sitemap.xml` at the end for crawler discovery
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests
 - ✍️ **Docsector Authoring Skill** — Publishable `SKILL.md` that teaches agents Docsector blocks, page patterns, MCP lookup, and WebMCP tools
@@ -352,8 +352,8 @@ export default {
 Use Cloudflare AI Search as the first provider path:
 
 - Create an AI Search instance in Cloudflare.
-- Build and deploy the Docsector site first; build output always publishes `/sitemap.xml` and adds `Sitemap: /sitemap.xml` to `robots.txt` for crawler discovery.
-- Use a Website data source. For the cleanest retrieval, point its specific sitemap to `/ai-search-sitemap.xml`; otherwise the crawler can discover `/sitemap.xml` from `robots.txt`.
+- Build and deploy the Docsector site first; build output always publishes `/sitemap.xml` and appends `Sitemap: /sitemap.xml` to the end of `robots.txt` for crawler discovery.
+- Use a Website data source. For the cleanest retrieval, point its specific sitemap to `/ai-search-sitemap.xml`. Docsector keeps that Markdown-focused sitemap available for explicit AI Search configuration, but does not auto-announce it from `robots.txt` so Cloudflare does not index the same content twice alongside `/sitemap.xml`.
 - Add metadata fields such as title, path, locale, book, version, and subpage if you want filtering later.
 - Set `AI_SEARCH_INSTANCE_NAME` as a Cloudflare Pages environment variable or local `.dev.vars` entry.
 - Bind the instance to Pages as `AI_SEARCH` when available, or set encrypted Pages secrets for `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` with AI Search run access.
@@ -368,7 +368,7 @@ When enabled, `docsector build` can generate:
 | `functions/assistant.js` | Cloudflare Pages Function for browser assistant requests |
 | `dist/spa/sitemap.xml` | Default crawler sitemap advertised from `robots.txt` |
 | `dist/spa/robots.txt` | Crawler policy with `Sitemap: /sitemap.xml` |
-| `dist/spa/ai-search-sitemap.xml` | Markdown-focused sitemap for AI Search crawling |
+| `dist/spa/ai-search-sitemap.xml` | Markdown-focused sitemap for explicit AI Search Website data source configuration |
 | `dist/spa/.well-known/ai-search/manifest.json` | Source metadata for indexed documentation pages |
 | `dist/spa/_routes.json` | Routes the internal assistant endpoint to the Pages Function |
 
@@ -619,7 +619,7 @@ Notes:
 - `aiTrain`, `search`, and `aiInput` accept `yes` / `no` (or booleans).
 - Default scope is only `User-agent: *`.
 - Build patch is idempotent: repeated builds do not duplicate `Content-Signal` lines.
-- Build also keeps `Sitemap: /sitemap.xml` discoverable in `robots.txt` so crawlers can find the generated sitemap automatically.
+- Build also keeps `Sitemap: /sitemap.xml` discoverable at the end of `robots.txt` so crawlers can find the generated sitemap automatically.
 
 ### Validate
 

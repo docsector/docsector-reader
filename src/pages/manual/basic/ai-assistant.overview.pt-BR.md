@@ -47,7 +47,7 @@ Para uma recuperação mais limpa, aponte a configuração de sitemap específic
 https://docs.example.com/ai-search-sitemap.xml
 ```
 
-O sitemap do AI Search aponta para URLs Markdown, que são mais limpas para recuperação do que HTML renderizado pela SPA. O manifest em `/.well-known/ai-search/manifest.json` lista títulos, rotas, locales, books, versões e subpáginas do mesmo conjunto de fontes.
+O sitemap do AI Search aponta para URLs Markdown, que são mais limpas para recuperação do que HTML renderizado pela SPA. O Docsector mantém esse arquivo disponível para configuração explícita no Cloudflare, mas não o anuncia automaticamente em `robots.txt`, para evitar indexação duplicada junto com `/sitemap.xml`. O manifest em `/.well-known/ai-search/manifest.json` lista títulos, rotas, locales, books, versões e subpáginas do mesmo conjunto de fontes.
 
 ## Endpoint Runtime
 
