@@ -553,15 +553,15 @@ const TEMPLATE_HOMEPAGE_MD = `\
 
 Docsector Reader is a markdown-first documentation engine.
 
+Give us a star on GitHub: [docsector/docsector-reader](https://github.com/docsector/docsector-reader)
+
 ## Quick Links
 
 - [Getting Started](/guide/getting-started/overview/)
-- [Configuration](/guide/configuration/overview/)
-- [Pages and Routing](/guide/pages-and-routing/overview/)
 
-## About
+## Demo
 
-- Repository: [docsector/docsector-reader](https://github.com/docsector/docsector-reader)
+Check out the [docsector.com](https://docsector.com) to see all the features in action!
 `
 
 const TEMPLATE_404_PAGE = `\
