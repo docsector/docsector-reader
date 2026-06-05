@@ -57,7 +57,8 @@
     "url": "https://github.com/docsector/docsector-reader/issues"
   },
   "scripts": {
-    "dev": "npx wrangler pages dev dist/spa",
+    "dev": "quasar dev",
+    "dev:pages": "npx wrangler pages dev dist/spa",
     "build": "quasar build",
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",

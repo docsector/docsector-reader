@@ -22,8 +22,8 @@ describe('assistant session persistence', () => {
   it('normalizes persisted messages and sources', () => {
     expect(normalizeAssistantSession({
       messages: [
-        { id: 'user-1', role: 'user', content: 'Question' },
-        { id: 'assistant-1', role: 'assistant', content: 'Answer' },
+        { id: 'user-1', role: 'user', content: 'Question', timestamp: 1717243200000 },
+        { id: 'assistant-1', role: 'assistant', content: 'Answer', timestamp: 'bad' },
         { id: 'empty', role: 'assistant', content: '   ' },
         { id: 'bad', role: 'system', content: 'Hidden' }
       ],
@@ -34,7 +34,7 @@ describe('assistant session persistence', () => {
       ]
     })).toEqual({
       messages: [
-        { id: 'user-1', role: 'user', content: 'Question' },
+        { id: 'user-1', role: 'user', content: 'Question', timestamp: 1717243200000 },
         { id: 'assistant-1', role: 'assistant', content: 'Answer' }
       ],
       sources: [
@@ -43,21 +43,35 @@ describe('assistant session persistence', () => {
     })
   })
 
+  it('recovers legacy message timestamps from message ids', () => {
+    expect(normalizeAssistantSession({
+      messages: [
+        { id: 'user-1717243200000-abcd', role: 'user', content: 'Question' },
+        { id: 'assistant-1717243205000-efgh', role: 'assistant', content: 'Answer' },
+        { id: 'assistant-not-a-time-efgh', role: 'assistant', content: 'No timestamp' }
+      ]
+    }).messages).toEqual([
+      { id: 'user-1717243200000-abcd', role: 'user', content: 'Question', timestamp: 1717243200000 },
+      { id: 'assistant-1717243205000-efgh', role: 'assistant', content: 'Answer', timestamp: 1717243205000 },
+      { id: 'assistant-not-a-time-efgh', role: 'assistant', content: 'No timestamp' }
+    ])
+  })
+
   it('saves, loads, and clears local storage sessions', () => {
     const storage = createStorage()
 
     saveAssistantSession({
-      messages: [{ id: 'user-1', role: 'user', content: 'Question' }],
+      messages: [{ id: 'user-1', role: 'user', content: 'Question', timestamp: 1717243200000 }],
       sources: [{ id: 'source-1', key: '/guide', title: 'Guide' }]
     }, { storage })
 
     expect(JSON.parse(storage.getItem(ASSISTANT_SESSION_STORAGE_KEY))).toMatchObject({
-      messages: [{ id: 'user-1', role: 'user', content: 'Question' }],
+      messages: [{ id: 'user-1', role: 'user', content: 'Question', timestamp: 1717243200000 }],
       sources: [{ id: 'source-1', key: '/guide', title: 'Guide' }]
     })
 
     expect(loadAssistantSession({ storage })).toMatchObject({
-      messages: [{ id: 'user-1', role: 'user', content: 'Question' }],
+      messages: [{ id: 'user-1', role: 'user', content: 'Question', timestamp: 1717243200000 }],
       sources: [{ id: 'source-1', key: '/guide', title: 'Guide' }]
     })
 

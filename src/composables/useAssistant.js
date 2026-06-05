@@ -17,10 +17,13 @@ let assistantSessionPersistencePaused = false
 const ASSISTANT_SESSION_PERSIST_DEBOUNCE = 180
 
 function createMessage (role, content = '') {
+  const timestamp = Date.now()
+
   return {
-    id: `${role}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: `${role}-${timestamp}-${Math.random().toString(16).slice(2)}`,
     role,
-    content
+    content,
+    timestamp
   }
 }
 
@@ -121,6 +124,11 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     message.content += content
   }
 
+  const appendAssistantPlaceholder = () => {
+    messages.value.push(createMessage('assistant'))
+    return messages.value[messages.value.length - 1]
+  }
+
   const consumeStream = async (response, assistantMessage) => {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
@@ -175,22 +183,14 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     }
   }
 
-  const send = async (content) => {
-    const prompt = String(content || '').trim()
-    if (!prompt || loading.value) return
-
+  const prepareRequest = () => {
     assistantSessionPersistencePaused = true
     cancelPersistAssistantSession()
     error.value = ''
     sources.value = []
+  }
 
-    const userMessage = createMessage('user', prompt)
-    const assistantMessage = createMessage('assistant')
-    messages.value.push(userMessage, assistantMessage)
-    // Use the reactive proxy from the array so streamed mutations trigger
-    // live re-renders (raw object mutations bypass Vue reactivity).
-    const liveAssistantMessage = messages.value[messages.value.length - 1]
-
+  const requestAssistantResponse = async (liveAssistantMessage) => {
     abortController.value = new AbortController()
     loading.value = true
 
@@ -249,6 +249,36 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     }
   }
 
+  const send = async (content) => {
+    const prompt = String(content || '').trim()
+    if (!prompt || loading.value) return
+
+    prepareRequest()
+
+    messages.value.push(createMessage('user', prompt))
+    const liveAssistantMessage = appendAssistantPlaceholder()
+
+    await requestAssistantResponse(liveAssistantMessage)
+  }
+
+  const retryFromUserMessage = async (messageId) => {
+    const targetId = String(messageId || '')
+    if (!targetId || loading.value) return
+
+    const targetIndex = messages.value.findIndex(message => String(message?.id || '') === targetId)
+    const targetMessage = messages.value[targetIndex]
+    if (targetIndex === -1 || targetMessage?.role !== 'user' || !String(targetMessage?.content || '').trim()) {
+      return
+    }
+
+    prepareRequest()
+
+    messages.value = messages.value.slice(0, targetIndex + 1)
+    const liveAssistantMessage = appendAssistantPlaceholder()
+
+    await requestAssistantResponse(liveAssistantMessage)
+  }
+
   return {
     config: assistantConfig,
     messages,
@@ -257,6 +287,7 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     error,
     hasMessages,
     send,
+    retryFromUserMessage,
     stop,
     clear
   }

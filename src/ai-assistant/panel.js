@@ -2,10 +2,63 @@ export function hasAssistantMessageContent(message) {
   return String(message?.content || '').trim().length > 0
 }
 
+export function getAssistantMessageTimestamp(message) {
+  const timestamp = Number(message?.timestamp)
+  if (Number.isFinite(timestamp) && timestamp > 0) {
+    return timestamp
+  }
+
+  const id = String(message?.id || '')
+  const match = id.match(/^(?:user|assistant)-(\d{12,})-/)
+  if (!match) {
+    return null
+  }
+
+  const legacyTimestamp = Number(match[1])
+  return Number.isFinite(legacyTimestamp) && legacyTimestamp > 0 ? legacyTimestamp : null
+}
+
+export function formatAssistantMessageTime(message, locale = 'en-US') {
+  const timestamp = getAssistantMessageTimestamp(message)
+  if (!timestamp) {
+    return ''
+  }
+
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat(locale || 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
+}
+
 export function listVisibleAssistantMessages(messages = []) {
   return messages.filter((message) => {
     if (message?.role !== 'assistant') {
       return true
+    }
+
+    return hasAssistantMessageContent(message)
+  })
+}
+
+export function hasVisibleAssistantHistoryAfter(messages = [], messageId = '') {
+  const targetId = String(messageId || '')
+  if (!targetId) {
+    return false
+  }
+
+  const targetIndex = messages.findIndex(message => String(message?.id || '') === targetId)
+  if (targetIndex === -1) {
+    return false
+  }
+
+  return messages.slice(targetIndex + 1).some((message) => {
+    if (message?.role === 'assistant') {
+      return hasAssistantMessageContent(message)
     }
 
     return hasAssistantMessageContent(message)

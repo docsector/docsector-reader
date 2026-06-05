@@ -8,7 +8,9 @@ import useAssistant from '../composables/useAssistant'
 import {
   ASSISTANT_MESSAGE_WINDOW_SIZE,
   ASSISTANT_MESSAGE_WINDOW_STEP,
+  formatAssistantMessageTime,
   getAssistantMessageWindow,
+  hasVisibleAssistantHistoryAfter,
   isAssistantThinkingState
 } from '../ai-assistant/panel'
 import DPageTokens from './DPageTokens.vue'
@@ -57,6 +59,8 @@ const scrollArea = ref(null)
 const visibleMessageLimit = ref(ASSISTANT_MESSAGE_WINDOW_SIZE)
 const copiedMessageId = ref('')
 const showScrollToBottom = ref(false)
+const retryHistoryDialogOpen = ref(false)
+const pendingRetryMessageId = ref('')
 let scrollFrame = 0
 let copiedMessageTimer = null
 let revealingOlderMessages = false
@@ -129,6 +133,10 @@ const isStreamingAssistantMessage = (message) => {
 
 const hasMessageContent = (message) => {
   return String(message?.content || '').trim().length > 0
+}
+
+const messageTime = (message) => {
+  return formatAssistantMessageTime(message, locale.value)
 }
 
 const messageHasSources = (message) => {
@@ -281,6 +289,41 @@ const messageCopyIcon = (message) => {
   return copiedMessageId.value === String(message?.id || '') ? 'check' : 'content_copy'
 }
 
+const runRetryMessage = async (messageId) => {
+  const id = String(messageId || '')
+  if (!id) return
+  await assistant.retryFromUserMessage(id)
+}
+
+const retryMessage = async (message) => {
+  const id = String(message?.id || '')
+  if (!id || assistant.loading.value) return
+
+  if (hasVisibleAssistantHistoryAfter(assistant.messages.value, id)) {
+    pendingRetryMessageId.value = id
+    retryHistoryDialogOpen.value = true
+    return
+  }
+
+  await runRetryMessage(id)
+}
+
+const clearPendingRetryMessage = () => {
+  pendingRetryMessageId.value = ''
+}
+
+const cancelRetryMessage = () => {
+  retryHistoryDialogOpen.value = false
+  clearPendingRetryMessage()
+}
+
+const confirmRetryMessage = async () => {
+  const id = pendingRetryMessageId.value
+  retryHistoryDialogOpen.value = false
+  clearPendingRetryMessage()
+  await runRetryMessage(id)
+}
+
 const submit = async (value = input.value) => {
   const prompt = String(value || '').trim()
   if (!prompt) return
@@ -419,7 +462,7 @@ onBeforeUnmount(() => {
           <q-btn
             flat dense
             text-color="primary"
-            class="d-assistant-message__copy d-assistant-message__copy--assistant"
+            class="d-assistant-message__action d-assistant-message__copy d-assistant-message__copy--assistant"
             :icon="messageCopyIcon(message)"
             :aria-label="t('assistant.copyMessage')"
             @click="copyMessage(message)"
@@ -483,6 +526,11 @@ onBeforeUnmount(() => {
               </q-list>
             </q-menu>
           </q-chip>
+
+          <span
+            v-if="messageTime(message)"
+            class="d-assistant-message__timestamp"
+          >{{ messageTime(message) }}</span>
         </div>
 
         <div
@@ -491,15 +539,30 @@ onBeforeUnmount(() => {
         >
           <div class="d-assistant-message__hoverlayer">
             <q-btn
+              v-if="!assistant.loading.value"
               flat dense
               text-color="primary"
-              class="d-assistant-message__copy d-assistant-message__copy--user"
+              class="d-assistant-message__action d-assistant-message__retry"
+              icon="refresh"
+              :aria-label="t('assistant.retryMessage')"
+              @click="retryMessage(message)"
+            >
+              <q-tooltip>{{ t('assistant.retryMessage') }}</q-tooltip>
+            </q-btn>
+            <q-btn
+              flat dense
+              text-color="primary"
+              class="d-assistant-message__action d-assistant-message__copy d-assistant-message__copy--user"
               :icon="messageCopyIcon(message)"
               :aria-label="t('assistant.copyMessage')"
               @click="copyMessage(message)"
             >
               <q-tooltip>{{ t('assistant.copyMessage') }}</q-tooltip>
             </q-btn>
+            <span
+              v-if="messageTime(message)"
+              class="d-assistant-message__timestamp"
+            >{{ messageTime(message) }}</span>
           </div>
         </div>
       </div>
@@ -572,6 +635,33 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </footer>
+
+  <q-dialog v-model="retryHistoryDialogOpen" @hide="clearPendingRetryMessage">
+    <q-card class="d-assistant-retry-dialog">
+      <q-card-section class="d-assistant-retry-dialog__header">
+        <q-icon name="warning_amber" size="24px" />
+        <div>
+          <h3>{{ t('assistant.retryHistoryTitle') }}</h3>
+          <p>{{ t('assistant.retryHistoryMessage') }}</p>
+        </div>
+      </q-card-section>
+      <q-card-actions align="right" class="d-assistant-retry-dialog__actions">
+        <q-btn
+          unelevated no-caps
+          color="grey-7"
+          text-color="white"
+          :label="t('assistant.retryHistoryCancel')"
+          @click="cancelRetryMessage"
+        />
+        <q-btn
+          unelevated no-caps
+          color="primary"
+          :label="t('assistant.retryHistoryConfirm')"
+          @click="confirmRetryMessage"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </aside>
 </template>
 
@@ -636,7 +726,7 @@ onBeforeUnmount(() => {
       color: rgba(255, 255, 255, 0.86)
       border-color: rgba(255, 255, 255, 0.12)
 
-    .d-assistant-message__copy
+    .d-assistant-message__action
       color: rgba(255, 255, 255, 0.84)
 
     .d-assistant-sources-chip__avatar
@@ -862,10 +952,12 @@ onBeforeUnmount(() => {
       color: white
       background: var(--q-primary)
 
-    &:hover .d-assistant-message__hoverlayer .d-assistant-message__copy,
-    &:focus-within .d-assistant-message__hoverlayer .d-assistant-message__copy,
-    .d-assistant-message__hoverlayer:hover .d-assistant-message__copy,
-    .d-assistant-message__hoverlayer:focus-within .d-assistant-message__copy
+    &:hover .d-assistant-message__hoverlayer .d-assistant-message__action,
+    &:focus-within .d-assistant-message__hoverlayer .d-assistant-message__action,
+    .d-assistant-message__hoverlayer:hover .d-assistant-message__action,
+    .d-assistant-message__hoverlayer:focus-within .d-assistant-message__action,
+    &:hover .d-assistant-message__timestamp,
+    &:focus-within .d-assistant-message__timestamp
       opacity: 1
       pointer-events: auto
 
@@ -880,6 +972,10 @@ onBeforeUnmount(() => {
 
     .d-assistant-message__footer
       justify-content: flex-start
+
+    &:hover .d-assistant-message__timestamp,
+    &:focus-within .d-assistant-message__timestamp
+      opacity: 1
 
   &__content
     max-width: 88%
@@ -935,7 +1031,7 @@ onBeforeUnmount(() => {
 
     .d-assistant-sources-chip
       flex: 0 1 auto
-      max-width: calc(100% - 38px)
+      max-width: calc(100% - 92px)
 
     &--user
       width: auto
@@ -946,7 +1042,7 @@ onBeforeUnmount(() => {
       align-items: center
       justify-content: center
 
-  &__copy
+  &__action
     flex: 0 0 auto
     width: 30px
     height: 30px
@@ -960,24 +1056,44 @@ onBeforeUnmount(() => {
 
       i
         font-size: 17px !important
-        margin-left: 3px
+        margin: 0
 
+  &__copy
     &--assistant
       margin-left: -2px
+
+  &__retry
+    color: currentColor
 
   &__hoverlayer
     display: flex
     align-items: center
-    justify-content: center
-    width: 30px
+    justify-content: flex-end
+    gap: 6px
+    width: auto
     height: 30px
     min-width: 30px
     min-height: 30px
 
-    .d-assistant-message__copy
+    .d-assistant-message__action
       opacity: 0
       pointer-events: none
       transition: opacity 0.14s ease
+
+  &__timestamp
+    flex: 0 0 auto
+    margin-left: auto
+    color: currentColor
+    font-size: 0.72rem
+    font-weight: 700
+    font-variant-numeric: tabular-nums
+    line-height: 30px
+    opacity: 0
+    pointer-events: none
+    transition: opacity 0.14s ease
+
+  &__hoverlayer &__timestamp
+    margin-left: 0
 
   &__thinking
     display: flex
@@ -986,6 +1102,31 @@ onBeforeUnmount(() => {
     color: inherit
     opacity: 0.78
     font-weight: 600
+
+.d-assistant-retry-dialog
+  width: min(360px, calc(100vw - 32px))
+  border-radius: 8px
+
+  &__header
+    display: flex
+    align-items: flex-start
+    gap: 12px
+    padding: 18px 18px 10px
+
+    h3
+      margin: 0 0 6px
+      font-size: 1rem
+      line-height: 1.3
+      font-weight: 800
+
+    p
+      margin: 0
+      color: currentColor
+      opacity: 0.72
+      line-height: 1.45
+
+  &__actions
+    padding: 8px 12px 14px
 
 .d-assistant-sources-chip
   max-width: 100%

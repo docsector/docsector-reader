@@ -1,4 +1,5 @@
 import { dedupeAssistantSources } from './stream'
+import { getAssistantMessageTimestamp } from './panel'
 
 export const ASSISTANT_SESSION_STORAGE_KEY = 'docsector.assistant.session.v1'
 
@@ -17,6 +18,11 @@ function cleanString (value = '', maxLength = Number.MAX_SAFE_INTEGER) {
   return String(value || '').slice(0, maxLength)
 }
 
+function normalizeMessageTimestamp (message) {
+  const timestamp = getAssistantMessageTimestamp(message)
+  return timestamp ? { timestamp } : {}
+}
+
 export function normalizeAssistantSession (session = {}) {
   const messages = (Array.isArray(session?.messages) ? session.messages : [])
     .map((message, index) => {
@@ -24,10 +30,15 @@ export function normalizeAssistantSession (session = {}) {
       const content = cleanString(message?.content, MAX_MESSAGE_CONTENT_LENGTH)
       if (!VALID_ROLES.has(role) || !content.trim()) return null
 
-      return {
+      const normalizedMessage = {
         id: cleanString(message?.id || `${role}-${index + 1}`, 160),
         role,
         content
+      }
+
+      return {
+        ...normalizedMessage,
+        ...normalizeMessageTimestamp(message)
       }
     })
     .filter(Boolean)
