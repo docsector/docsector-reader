@@ -88,10 +88,10 @@ export default {
       matchThreshold: 0.4,
       contextExpansion: 1,
       queryRewrite: {
-        enabled: true
+        enabled: false
       },
       reranking: {
-        enabled: true,
+        enabled: false,
         model: '@cf/baai/bge-reranker-base',
         matchThreshold: 0.4
       },
