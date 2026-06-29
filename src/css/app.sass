@@ -84,6 +84,20 @@ body.body--dark
         color: #B19248
     section
       color: var(--q-light-in-dark-2)
+    // VS comparison marks (dark)
+    .vs-mark--yes
+      color: #3fb950
+    .vs-mark--no
+      color: #ff7b72
+    .vs-mark--dep
+      color: #d29922
+    // VS comparison: highlight the configured column (dark)
+    .d-table-wrapper--vs
+      th:nth-child(2),
+      td:nth-child(2)
+        background: rgba(193, 166, 103, 0.12)
+        border-left-color: rgba(193, 166, 103, 0.45)
+        border-right-color: rgba(193, 166, 103, 0.45)
     // token
     code:not(pre > code)
       color: var(--q-primary-in-dark-bg) !important
@@ -102,7 +116,8 @@ body.body--dark
         border-bottom: 1px dotted #1b4a6c
 
     &.overview,
-    &.showcase
+    &.showcase,
+    &.vs
       blockquote
         border-left-color: #3d444d
         background-color: #161b22 !important
@@ -156,6 +171,25 @@ body.body--dark
 .content
   --big-play-button-background: #000 !important
   --big-play-button-background-dark: #000 !important
+
+  // VS comparison marks
+  .vs-mark
+    font-weight: 700
+  .vs-mark--yes
+    color: #1a7f37
+  .vs-mark--no
+    color: #cf222e
+  .vs-mark--dep
+    color: #9a6700
+
+  // VS comparison: highlight the configured column
+  .d-table-wrapper--vs
+    th:nth-child(2),
+    td:nth-child(2)
+      background: rgba(105, 86, 43, 0.07)
+      font-weight: 600
+      border-left: 2px solid rgba(105, 86, 43, 0.35)
+      border-right: 2px solid rgba(105, 86, 43, 0.35)
 
   h1, h2, h3, h4, h5, h6
     font-weight: 600
@@ -281,7 +315,8 @@ body.body--dark
       transition: all 0.3s ease
 
   &.overview,
-  &.showcase
+  &.showcase,
+  &.vs
     blockquote
       margin: 1.5em 0
       padding: 0.85em 1.1em

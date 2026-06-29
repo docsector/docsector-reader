@@ -88,6 +88,7 @@ import DBlockApi from './DBlockApi.vue'
   <div
     v-else-if="token.tag === 'table'"
     class="d-table-wrapper"
+    :class="{ 'd-table-wrapper--vs': token.highlight }"
   >
     <d-page-rich-content
       tag="table"

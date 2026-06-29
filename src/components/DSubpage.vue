@@ -9,9 +9,17 @@ import DPageBar from "./DPageBar.vue";
 import DH1 from "./DH1.vue";
 import DPageSection from "./DPageSection.vue";
 import { usesRemoteReadmeHomeContent } from '../home-page-mode'
+import { getTemplate } from '../page-template'
 
 const route = useRoute()
 const store = useStore()
+
+const template = computed(() => {
+  const relative = store.state.page.relative
+  const subpage = relative ? relative.replace(/^\//, '') : 'overview'
+  const templates = route.matched?.[0]?.meta?.subpageTemplates
+  return getTemplate(templates?.[subpage])
+})
 
 const id = computed(() => {
   const path = route.path
@@ -42,7 +50,7 @@ const usesRemoteReadmeHome = computed(() => {
   </header>
 
   <main>
-    <d-page-section :id="id" :render-primary-heading="usesRemoteReadmeHome" />
+    <d-page-section :id="id" :render-primary-heading="usesRemoteReadmeHome" :template="template" />
   </main>
 </d-page>
 </template>

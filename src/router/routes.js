@@ -2,6 +2,7 @@ import { pageEntries, versions } from 'virtual:docsector-books'
 import boot from 'pages/boot'
 import docsectorConfig from 'docsector.config.js'
 import { resolveHomePageLayout, resolvePageLayout } from '../page-layout'
+import { isSubpageEnabled, resolveSubpageTemplate } from '../page-template'
 
 const normalizeInternalLink = (linkTo) => {
   const normalized = String(linkTo || '').trim()
@@ -85,8 +86,13 @@ for (const entry of pageEntries || []) {
   const config = rawConfig || {}
   const menu = (typeof config.menu === 'object' && config.menu !== null) ? config.menu : {}
   const subpages = {
-    showcase: config?.subpages?.showcase === true,
-    vs: config?.subpages?.vs === true
+    showcase: isSubpageEnabled(config?.subpages?.showcase),
+    vs: isSubpageEnabled(config?.subpages?.vs)
+  }
+  const subpageTemplates = {
+    overview: resolveSubpageTemplate(config?.subpages?.overview).name,
+    showcase: resolveSubpageTemplate(config?.subpages?.showcase).name,
+    vs: resolveSubpageTemplate(config?.subpages?.vs).name
   }
 
   const topPage = config.book ?? config.type ?? entry?.book ?? 'manual'
@@ -159,6 +165,7 @@ for (const entry of pageEntries || []) {
       pageVersion,
       menu,
       subpages,
+      subpageTemplates,
       data: page.data,
       book: topPage,
       // legacy compatibility

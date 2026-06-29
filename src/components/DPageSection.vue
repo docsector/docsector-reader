@@ -7,8 +7,10 @@ import DPageTokens from './DPageTokens.vue'
 import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'
 import { tokenizePageSectionSource } from './page-section-tokens'
+import { applyTemplateSections } from './page-template-sections'
+import docsectorConfig from 'docsector.config.js'
 
-defineProps({
+const props = defineProps({
   id: {
     type: Number,
     required: true
@@ -16,11 +18,15 @@ defineProps({
   renderPrimaryHeading: {
     type: Boolean,
     default: false
+  },
+  template: {
+    type: Object,
+    default: null
   }
 })
 
 const store = useStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const tokenized = computed(() => {
   const absolute = store.state.i18n.absolute
@@ -29,7 +35,15 @@ const tokenized = computed(() => {
     return []
   }
 
-  return tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')))
+  const tokens = tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')))
+
+  if (Array.isArray(props.template?.sections) && props.template.sections.length > 0) {
+    return applyTemplateSections(tokens, props.template, locale.value, {
+      highlightColumn: docsectorConfig?.branding?.name
+    })
+  }
+
+  return tokens
 })
 
 watch(tokenized, (tokens) => {

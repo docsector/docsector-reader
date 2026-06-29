@@ -448,11 +448,11 @@ export function buildMessages ({ langModules, mdModules, pages, books, pageEntri
       // Overview
       _.overview.source = load(topPage, path, 'overview', lang, sourceRoot)
       // showcase
-      if (config.subpages?.showcase === true) {
+      if (config.subpages?.showcase) {
         _.showcase.source = load(topPage, path, 'showcase', lang, sourceRoot)
       }
       // Vs
-      if (config.subpages?.vs === true) {
+      if (config.subpages?.vs) {
         _.vs.source = load(topPage, path, 'vs', lang, sourceRoot)
       }
     }

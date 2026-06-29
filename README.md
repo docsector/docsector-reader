@@ -67,6 +67,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🦶 **Global Branding Footer** — Built-in `Powered by Docsector` footer renders across documentation and system pages, while respecting each page's own scroll container for full-width layout integration without double scrollbars
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
 - 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and dock to the bottom on mobile
+- 🆚 **Subpage Templates** — Subpages opt into a structured template via `vs: { template: 'vs' }`; the managed/strict `vs` template owns the order and localized titles of its **Features**, **Performance** and **Security** sections (one `##` heading per section, missing sections dropped gracefully), auto-colorizes `✓`/`✗`/`➕` comparison marks, and highlights the column whose header matches the consumer's `branding.name`
 - ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress that stays above the mobile subpage toolbar
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, `empty`, or `new` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
@@ -1137,6 +1138,7 @@ Notes:
 - In `manual.index.js`, route keys are relative to the `manual` book (for example `'/my-section/my-page'` becomes `/manual/my-section/my-page/...`).
 - You only need to set `config.book` when overriding the inferred book from the registry file.
 - When `showcase` or `vs` are enabled, the subpage toolbar aligns with the content width on desktop and becomes a bottom action bar on mobile.
+- A subpage can opt into a **structured template** with the object form `vs: { template: 'vs' }` (the boolean `true` stays `freestyle`). The built-in `vs` template is managed/strict: it owns the order and localized titles of its **Features**, **Performance** and **Security** sections — write one `##` heading per section in the Markdown and omitted sections are dropped gracefully.
 
 2️⃣ Create Markdown files:
 
