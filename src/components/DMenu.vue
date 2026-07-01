@@ -777,6 +777,18 @@ body.body--light
   .page-status
     margin-right: 7px
 
+  // ? stick subheader section headers to the top while scrolling (like expansion headers)
+  .subheader-section
+    position: sticky
+    position: -webkit-sticky
+    top: -1px
+    z-index: 2
+    background-color: var(--d-menu-expansion-bg-color)
+
+  // ? inside an expansion, stack the subheader below the sticky expansion header (~45px) instead of behind it
+  .menu-list-expansion .subheader-section
+    top: 44px
+
   .label
     color: var(--d-menu-subheader-txt-color)
 

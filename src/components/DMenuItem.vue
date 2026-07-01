@@ -144,7 +144,7 @@ const onMenuItemClick = (event, path, currentSubpage) => {
 
 <template>
 <!-- Menu Separator - Subheader -->
-<q-item-section v-if="subitem?.meta?.menu?.subheader">
+<q-item-section v-if="subitem?.meta?.menu?.subheader" class="subheader-section">
   <q-item-label class="label subheader" header>
     {{ getMenuItemSubheader(subitem.meta) }}
   </q-item-label>
