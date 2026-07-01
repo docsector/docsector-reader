@@ -355,6 +355,11 @@ const scrollToTop = () => {
 }
 
 onMounted(() => {
+  // ? Mobile shows the ToC as a tap-triggered dialog; never auto-open it on page entry
+  if (rightRailState.value.isMobile) {
+    layoutMeta.value = false
+  }
+
   window.addEventListener('keydown', handleMainScrollKeys)
   window.addEventListener('resize', schedulePageMinHeightUpdate)
   nextTick(() => {
@@ -390,6 +395,11 @@ onBeforeUnmount(() => {
 })
 
 watch(() => route.fullPath, () => {
+  // ? Close the mobile ToC dialog on navigation (including anchor taps); desktop keeps its rail
+  if (rightRailState.value.isMobile) {
+    layoutMeta.value = false
+  }
+
   nextTick(() => {
     schedulePageMinHeightUpdate()
     syncReadingProgress(0)
