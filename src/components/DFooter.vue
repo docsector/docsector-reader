@@ -9,17 +9,21 @@
         no-caps
         color="white"
         text-color="dark"
-        label="Docsector"
         href="https://docsector.com"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open Docsector website"
-      />
+      >
+        <img class="d-footer__logo" :src="logoUrl" alt="" width="18" height="18" />
+        <span>Docsector</span>
+      </q-btn>
     </div>
   </footer>
 </template>
 
 <script setup>
+import logoUrl from '../assets/docsector-logo.png'
+
 defineOptions({ name: 'DFooter' })
 </script>
 
@@ -45,10 +49,18 @@ defineOptions({ name: 'DFooter' })
     opacity: 0.84
 
   .d-footer__brand
+    padding: 4px 10px !important
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1)
 
     .q-btn__content
       font-weight: 700
+      gap: 6px
+
+  .d-footer__logo
+    display: block
+    width: 18px
+    height: 18px
+    border-radius: 4px
 
 @media (max-width: 599px)
   .d-footer
