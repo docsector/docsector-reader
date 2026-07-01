@@ -46,7 +46,11 @@ export default {
   github: {
     // Base URL for "Edit on GitHub" links
     // The page path will be appended to this URL
-    editBaseUrl: 'https://github.com/docsector/docsector-reader/edit/main/src/pages'
+    editBaseUrl: 'https://github.com/docsector/docsector-reader/edit/main/src/pages',
+    // Show the repository star count as a badge on the GitHub button in the menu.
+    // Opt-in: set to true to enable. The repo is derived from `links.github`.
+    // Uses the unauthenticated GitHub API (60 req/hour/IP), cached for 6h in localStorage.
+    stars: true
   },
 
   // @ Site URL

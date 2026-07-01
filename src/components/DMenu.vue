@@ -17,6 +17,7 @@ const { t, te, tm } = useI18n()
 
 const branding = docsectorConfig.branding || {}
 const links = docsectorConfig.links || {}
+const github = docsectorConfig.github || {}
 
 const term = ref(null)
 const founds = ref(false)
@@ -24,6 +25,7 @@ const items = ref([])
 const scrolling = ref(null)
 const isMenuHovered = ref(false)
 const pendingScroll = ref(false)
+const githubStars = ref(null)
 
 const subpage = computed(() => {
   const parent = $route.matched[0]?.path
@@ -387,8 +389,66 @@ const handleMenuMouseLeave = () => {
   flushPendingMenuScroll()
 }
 
+// * GitHub stars
+// # Compact display: 1.2k, 3.4M
+const formatStars = (count) => {
+  if (count >= 1000000) return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (count >= 1000) return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(count)
+}
+
+// # Fetch stargazers_count (opt-in via github.stars), cached in localStorage (6h TTL)
+const loadGithubStars = async () => {
+  // ? feature disabled or no repo link
+  if (github.stars !== true || !links.github) {
+    return
+  }
+
+  // ? derive owner/repo from links.github
+  const match = String(links.github).match(/github\.com\/([^/]+)\/([^/#?]+)/)
+  if (!match) {
+    return
+  }
+  const repo = `${match[1]}/${match[2].replace(/\.git$/, '')}`
+
+  // ! cache setup
+  const cacheKey = `docsector.githubStars.${repo}`
+  const TTL = 6 * 60 * 60 * 1000
+
+  // @ show cached value first (instant paint), even if stale
+  const cached = $q.localStorage.getItem(cacheKey)
+  if (cached && typeof cached.count === 'number') {
+    githubStars.value = cached.count
+    // ? fresh enough — skip network
+    if ((Date.now() - cached.ts) < TTL) {
+      return
+    }
+  }
+
+  // @ refresh from GitHub API (unauthenticated: 60 req/hour/IP)
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { Accept: 'application/vnd.github+json' }
+    })
+    // ? rate-limited / not found — keep stale cache
+    if (!response.ok) {
+      return
+    }
+
+    const data = await response.json()
+    if (typeof data.stargazers_count === 'number') {
+      githubStars.value = data.stargazers_count
+      $q.localStorage.set(cacheKey, { count: data.stargazers_count, ts: Date.now() })
+    }
+  } catch {
+    // ? offline / network error — stale cache already shown above
+  }
+}
+
 onMounted(() => {
   scrollToActiveMenuItem()
+
+  loadGithubStars()
 
   $router.afterEach((to, from) => {
     if (!to.hash || (from.path !== to.path)) {
@@ -525,27 +585,6 @@ watch([currentBookId, activeVersionId], rebuildItems)
     </div>
   </div>
 
-  <q-separator class="separator list" />
-  <div class="row" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
-    <div class="col text-center">
-      <q-btn-group flat>
-        <q-btn v-if="links.github" icon="fab fa-github" size="sm" @click="openURL(links.github)" aria-label="Github">
-          <q-tooltip>Github</q-tooltip>
-        </q-btn>
-        <q-btn v-if="links.discussions" icon="fas fa-comments" size="sm" @click="openURL(links.discussions)" aria-label="Discussions">
-          <q-tooltip>Discussions</q-tooltip>
-        </q-btn>
-        <q-btn v-if="links.chat" icon="fas fa-comment" size="sm" @click="openURL(links.chat)" aria-label="Chat">
-          <q-tooltip>Chat</q-tooltip>
-        </q-btn>
-        <q-btn v-if="links.email" icon="fas fa-at" size="sm" @click="openURL('mailto:' + links.email)" aria-label="Email">
-          <q-tooltip>Email</q-tooltip>
-        </q-btn>
-      </q-btn-group>
-    </div>
-  </div>
-  <q-separator class="separator list" />
-
   <q-list no-border link inset-delimiter role="list">
     <q-item to="/" exact>
       <q-item-section side>
@@ -640,6 +679,26 @@ watch([currentBookId, activeVersionId], rebuildItems)
     </template>
   </q-list>
 </q-scroll-area>
+
+<div class="menu-social" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
+  <div class="col text-center">
+    <q-btn-group flat>
+      <q-btn v-if="links.email" icon="fas fa-at" size="sm" @click="openURL('mailto:' + links.email)" aria-label="Email">
+        <q-tooltip>Email</q-tooltip>
+      </q-btn>
+      <q-btn v-if="links.chat" icon="fas fa-comment" size="sm" @click="openURL(links.chat)" aria-label="Chat">
+        <q-tooltip>Chat</q-tooltip>
+      </q-btn>
+      <q-btn v-if="links.discussions" icon="fas fa-comments" size="sm" @click="openURL(links.discussions)" aria-label="Discussions">
+        <q-tooltip>Discussions</q-tooltip>
+      </q-btn>
+      <q-btn v-if="links.github" icon="fab fa-github" size="sm" @click="openURL(links.github)" aria-label="Github">
+        <q-badge v-if="githubStars !== null" class="menu-social__stars" floating rounded>{{ formatStars(githubStars) }}</q-badge>
+        <q-tooltip>Github</q-tooltip>
+      </q-btn>
+    </q-btn-group>
+  </div>
+</div>
 </template>
 
 <style lang="sass">
@@ -652,9 +711,28 @@ body.body--light
   --d-menu-expansion-bg-color: rgb(245, 245, 245)
   --d-menu-item-opacity: 0.015
 
+.menu-social
+  display: flex
+  align-items: center
+  min-height: 50px
+  border-top: 3px solid rgba(0, 0, 0, 0.06)
+  padding-bottom: env(safe-area-inset-bottom, 0px)
+
+  .col
+    width: 100%
+
+  // ? allow the star badge to overflow the button/group (clipped by default)
+  .q-btn-group,
+  .q-btn
+    overflow: visible
+
+  .menu-social__stars
+    font-size: 9px
+    line-height: 1
+
 #menu
   width: 100%
-  height: calc(100% - 50px)
+  height: calc(100% - 50px - 50px - env(safe-area-inset-bottom, 0px))
 
   .q-list
     padding: 8px 0
