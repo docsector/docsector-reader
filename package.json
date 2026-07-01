@@ -1,6 +1,6 @@
 {
   "name": "@docsector/docsector-reader",
-  "version": "4.7.3",
+  "version": "4.7.4",
   "description": "A documentation rendering engine built with Vue 3, Quasar v2 and Vite. Transform Markdown into beautiful, navigable documentation sites.",
   "productName": "Docsector Reader",
   "author": "Rodrigo de Araujo Vieira",
@@ -74,7 +74,7 @@
     "github-slugger": "^2.0.0",
     "hjson": "^3.2.2",
     "katex": "^0.17.0",
-    "markdown-it": "^13.0.1",
+    "markdown-it": "^14.2.0",
     "markdown-it-attrs": "^4.1.6",
     "markdown-it-task-lists": "^2.1.1",
     "markdown-it-texmath": "^1.0.0",
