@@ -98,6 +98,13 @@ body.body--dark
         background: rgba(193, 166, 103, 0.12)
         border-left-color: rgba(193, 166, 103, 0.45)
         border-right-color: rgba(193, 166, 103, 0.45)
+    // VS comparison: highlight the configured row (horizontal, dark)
+    table tr.vs-row td
+      background: rgba(193, 166, 103, 0.12)
+      border-top: 2px solid rgba(193, 166, 103, 0.45)
+      border-bottom: 2px solid rgba(193, 166, 103, 0.45)
+    table tr.vs-row td:first-child
+      font-weight: 700
     // token
     code:not(pre > code)
       color: var(--q-primary-in-dark-bg) !important
@@ -190,6 +197,14 @@ body.body--dark
       font-weight: 600
       border-left: 2px solid rgba(105, 86, 43, 0.35)
       border-right: 2px solid rgba(105, 86, 43, 0.35)
+
+  // VS comparison: highlight the configured row (horizontal)
+  table tr.vs-row td
+    background: rgba(105, 86, 43, 0.07)
+    border-top: 2px solid rgba(105, 86, 43, 0.35)
+    border-bottom: 2px solid rgba(105, 86, 43, 0.35)
+  table tr.vs-row td:first-child
+    font-weight: 600
 
   h1, h2, h3, h4, h5, h6
     font-weight: 600

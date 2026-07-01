@@ -158,6 +158,60 @@ describe('applyTemplateSections', () => {
     )
     expect(labelAsRow.find(token => token.tag === 'table').highlight).toBeUndefined()
   })
+
+  it('injects the vs-row class into the body row whose first cell matches the configured row', () => {
+    const runtimeTable = '<thead><tr><th>Framework</th><th>Engine</th></tr></thead><tbody><tr><td><strong>Acme</strong></td><td>Pure PHP</td></tr><tr><td>Other</td><td>C ext</td></tr></tbody>'
+
+    const out = applyTemplateSections(
+      [h2('features', 'Features'), { tag: 'table', content: runtimeTable }],
+      getTemplate('vs'),
+      'en-US',
+      { highlightRow: 'Acme' }
+    )
+    const table = out.find(token => token.tag === 'table')
+
+    expect(table.content).toContain('<tr class="vs-row">')
+    // ? only the matching row is flagged, not the sibling body row
+    expect(table.content.match(/vs-row/g)).toHaveLength(1)
+    // ? header row is never flagged
+    expect(table.content).toContain('<thead><tr><th>Framework</th>')
+  })
+
+  it('does not inject a row when no first cell matches or no label is given', () => {
+    const table = '<thead><tr><th>Framework</th></tr></thead><tbody><tr><td>Other</td></tr></tbody>'
+
+    const noMatch = applyTemplateSections(
+      [h2('features', 'Features'), { tag: 'table', content: table }],
+      getTemplate('vs'), 'en-US', { highlightRow: 'Acme' }
+    )
+    expect(noMatch.find(token => token.tag === 'table').content).not.toContain('vs-row')
+
+    const noLabel = applyTemplateSections(
+      [h2('features', 'Features'), { tag: 'table', content: '<tbody><tr><td>Acme</td></tr></tbody>' }],
+      getTemplate('vs')
+    )
+    expect(noLabel.find(token => token.tag === 'table').content).not.toContain('vs-row')
+  })
+
+  it('applies column and row highlight independently from the same label', () => {
+    // ? Acme as a column header -> column flag, no row injected
+    const columnCase = applyTemplateSections(
+      [h2('features', 'Features'), { tag: 'table', content: '<thead><tr><th>Feature</th><th>Acme</th></tr></thead><tbody><tr><td>Router</td><td>✓</td></tr></tbody>' }],
+      getTemplate('vs'), 'en-US', { highlightColumn: 'Acme', highlightRow: 'Acme' }
+    )
+    const columnTable = columnCase.find(token => token.tag === 'table')
+    expect(columnTable.highlight).toBe(true)
+    expect(columnTable.content).not.toContain('vs-row')
+
+    // ? Acme as a first cell -> row injected, no column flag
+    const rowCase = applyTemplateSections(
+      [h2('performance', 'Performance'), { tag: 'table', content: '<thead><tr><th>Framework</th><th>Peak</th></tr></thead><tbody><tr><td>Acme</td><td>1</td></tr></tbody>' }],
+      getTemplate('vs'), 'en-US', { highlightColumn: 'Acme', highlightRow: 'Acme' }
+    )
+    const rowTable = rowCase.find(token => token.tag === 'table')
+    expect(rowTable.highlight).toBeUndefined()
+    expect(rowTable.content).toContain('<tr class="vs-row">')
+  })
 })
 
 describe('vs template end-to-end with the real tokenizer', () => {

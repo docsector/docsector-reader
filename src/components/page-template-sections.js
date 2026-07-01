@@ -43,7 +43,35 @@ const isHighlightColumnTable = (html, label) => {
   return cells[1] === label
 }
 
-const transformToken = (token, highlightColumn) => {
+// ? Class flagging the body row whose first cell matches the highlight label (horizontal)
+const HIGHLIGHT_ROW_CLASS = 'vs-row'
+
+// @ Inject the highlight class into the body <tr> whose first cell equals the label.
+//   Header rows (containing <th>) are skipped, so this composes with column highlight
+//   without overlapping. The class is added into token.content because the <tr> lives
+//   there (unlike the <table> element, which DPageTokens creates).
+const highlightMatchingRow = (html, label) => {
+  if (!label) {
+    return html
+  }
+
+  return String(html).replace(/<tr(\s[^>]*)?>([\s\S]*?)<\/tr>/gi, (row, attrs = '', inner) => {
+    if (/<th[\s>]/i.test(inner)) {
+      return row
+    }
+
+    const firstCell = inner.match(/<td[^>]*>([\s\S]*?)<\/td>/i)?.[1] ?? ''
+    if (stripHtml(firstCell).trim() !== label) {
+      return row
+    }
+
+    return /\bclass\s*=/.test(attrs)
+      ? `<tr${attrs.replace(/class\s*=\s*(["'])([\s\S]*?)\1/i, (m, quote, value) => `class=${quote}${value} ${HIGHLIGHT_ROW_CLASS}${quote}`)}>${inner}</tr>`
+      : `<tr${attrs} class="${HIGHLIGHT_ROW_CLASS}">${inner}</tr>`
+  })
+}
+
+const transformToken = (token, highlightColumn, highlightRow) => {
   if (!token || typeof token.content !== 'string') {
     return token
   }
@@ -51,6 +79,10 @@ const transformToken = (token, highlightColumn) => {
   let content = token.content
   if (MARKABLE_TAGS.has(token.tag) && MARK_PATTERN.test(content)) {
     content = colorizeMarks(content)
+  }
+
+  if (token.tag === 'table' && highlightRow) {
+    content = highlightMatchingRow(content, highlightRow)
   }
 
   // ? Flag (not inject) — the <table> element is created by DPageTokens, not in token.content
@@ -80,11 +112,13 @@ const transformToken = (token, highlightColumn) => {
  * @param {string} [locale] - Active locale for section titles.
  * @param {Object} [options] - Render options.
  * @param {string} [options.highlightColumn] - Header label whose comparison column is emphasized (consumer-provided, e.g. the project name).
+ * @param {string} [options.highlightRow] - First-cell label whose comparison row is emphasized (consumer-provided, e.g. the project name).
  * @returns {Array} Reordered/relabeled token stream.
  */
 export function applyTemplateSections (tokens, template, locale = 'en-US', options = {}) {
   const sections = template?.sections
   const highlightColumn = options.highlightColumn
+  const highlightRow = options.highlightRow
 
   if (!Array.isArray(sections) || sections.length === 0) {
     return Array.isArray(tokens) ? tokens : []
@@ -166,6 +200,6 @@ export function applyTemplateSections (tokens, template, locale = 'en-US', optio
     }
   }
 
-  // : colorize comparison marks (✓/✗/➕) + highlight the configured column
-  return output.map(token => transformToken(token, highlightColumn))
+  // : colorize comparison marks (✓/✗/➕) + highlight the configured column and row
+  return output.map(token => transformToken(token, highlightColumn, highlightRow))
 }

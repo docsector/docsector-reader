@@ -39,7 +39,8 @@ const tokenized = computed(() => {
 
   if (Array.isArray(props.template?.sections) && props.template.sections.length > 0) {
     return applyTemplateSections(tokens, props.template, locale.value, {
-      highlightColumn: docsectorConfig?.branding?.name
+      highlightColumn: docsectorConfig?.branding?.name,
+      highlightRow: docsectorConfig?.branding?.name
     })
   }
 
