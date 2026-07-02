@@ -36,6 +36,7 @@ export default async function createEngine ({ onOutput, onError, onStatus }) {
     async source (command) {         // opcional: alimenta o painel de código-fonte
       return { text: '…', language: 'php', url: 'https://github.com/…' }
     },
+    input (data) {},                 // opcional: recebe dados de teclado/mouse digitados no terminal
     async stop () {},                // opcional: interrompe a execução atual (mostra um botão Stop)
     async dispose () {}              // opcional: teardown ao desmontar
   }
@@ -45,6 +46,14 @@ export default async function createEngine ({ onOutput, onError, onStatus }) {
 A factory em si deve ser barata: ela roda na montagem da página para que o painel de código-fonte e o botão Stop estejam disponíveis antes da primeira execução. Trabalho pesado — baixar um runtime, inicializar uma VM — pertence ao `run()`.
 
 `onStatus(phase, detail)` aceita as fases `downloading`, `extracting`, `booting` e `running` — o bloco as converte em mensagens de status enquanto a engine prepara runtimes pesados.
+
+## Interatividade
+
+Quando a engine implementa `input(data)`, o terminal se torna interativo: o bloco habilita o stdin do xterm.js e encaminha tudo que o leitor digita para a engine, byte a byte (setas chegam como sequências de escape ANSI como `\x1b[A`, Enter chega como `\r`). Eventos de mouse são encaminhados da mesma forma assim que a aplicação hóspede habilita o rastreamento de mouse do terminal (sequências SGR).
+
+A captura de teclado é **clique para focar**: o terminal só rouba as teclas depois que o leitor clica dentro dele, e as devolve no blur (Tab ou um clique fora). Enquanto uma execução interativa está sem foco, o bloco sobrepõe a dica "Click to interact".
+
+`Ctrl+C` dentro de um terminal focado não é entregue à engine: quando a engine também implementa `stop()`, o bloco o converte na mesma interrupção do botão Stop.
 
 ## Carregamento Sob Demanda
 
@@ -76,6 +85,8 @@ O conteúdo do elemento (entre as tags de abertura e fechamento) vira uma legend
 ```
 
 Antes da primeira execução, escolher uma aba apenas a seleciona — o leitor continua no controle de quando o runtime é baixado. Após a primeira execução o runtime está aquecido, então trocar de aba executa o comando selecionado diretamente.
+
+As abas são ancoráveis: selecionar uma aba diferente da padrão a registra na URL da página como um parâmetro de query `?t<index>` (um por bloco). Recarregar — ou compartilhar o link — restaura aquela aba e rola o bloco para a área visível.
 
 ## Painel de Código-Fonte e Link do GitHub
 

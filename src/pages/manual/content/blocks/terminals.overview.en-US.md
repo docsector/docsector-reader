@@ -36,6 +36,7 @@ export default async function createEngine ({ onOutput, onError, onStatus }) {
     async source (command) {      // optional: powers the source panel
       return { text: '…', language: 'php', url: 'https://github.com/…' }
     },
+    input (data) {},              // optional: receives keyboard/mouse data typed into the terminal
     async stop () {},             // optional: interrupt the current run (shows a Stop button)
     async dispose () {}           // optional: teardown on unmount
   }
@@ -45,6 +46,14 @@ export default async function createEngine ({ onOutput, onError, onStatus }) {
 The factory itself must be cheap: it runs at page mount so the source panel and the Stop wiring are available before the first run. Heavy work — downloading a runtime, booting a VM — belongs inside `run()`.
 
 `onStatus(phase, detail)` accepts the phases `downloading`, `extracting`, `booting` and `running` — the block maps them to user-facing status copy while the engine prepares heavy runtimes.
+
+## Interactivity
+
+When the engine implements `input(data)`, the terminal becomes interactive: the block enables the xterm.js stdin and forwards everything the reader types to the engine, byte-for-byte (arrow keys arrive as ANSI escape sequences such as `\x1b[A`, Enter arrives as `\r`). Mouse events are forwarded the same way once the guest application enables terminal mouse tracking (SGR sequences).
+
+Keyboard capture is **click-to-focus**: the terminal only steals keys after the reader clicks inside it, and releases them on blur (Tab or a click outside). While an interactive run has no focus, the block overlays a "Click to interact" hint.
+
+`Ctrl+C` inside a focused terminal is not delivered to the engine: when the engine also implements `stop()`, the block maps it to the same interrupt as the Stop button.
 
 ## Lazy Loading
 
@@ -76,6 +85,8 @@ The element content (between the opening and closing tags) becomes a caption ren
 ```
 
 Before the first run, picking a tab only selects it — the reader stays in control of when the runtime downloads. After the first run the runtime is warm, so switching tabs runs the selected command directly.
+
+Tabs are deep-linkable: selecting a non-default tab records it in the page URL as a `?t<index>` query parameter (one per block). Reloading — or sharing the link — restores that tab and scrolls the block into view.
 
 ## Source Panel and GitHub Link
 

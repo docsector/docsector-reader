@@ -94,7 +94,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
 - 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
-- 🖥️ **Live Terminal Blocks** — Use `<d-block-terminal engine="..." />` to embed a runnable xterm.js terminal driven by a project-provided engine (`src/terminals/**/*.js`) — e.g. a PHP-WASM CLI — with streaming ANSI output, command picker, source panel, and lazy runtime loading
+- 🖥️ **Live Terminal Blocks** — Use `<d-block-terminal engine="..." />` to embed a runnable xterm.js terminal driven by a project-provided engine (`src/terminals/**/*.js`) — e.g. a PHP-WASM CLI — with streaming ANSI output, interactive click-to-focus input, command picker, source panel, and lazy runtime loading
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
@@ -1219,9 +1219,10 @@ Optional caption rendered as inline Markdown.
 Notes:
 
 - Store engines as JS modules under `src/terminals/**/*.js`; for example, `engine="demo-echo"` resolves `src/terminals/demo-echo.js` after kebab-case normalization.
-- An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap (it runs at mount); heavy work belongs inside `run()`. When `stop()` exists, the block shows a Stop button during runs.
+- An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, input(data)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap (it runs at mount); heavy work belongs inside `run()`. When `stop()` exists, the block shows a Stop button during runs.
+- When `input(data)` exists, the terminal is interactive: keyboard (and terminal mouse-tracking sequences) are forwarded to the engine byte-for-byte. Capture is click-to-focus, and `Ctrl+C` maps to `stop()` instead of reaching the engine.
 - xterm.js and the engine module are lazily imported on the first Run (or on visibility with `autorun="true"`); engines should fetch heavy runtimes (e.g. `.wasm`) inside the first `run()` and report progress via `onStatus('downloading' | 'extracting' | 'booting' | 'running')`.
-- Use `commands="Label:command|Label:command"` for a command tab strip below the toolbar (tabs run directly once the runtime is warm), `height` for the viewport size, and `run-label` to rename the Run button.
+- Use `commands="Label:command|Label:command"` for a command tab strip below the toolbar (tabs run directly once the runtime is warm), `height` for the viewport size, and `run-label` to rename the Run button. Non-default tabs persist in the URL as `?t<index>`, so reloads and shared links restore the selected tab.
 - When the engine implements `source(command)`, readers get a source panel (and a GitHub button when the returned object carries a `url`).
 
 ### File Attachment Blocks

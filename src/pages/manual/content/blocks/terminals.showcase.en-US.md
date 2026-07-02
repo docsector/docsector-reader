@@ -21,6 +21,14 @@ Use `commands` to offer several commands in a single terminal.
 Pick a command in the tab strip, then Run. The source button shows what the engine exposes for the selected command.
 </d-block-terminal>
 
+### Interactive Input
+
+When the engine implements `input(data)`, the terminal captures the keyboard after a click inside it. `Ctrl+C` interrupts the run like the Stop button.
+
+<d-block-terminal engine="demo-echo" title="Echo demo — interactive" command="read" height="260">
+Run, click the terminal and type — the engine echoes each key and finishes on Enter.
+</d-block-terminal>
+
 ## Authoring Syntax
 
 ```html
@@ -41,6 +49,7 @@ Optional caption rendered as inline Markdown.
 - **Lazy loading** — xterm.js and the engine load on the first Run, not at page render
 - **Streaming output** — chunks are written to the terminal as the engine emits them
 - **ANSI support** — colors, `\r` overwrites and cursor sequences render natively
-- **Command picker** with pipe-separated `Label:command` pairs
+- **Command picker** with pipe-separated `Label:command` pairs — deep-linkable via `?t<index>` (reload restores the tab)
+- **Interactive input** — click-to-focus keyboard forwarding via the engine's `input()` hook, `Ctrl+C` = Stop
 - **Source panel** backed by the engine's `source()` hook
 - **Inline Markdown caption** below the terminal

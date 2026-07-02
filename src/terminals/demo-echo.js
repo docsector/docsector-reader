@@ -25,13 +25,28 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default async function createEngine ({ onOutput, onStatus }) {
   let stopped = false
+  let pendingRead = null // { resolve, buffer } while `read` waits for Enter
 
   return {
     async run (command, { columns = 80, rows = 24 } = {}) {
       const input = String(command || '').trim() || 'echo Hello, Docsector!'
-      const message = input.replace(/^echo\s+/i, '')
       const started = Date.now()
       stopped = false
+
+      // `read` demonstrates the optional input() contract: it echoes what you
+      // type and finishes on Enter.
+      if (/^read\b/i.test(input)) {
+        onStatus('running')
+        onOutput(`${ANSI.green}${ANSI.bold}$${ANSI.reset} ${input}\r\n\r\n`)
+        onOutput(`${ANSI.dim}Click the terminal, type something and press Enter:${ANSI.reset}\r\n`)
+        onOutput(`${ANSI.bold}${ANSI.cyan}> ${ANSI.reset}`)
+
+        return await new Promise((resolve) => {
+          pendingRead = { resolve, buffer: '' }
+        })
+      }
+
+      const message = input.replace(/^echo\s+/i, '')
 
       onStatus('running')
       onOutput(`${ANSI.green}${ANSI.bold}$${ANSI.reset} ${input}\r\n\r\n`)
@@ -62,9 +77,45 @@ export default async function createEngine ({ onOutput, onStatus }) {
       return 0
     },
 
+    input (data) {
+      if (!pendingRead) {
+        return
+      }
+
+      for (const char of String(data)) {
+        if (char === '\r' || char === '\n') {
+          const typed = pendingRead.buffer
+          const finish = pendingRead.resolve
+          pendingRead = null
+          onOutput(`\r\n\r\n${ANSI.green}you typed:${ANSI.reset} ${ANSI.bold}${typed || '(nothing)'}${ANSI.reset}\r\n`)
+          finish(0)
+          return
+        }
+
+        if (char === '\x7f' || char === '\b') {
+          if (pendingRead.buffer.length > 0) {
+            pendingRead.buffer = pendingRead.buffer.slice(0, -1)
+            onOutput('\b \b')
+          }
+          continue
+        }
+
+        if (char >= ' ') {
+          pendingRead.buffer += char
+          onOutput(char)
+        }
+      }
+    },
+
     async stop () {
       stopped = true
       onOutput(`\r\n${ANSI.dim}^C${ANSI.reset}\r\n`)
+
+      if (pendingRead) {
+        const finish = pendingRead.resolve
+        pendingRead = null
+        finish(130)
+      }
     },
 
     async source (command) {

@@ -70,6 +70,7 @@ const state = ref('idle') // idle → loading → running → done | error
 const statusDetail = ref('')
 const errorMessage = ref('')
 const engineReady = ref(false)
+const terminalFocused = ref(false)
 const engineMeta = ref({})
 const selectedCommand = ref(props.command || (props.commands[0]?.command ?? ''))
 const sourceOpen = ref(false)
@@ -96,6 +97,8 @@ const runButtonLabel = computed(() => {
 })
 const isBusy = computed(() => state.value === 'loading' || state.value === 'running')
 const canStop = computed(() => engineReady.value && typeof engineInstance?.stop === 'function')
+const canInput = computed(() => engineReady.value && typeof engineInstance?.input === 'function')
+const showInteractHint = computed(() => state.value === 'running' && canInput.value && !terminalFocused.value)
 const statusLabel = computed(() => {
   if (state.value === 'error') {
     return 'Error'
@@ -146,6 +149,26 @@ function onStatus (phase, detail = '') {
   statusDetail.value = detail || STATUS_COPY[phase] || ''
 }
 
+// Keyboard and mouse data from xterm (mouse arrives as SGR escape sequences
+// once the guest application enables tracking). The terminal only captures
+// the keyboard after a click inside it (click-to-focus); Ctrl+C maps to stop().
+function forwardInput (data) {
+  if (state.value !== 'running' || !canInput.value) {
+    return
+  }
+
+  if (data === '\x03' && canStop.value) {
+    stop()
+    return
+  }
+
+  try {
+    engineInstance.input(data)
+  } catch (err) {
+    // input must never surface as a block error
+  }
+}
+
 // Engine factories are cheap by contract (heavy work happens inside run()),
 // so the engine loads at mount: source view and Stop are available before
 // the first run, while xterm and the runtime stay lazy.
@@ -191,8 +214,8 @@ async function ensureTerminal () {
 
   term = new Terminal({
     convertEol: true,
-    cursorBlink: false,
-    disableStdin: true,
+    cursorBlink: canInput.value,
+    disableStdin: !canInput.value,
     fontFamily: '"JetBrains Mono", "Fira Code", Consolas, Menlo, monospace',
     fontSize: 13,
     scrollback: 2000,
@@ -202,6 +225,11 @@ async function ensureTerminal () {
   term.loadAddon(fitAddon)
   term.open(viewportRef.value)
   fitAddon.fit()
+
+  term.onData(forwardInput)
+  term.onBinary(forwardInput)
+  term.textarea?.addEventListener('focus', () => { terminalFocused.value = true })
+  term.textarea?.addEventListener('blur', () => { terminalFocused.value = false })
 
   resizeObserver = new ResizeObserver(() => {
     try {
@@ -281,6 +309,54 @@ async function toggleSource () {
   }
 }
 
+// Tabs are deep-linkable: the selected command persists as a ?t<ordinal> query
+// param (one per terminal block on the page, in DOM order), so a reload or a
+// shared link restores the same tab. Blocks mount in document order, so the
+// ordinal computed at mount is stable across reloads.
+let anchorParam = ''
+
+function anchor () {
+  if (!anchorParam && rootRef.value) {
+    const ordinal = Array.from(document.querySelectorAll('.d-block-terminal')).indexOf(rootRef.value)
+    anchorParam = `t${ordinal < 0 ? props.index : ordinal}`
+  }
+
+  return anchorParam
+}
+
+function syncAnchor (value) {
+  if (typeof window === 'undefined' || !props.commands.length || !anchor()) {
+    return
+  }
+
+  const url = new URL(window.location.href)
+  const isDefault = value === (props.command || (props.commands[0]?.command ?? ''))
+
+  if (isDefault) {
+    url.searchParams.delete(anchor())
+  } else {
+    url.searchParams.set(anchor(), value)
+  }
+
+  window.history.replaceState(window.history.state, '', url)
+}
+
+function restoreAnchor () {
+  if (typeof window === 'undefined' || !props.commands.length) {
+    return
+  }
+
+  const anchored = anchor() && new URLSearchParams(window.location.search).get(anchor())
+  if (!anchored || anchored === selectedCommand.value) {
+    return
+  }
+
+  if (props.commands.some((entry) => entry.command === anchored)) {
+    selectedCommand.value = anchored
+    rootRef.value?.scrollIntoView({ block: 'center' })
+  }
+}
+
 async function selectCommand (value) {
   if (value === selectedCommand.value || isBusy.value) {
     return
@@ -288,6 +364,7 @@ async function selectCommand (value) {
 
   selectedCommand.value = value
   sourceData.value = null
+  syncAnchor(value)
 
   if (sourceOpen.value) {
     await loadSource(value)
@@ -306,6 +383,8 @@ function openGitHub () {
 }
 
 onMounted(() => {
+  restoreAnchor()
+
   ensureEngine().catch((err) => {
     errorMessage.value = err?.message || `Unable to load terminal engine: ${props.engine}`
     state.value = 'error'
@@ -499,6 +578,17 @@ onBeforeUnmount(() => {
     </div>
 
     <div
+      v-if="showInteractHint"
+      class="d-block-terminal__interact"
+    >
+      <q-icon
+        name="keyboard"
+        size="14px"
+      />
+      <span>Click to interact</span>
+    </div>
+
+    <div
       v-else-if="state === 'error' && errorMessage"
       class="d-block-terminal__overlay d-block-terminal__overlay--error"
     >
@@ -652,6 +742,25 @@ body.body--dark
     min-width: 0
     overflow: hidden
     position: relative
+    transition: box-shadow 0.18s ease
+
+    &:focus-within
+      box-shadow: inset 0 0 0 2px rgba(118, 190, 126, 0.55)
+
+  &__interact
+    align-items: center
+    background: rgba(12, 15, 13, 0.78)
+    border: 1px solid rgba(197, 220, 200, 0.25)
+    border-radius: 999px
+    bottom: 10px
+    color: #c7d4ca
+    display: flex
+    font-size: 12px
+    gap: 6px
+    padding: 4px 12px
+    pointer-events: none
+    position: absolute
+    right: 12px
 
   &__screen
     height: 100%
