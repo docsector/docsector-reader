@@ -94,7 +94,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
 - 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
-- 🖥️ **Live Terminal Blocks** — Use `<d-block-terminal engine="..." />` to embed a runnable xterm.js terminal driven by a project-provided engine (`src/terminals/**/*.js`) — e.g. a PHP-WASM CLI — with streaming ANSI output, interactive click-to-focus input, command picker, source panel, and lazy runtime loading
+- 🖥️ **Live Terminal Blocks** — Use `<d-block-terminal engine="..." />` to embed a runnable xterm.js terminal driven by a project-provided engine (`src/terminals/**/*.js`) — e.g. a PHP-WASM CLI — with streaming ANSI output, interactive click-to-focus input, deep-linkable command tabs (`?t<n>` survives reloads), source panel, and lazy runtime loading
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
