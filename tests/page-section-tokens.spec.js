@@ -67,6 +67,102 @@ echo "hi"
     })
   })
 
+  it('normalizes native <details>/<summary> into a collapsed expandable', () => {
+    const tokens = tokenizePageSectionSource(`
+<details>
+<summary>More details</summary>
+
+Hidden *content*.
+
+</details>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'expandable',
+      title: 'More details',
+      open: false
+    })
+    expect(tokens[0].tokens[0]).toMatchObject({
+      tag: 'p',
+      content: 'Hidden <em>content</em>.'
+    })
+  })
+
+  it('maps <details open> with a summary and rich body to an open expandable', () => {
+    const tokens = tokenizePageSectionSource(`
+<details open>
+<summary>Advanced</summary>
+
+> [!TIP]
+> Keep it short.
+
+~~~bash
+echo "hi"
+~~~
+
+</details>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'expandable',
+      title: 'Advanced',
+      open: true
+    })
+    expect(tokens[0].tokens.map((token) => token.tag)).toEqual(['blockquote', 'code'])
+    expect(tokens[0].tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      content: 'echo "hi"\n'
+    })
+  })
+
+  it('handles the real README shape: <summary><kbd>, trailing <br>, indented fenced body', () => {
+    const tokens = tokenizePageSectionSource(`
+<details>
+   <summary><kbd>Run Bootgly CLI demo</kbd></summary><br>
+
+   1) Run the Bootgly CLI demo in terminal:
+
+   \`\`\`bash
+   php bootgly demo
+   \`\`\`
+</details>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'expandable',
+      title: 'Run Bootgly CLI demo',
+      open: false
+    })
+    // ? <br> stripped + body dedented, so the fenced code is a top-level block again
+    expect(tokens[0].tokens.map((token) => token.tag)).toEqual(['ol', 'code'])
+    expect(tokens[0].tokens[1]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      content: 'php bootgly demo\n'
+    })
+  })
+
+  it('falls back to a "Details" title when <details> has no <summary>', () => {
+    const tokens = tokenizePageSectionSource(`
+<details>
+
+Just a body.
+
+</details>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'expandable',
+      title: 'Details',
+      open: false
+    })
+  })
+
   it('flattens headings inside expandable blocks to keep the page toc stable', () => {
     const tokens = tokenizePageSectionSource(`
 <d-block-expandable title="Flatten headings">
