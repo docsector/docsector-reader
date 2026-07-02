@@ -600,6 +600,34 @@ export default {
     }
   },
 
+  '/content/blocks/terminals': {
+    config: {
+      icon: 'terminal',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Terminals — Documentation of Docsector Reader',
+          'pt-BR': 'Terminais — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      'en-US': { title: 'Terminals' },
+      'pt-BR': { title: 'Terminais' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'terminal xterm cli console live run command engine wasm ansi',
+        'pt-BR': 'terminal xterm cli console ao vivo executar comando engine wasm ansi'
+      }
+    }
+  },
+
   '/content/blocks/mermaid-diagrams': {
     config: {
       icon: 'account_tree',

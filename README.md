@@ -94,6 +94,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🏷️ **Version Selector Badges** — Every version in the sidebar selector displays a color-coded badge: green for released, orange for draft, red for deprecated; fully customizable via `badge: { label, color, textColor }`
 - 📂 **Tabbed Code Blocks** — Group consecutive fenced code blocks into tabs using the `group` and `tab` attributes in the fence info line
 - 🧪 **Live Code Example Blocks** — Use `<d-block-code-example src="..." />` to render bundled Vue SFC examples with a live preview, GitHub source link, source toggle, and CodePen export for compatible examples
+- 🖥️ **Live Terminal Blocks** — Use `<d-block-terminal engine="..." />` to embed a runnable xterm.js terminal driven by a project-provided engine (`src/terminals/**/*.js`) — e.g. a PHP-WASM CLI — with streaming ANSI output, command picker, source panel, and lazy runtime loading
 - 🍞 **Breadcrumb Path Display** — Show a file path breadcrumb above code blocks with the `breadcrumb` attribute; renders as clickable path segments
 - 🎨 **File Type Icons** — Automatically resolves file extension or filename to a Material Icon Theme SVG icon, shown inline in tabs and beside the last breadcrumb segment
 - ⚙️ **Single Config File** — Customize branding, links, and languages via `docsector.config.js`
@@ -1206,6 +1207,22 @@ Notes:
 - Use `expanded="true"` only when the source code should be visible by default.
 - CodePen export currently supports plain Vue SFCs with a template, optional style, and an Options API `export default` script. Named imports from `vue` and `quasar` are converted to browser globals.
 - Examples using `<script setup>`, TypeScript scripts, or local imports still render in Docsector, but the CodePen action is disabled. Use `codepen="false"` to hide it intentionally.
+
+### Terminal Blocks
+
+```html
+<d-block-terminal engine="demo-echo" title="Echo demo" command="echo Hello, Docsector!">
+Optional caption rendered as inline Markdown.
+</d-block-terminal>
+```
+
+Notes:
+
+- Store engines as JS modules under `src/terminals/**/*.js`; for example, `engine="demo-echo"` resolves `src/terminals/demo-echo.js` after kebab-case normalization.
+- An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap (it runs at mount); heavy work belongs inside `run()`. When `stop()` exists, the block shows a Stop button during runs.
+- xterm.js and the engine module are lazily imported on the first Run (or on visibility with `autorun="true"`); engines should fetch heavy runtimes (e.g. `.wasm`) inside the first `run()` and report progress via `onStatus('downloading' | 'extracting' | 'booting' | 'running')`.
+- Use `commands="Label:command|Label:command"` for a command tab strip below the toolbar (tabs run directly once the runtime is warm), `height` for the viewport size, and `run-label` to rename the Run button.
+- When the engine implements `source(command)`, readers get a source panel (and a GitHub button when the returned object carries a `url`).
 
 ### File Attachment Blocks
 

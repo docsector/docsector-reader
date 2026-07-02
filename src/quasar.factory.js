@@ -1250,6 +1250,79 @@ function createCodeExamplesPlugin () {
   }
 }
 
+function buildVirtualTerminalsModule () {
+  return `const engineModules = import.meta.glob(['/src/terminals/**/*.js', '!**/*.worker.js'])
+
+const trimSlashes = (value) => String(value || '').replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '')
+const toKebabSegment = (value) => String(value || '')
+  .replace(/\\.js$/i, '')
+  .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+  .replace(/[\\s_]+/g, '-')
+  .replace(/-+/g, '-')
+  .toLowerCase()
+
+export const normalizeTerminalEngineId = (value) => trimSlashes(value)
+  .replace(/^src\\/terminals\\//i, '')
+  .replace(/^terminals\\//i, '')
+  .replace(/\\.js$/i, '')
+  .split('/')
+  .filter(Boolean)
+  .map(toKebabSegment)
+  .join('/')
+
+export const terminalEngines = Object.keys(engineModules).reduce((engines, filePath) => {
+  const id = normalizeTerminalEngineId(filePath)
+
+  engines[id] = {
+    id,
+    filePath,
+    loadEngine: engineModules[filePath]
+  }
+
+  return engines
+}, {})
+
+export const terminalEngineIds = Object.keys(terminalEngines).sort()
+
+export const resolveTerminalEngine = (value) => {
+  const id = normalizeTerminalEngineId(value)
+  const entry = terminalEngines[id]
+
+  if (!entry) {
+    return {
+      id,
+      filePath: '',
+      exists: false,
+      loadEngine: null
+    }
+  }
+
+  return {
+    ...entry,
+    exists: true
+  }
+}
+
+export default terminalEngines
+`
+}
+
+function createTerminalsPlugin () {
+  const virtualId = 'virtual:docsector-terminals'
+  const resolvedId = '\0' + virtualId
+
+  return {
+    name: 'docsector-terminals',
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    load (id) {
+      if (id !== resolvedId) return null
+      return buildVirtualTerminalsModule()
+    }
+  }
+}
+
 /**
  * Create the HJSON Vite plugin for loading .hjson files as ES modules.
  */
@@ -3162,6 +3235,7 @@ export function createQuasarConfig (options = {}) {
       vitePlugins: [
         createBooksPlugin(projectRoot),
         createCodeExamplesPlugin(),
+        createTerminalsPlugin(),
         createHjsonPlugin(),
         createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),

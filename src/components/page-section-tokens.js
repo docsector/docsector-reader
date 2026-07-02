@@ -23,6 +23,7 @@ const EXPANDABLE_MARKER_PREFIX = '@@DOCSECTOR_EXPANDABLE_'
 const FILE_MARKER_PREFIX = '@@DOCSECTOR_FILE_'
 const EMBEDDED_URL_MARKER_PREFIX = '@@DOCSECTOR_EMBEDDED_URL_'
 const CODE_EXAMPLE_MARKER_PREFIX = '@@DOCSECTOR_CODE_EXAMPLE_'
+const TERMINAL_MARKER_PREFIX = '@@DOCSECTOR_TERMINAL_'
 const API_BLOCK_MARKER_PREFIX = '@@DOCSECTOR_API_BLOCK_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
@@ -423,6 +424,46 @@ const extractStepperBlocks = (source = '') => {
   }
 }
 
+// @ Normalize native <details>/<summary> into the expandable block syntax so raw
+//   HTML READMEs render as a single styled collapsible instead of being split
+//   across multiple html_block tokens (which breaks the <details> nesting).
+const normalizeNativeDetails = (source = '') => {
+  const blockPattern = /<details\b([^>]*)>([\s\S]*?)<\/details>/gi
+
+  return String(source).replace(blockPattern, (_, rawAttrs, inner) => {
+    let title = ''
+    let body = inner
+
+    // ? Pull the first <summary> as the collapsible title; the rest is the body
+    const summaryMatch = inner.match(/<summary\b[^>]*>([\s\S]*?)<\/summary>/i)
+    if (summaryMatch) {
+      title = summaryMatch[1]
+      body = inner.slice(0, summaryMatch.index) + inner.slice(summaryMatch.index + summaryMatch[0].length)
+    }
+
+    // : plain-text, attribute-safe title (falls back when no <summary> is present)
+    title = title.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().replace(/"/g, '&quot;') || 'Details'
+
+    // ? Drop a leading <br> that commonly trails </summary> so the body starts clean
+    body = body.replace(/^\s*<br\s*\/?>/i, '')
+
+    // ? Strip the common leading indentation authors add inside <details> so the
+    //   body parses as top-level Markdown instead of an indented/nested block
+    const lines = body.split('\n')
+    const indents = lines
+      .filter((line) => line.trim() !== '')
+      .map((line) => (line.match(/^[ \t]*/) || [''])[0].length)
+    const commonIndent = indents.length > 0 ? Math.min(...indents) : 0
+    if (commonIndent > 0) {
+      body = lines.map((line) => line.slice(commonIndent)).join('\n')
+    }
+
+    const open = /(^|\s)open(\s|=|$)/i.test(rawAttrs) ? ' open="true"' : ''
+
+    return `\n<d-block-expandable title="${title}"${open}>\n${body.trim()}\n</d-block-expandable>\n`
+  })
+}
+
 const extractExpandableBlocks = (source = '') => {
   const map = new Map()
   let index = 0
@@ -576,6 +617,71 @@ const extractCodeExampleBlocks = (source = '') => {
   return {
     source: replaced,
     codeExampleMap: map
+  }
+}
+
+const parseTerminalCommands = (raw = '') => {
+  return String(raw)
+    .split('|')
+    .map((entry) => {
+      const trimmed = entry.trim()
+      if (!trimmed) {
+        return null
+      }
+
+      const separator = trimmed.indexOf(':')
+      if (separator === -1) {
+        return { label: trimmed, command: trimmed }
+      }
+
+      const label = trimmed.slice(0, separator).trim()
+      const command = trimmed.slice(separator + 1).trim()
+      if (!command) {
+        return null
+      }
+
+      return { label: label || command, command }
+    })
+    .filter(Boolean)
+}
+
+const extractTerminalBlocks = (source = '') => {
+  const map = new Map()
+  let index = 0
+
+  const replaceBlock = (match, rawAttrs, rawCaption = '') => {
+    const attrs = parseCustomTagAttributes(rawAttrs)
+    const engine = decodeHtmlEntities(attrs.engine || '').trim()
+
+    if (!engine) {
+      return match
+    }
+
+    const marker = `${TERMINAL_MARKER_PREFIX}${index}@@`
+    index++
+
+    map.set(marker, {
+      engine,
+      title: decodeHtmlEntities(attrs.title || '').trim(),
+      command: decodeHtmlEntities(attrs.command || '').trim(),
+      commands: parseTerminalCommands(decodeHtmlEntities(attrs.commands || '')),
+      height: decodeHtmlEntities(attrs.height || '').trim(),
+      autorun: parseBooleanAttribute(attrs.autorun, false),
+      runLabel: decodeHtmlEntities(attrs['run-label'] || '').trim(),
+      caption: String(rawCaption).trim()
+    })
+
+    return `\n${marker}\n`
+  }
+
+  const replacedSelfClosing = String(source).replace(/<d-block-terminal\b([^>]*)\/\s*>/gi, (match, rawAttrs) => {
+    return replaceBlock(match, rawAttrs)
+  })
+  const replaced = replacedSelfClosing.replace(/<d-block-terminal\b([^>]*)>([\s\S]*?)<\/d-block-terminal>/gi, replaceBlock)
+
+  return {
+    source: replaced,
+    terminalMap: map
   }
 }
 
@@ -931,7 +1037,9 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     allowHeadingTokens = true,
     parserState = createParserState()
   } = options
-  const normalizedSource = normalizePageSectionSource(source)
+  // ? Convert native <details>/<summary> to the expandable syntax BEFORE shielding
+  //   so any dedented body code is shielded/restored flush-left (not nested)
+  const normalizedSource = normalizeNativeDetails(normalizePageSectionSource(source))
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
   const { source: sourceWithTimelines, timelineMap } = extractTimelineBlocks(sourceWithShieldedCode)
 
@@ -971,7 +1079,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   const { source: sourceWithFiles, fileMap } = extractFileBlocks(sourceWithQuickLinks)
   const { source: sourceWithEmbeddedUrls, embeddedUrlMap } = extractEmbeddedUrlBlocks(sourceWithFiles)
   const { source: sourceWithCodeExamples, codeExampleMap } = extractCodeExampleBlocks(sourceWithEmbeddedUrls)
-  const { source: sourceWithApiBlocks, apiBlockMap } = extractApiBlocks(sourceWithCodeExamples)
+  const { source: sourceWithTerminals, terminalMap } = extractTerminalBlocks(sourceWithCodeExamples)
+  const { source: sourceWithApiBlocks, apiBlockMap } = extractApiBlocks(sourceWithTerminals)
 
   fileMap.forEach((data, marker) => {
     fileMap.set(marker, {
@@ -989,6 +1098,13 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
   codeExampleMap.forEach((data, marker) => {
     codeExampleMap.set(marker, {
+      ...data,
+      caption: restoreShieldedCodeSegments(data.caption, codeSegmentsMap)
+    })
+  })
+
+  terminalMap.forEach((data, marker) => {
+    terminalMap.set(marker, {
       ...data,
       caption: restoreShieldedCodeSegments(data.caption, codeSegmentsMap)
     })
@@ -1268,6 +1384,27 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               scrollable: data.scrollable,
               overflow: data.overflow,
               height: data.height,
+              caption: data.caption !== ''
+                ? markdownInline.renderInline(data.caption, markdownEnv)
+                : ''
+            })
+            break
+          }
+
+          if (terminalMap.has(element.content.trim())) {
+            const data = terminalMap.get(element.content.trim())
+
+            tokens.push({
+              tag: 'terminal',
+              map: element.map,
+              codeIndex: parserState.codeIndex++,
+              engine: data.engine,
+              title: data.title,
+              command: data.command,
+              commands: data.commands,
+              height: data.height,
+              autorun: data.autorun,
+              runLabel: data.runLabel,
               caption: data.caption !== ''
                 ? markdownInline.renderInline(data.caption, markdownEnv)
                 : ''

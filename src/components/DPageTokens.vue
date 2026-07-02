@@ -36,6 +36,7 @@ import DBlockTimeline from './DBlockTimeline.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
 import DBlockStepper from './DBlockStepper.vue'
 import DBlockCodeExample from './DBlockCodeExample.vue'
+import DBlockTerminal from './DBlockTerminal.vue'
 import DBlockApi from './DBlockApi.vue'
 </script>
 
@@ -160,6 +161,19 @@ import DBlockApi from './DBlockApi.vue'
     :scrollable="token.scrollable"
     :overflow="token.overflow"
     :height="token.height"
+  />
+
+  <d-block-terminal
+    v-else-if="token.tag === 'terminal'"
+    :index="id + token.codeIndex"
+    :engine="token.engine"
+    :title="token.title"
+    :caption="token.caption"
+    :command="token.command"
+    :commands="token.commands"
+    :height="token.height"
+    :autorun="token.autorun"
+    :run-label="token.runLabel"
   />
 
   <d-block-api
