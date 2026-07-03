@@ -63,7 +63,10 @@ const TERMINAL_THEME = {
   foreground: '#e8efe9',
   cursor: '#e8efe9',
   cursorAccent: '#0c0f0d',
-  selectionBackground: 'rgba(197, 220, 200, 0.3)'
+  selectionBackground: 'rgba(197, 220, 200, 0.3)',
+  // ANSI "bright black" (SGR 90): xterm's default is too dim on this
+  // background — timestamps, footers and muted labels become unreadable
+  brightBlack: '#a8b5ab'
 }
 
 const state = ref('idle') // idle → loading → running → done | error
@@ -741,6 +744,11 @@ body.body--dark
     background: #0c0f0d
     min-width: 0
     overflow: hidden
+    // Padding lives here, NOT on __screen: FitAddon sizes the terminal from
+    // its parent's clientHeight, which includes the parent's own padding —
+    // a padded __screen makes fit() propose more rows than actually fit and
+    // the bottom row gets clipped
+    padding: 8px 0 8px 12px
     position: relative
     transition: box-shadow 0.18s ease
 
@@ -764,7 +772,6 @@ body.body--dark
 
   &__screen
     height: 100%
-    padding: 8px 0 8px 12px
     width: 100%
 
     .xterm
