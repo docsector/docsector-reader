@@ -755,6 +755,32 @@ body.body--dark
     &:focus-within
       box-shadow: inset 0 0 0 2px rgba(118, 190, 126, 0.55)
 
+    // xterm keeps `overflow-y: scroll` on its viewport: on classic-scrollbar
+    // platforms (e.g. Windows) the default track renders as a white strip
+    // over the dark terminal — theme it dark and thin instead
+    .xterm-viewport
+      scrollbar-color: rgba(197, 220, 200, 0.28) transparent
+      scrollbar-width: thin
+
+      &::-webkit-scrollbar
+        height: 8px
+        width: 8px
+
+      &::-webkit-scrollbar-thumb
+        background: rgba(197, 220, 200, 0.28)
+        border-radius: 4px
+
+      &::-webkit-scrollbar-track
+        background: transparent
+
+      &::-webkit-scrollbar-corner
+        background: transparent
+
+      &::-webkit-scrollbar-button
+        display: none
+        height: 0
+        width: 0
+
   &__interact
     align-items: center
     background: rgba(12, 15, 13, 0.78)
