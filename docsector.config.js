@@ -32,6 +32,7 @@ export default {
 
   // @ Links
   links: {
+    website: null, // e.g., project website URL
     github: 'https://github.com/docsector/docsector-reader',
     discussions: 'https://github.com/docsector/docsector-reader/discussions',
     chat: null, // e.g., Discord/Slack invite URL

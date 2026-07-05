@@ -14,7 +14,7 @@ Under the hood, this page describes the `DMenu` implementation.
 
 - **Search** — Filter pages by searching content, titles, and tags
 - **Branding section** — Logo, project name, version selector
-- **External links** — GitHub, discussions, chat, email, changelog, roadmap, sponsor
+- **External links** — Website, GitHub, discussions, chat, email, changelog, roadmap, sponsor
 - **Explore section** — Custom external links
 - **Page tree** — Auto-generated from the page registry with expansion panels
 
@@ -44,6 +44,7 @@ Every version object shows a badge after the version label. Released versions de
 
 Each link is conditionally rendered — set to `null` in the config to hide:
 
+- **Website** — Project website link (icon button in the menu footer)
 - **GitHub** — Repository link
 - **Discussions** — GitHub Discussions
 - **Chat** — Discord/Slack/etc.

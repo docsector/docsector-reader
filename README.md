@@ -58,7 +58,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧰 **Docsector CLI Skill Installer** — Install the built-in authoring skill into older scaffolds with `docsector install-skill`
 - 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, resize-safe drawer state, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
-- 🔻 **Bottom-Pinned Social Links** — The menu's social links bar (Email, Chat, Discussions, GitHub) is pinned to the bottom of the sidebar for constant access on mobile and while a documentation page is open
+- 🔻 **Bottom-Pinned Social Links** — The menu's social links bar (Website, Email, Chat, Discussions, GitHub) is pinned to the bottom of the sidebar for constant access on mobile and while a documentation page is open — the project website button is opt-in via `links.website`
 - ⭐ **GitHub Stars Badge** — Optional star-count badge on the menu's GitHub button, opt-in via `github.stars` and derived from `links.github`, using the unauthenticated GitHub API cached for 6h in localStorage
 - 🔎 **Search** — Menu search across all documentation content and tags
 - 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, preserve the assistant panel open state across reloads, include per-message copy actions and hover-revealed message times, and show a floating quick return to the bottom
@@ -840,6 +840,7 @@ export default {
   },
 
   links: {
+    website: 'https://example.com',
     github: 'https://github.com/org/repo',
     discussions: 'https://github.com/org/repo/discussions',
     chat: 'https://discord.gg/invite',

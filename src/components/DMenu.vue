@@ -683,6 +683,9 @@ watch([currentBookId, activeVersionId], rebuildItems)
 <div class="menu-social" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
   <div class="col text-center">
     <q-btn-group flat>
+      <q-btn v-if="links.website" icon="fas fa-globe" size="sm" @click="openURL(links.website)" aria-label="Website">
+        <q-tooltip>Website</q-tooltip>
+      </q-btn>
       <q-btn v-if="links.email" icon="fas fa-at" size="sm" @click="openURL('mailto:' + links.email)" aria-label="Email">
         <q-tooltip>Email</q-tooltip>
       </q-btn>
