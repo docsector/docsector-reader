@@ -43,6 +43,17 @@ export default {
     explore: null // e.g., URL to explore related repos
   },
 
+  // @ Footer
+  // Legal / compliance links rendered in a row above the "Powered by" line.
+  // Opt-in: leave `legalLinks` empty (or omit `footer`) to hide the row entirely.
+  // Each item: { href: string, label?: string | { 'en-US': string, 'pt-BR': string } }
+  // Absolute http(s) URLs open in a new tab automatically (or force it with `external: true`).
+  footer: {
+    legalLinks: [
+      { href: 'https://github.com/docsector/docsector-reader/blob/main/LICENSE.md', label: { 'en-US': 'License', 'pt-BR': 'Licença' } }
+    ]
+  },
+
   // @ GitHub
   github: {
     // Base URL for "Edit on GitHub" links

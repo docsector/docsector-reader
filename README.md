@@ -67,10 +67,11 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📚 **Book Tabs with Per-State Colors** — Define `*.book.js` tabs with icons, order, and `color.active` / `color.inactive`
 - 📐 **Book Layout Presets** — Configure books with the default documentation chrome or a `fullwidth` layout that keeps the header and book tabs while removing the sidebar, subpage toolbar, and Table of Contents
 - 🦶 **Global Branding Footer** — Built-in `Powered by Docsector` footer (Docsector logo + wordmark, bundled from the engine so it never resolves to a consumer asset) renders across documentation and system pages, while respecting each page's own scroll container for full-width layout integration without double scrollbars
+- ⚖️ **Footer Legal Links** — Opt-in row of legal / compliance links (Privacy, Cookies, License, …) rendered above the footer credit, configured via `footer.legalLinks` with plain-string or per-locale labels and automatic new-tab handling for external URLs
 - 🔀 **Internal Shortcut Pages** — Route entries can redirect with `config.link.to`, keeping localized titles while inheriting icon/status from the destination page
-- 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and dock to the bottom on mobile
+- 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and pin to the top (below the book tabs) on mobile, with full-height active tabs
 - 🆚 **Subpage Templates** — Subpages opt into a structured template via `vs: { template: 'vs' }`; the managed/strict `vs` template owns the order and localized titles of its **Features**, **Performance** and **Security** sections (one `##` heading per section, missing sections dropped gracefully), auto-colorizes `✓`/`✗`/`➕` comparison marks, and highlights the column (by header) or row (by first cell) that matches the consumer's `branding.name`
-- ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress that stays above the mobile subpage toolbar
+- ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress in the bottom corner
 - 🏷️ **Status Badges** — Mark pages as `done`, `draft`, `empty`, or `new` with visual indicators
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs

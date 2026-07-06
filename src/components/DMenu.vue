@@ -536,11 +536,9 @@ watch([currentBookId, activeVersionId], rebuildItems)
   :visible="true"
   :class="$q.dark.isActive ? '' : 'bg-grey-2'"
 >
-  <div class="row flex-center" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'" style="height: 115px;">
-    <div class="col-5">
-      <img class="q-mr-md" v-if="branding.logo" :src="branding.logo" :alt="branding.name" width="85" height="85" style="float: right;" />
-    </div>
-    <div class="col-7">
+  <div class="d-menu__brand row items-center no-wrap" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
+    <img class="d-menu__brand-logo" v-if="branding.logo" :src="branding.logo" :alt="branding.name" width="85" height="85" />
+    <div class="d-menu__brand-text col">
       <div class="text-weight-medium">{{ branding.name || 'Docsector' }}</div>
       <div class="text-caption q-pt-xs">{{ t('system.documentation') }}</div>
       <q-select class="q-mr-md"
@@ -736,6 +734,21 @@ body.body--light
 #menu
   width: 100%
   height: calc(100% - 50px - 50px - env(safe-area-inset-bottom, 0px))
+
+  .d-menu__brand
+    padding: 12px
+    gap: 14px
+
+    .d-menu__brand-logo
+      flex: 0 0 auto
+      width: 85px
+      height: 85px
+
+    .d-menu__brand-text
+      min-width: 0
+
+    .q-select
+      margin-top: 2px
 
   .q-list
     padding: 8px 0

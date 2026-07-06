@@ -409,9 +409,15 @@ store.commit('page/resetAnchors')
       background-color: currentColor
   .d-book-tab
     color: var(--d-book-tab-inactive-color, rgba(255, 255, 255, 0.72))
-    transition: color 0.2s ease
+    opacity: 0.5
+    font-weight: 400
+    transition: color 0.2s ease, opacity 0.2s ease
+    &:hover
+      opacity: 0.8
   .d-book-tab.q-tab--active
     color: var(--d-book-tab-active-color, #ffffff)
+    opacity: 1
+    font-weight: 600
   .q-btn
     border-radius: 0
   .d-header__assistant-toggle.active

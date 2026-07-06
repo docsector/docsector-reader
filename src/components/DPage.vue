@@ -42,7 +42,6 @@ const pageContainer = ref(null)
 const submenu = ref(null)
 const pageMinHeight = ref('calc(100vh - 86px)')
 const submenuHeight = ref('36px')
-const pageBottomInset = ref('0px')
 const readingProgress = ref(getReadingProgressState())
 const routeHashScrollTimeout = ref(null)
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
@@ -83,12 +82,10 @@ const updatePageMinHeight = () => {
   const pageContainerStyles = window.getComputedStyle(pageContainerEl)
   const headerHeight = Number.parseFloat(pageContainerStyles.paddingTop) || 0
   const measuredSubmenuHeight = showSubmenu.value ? (submenuEl?.offsetHeight || 0) : 0
-  const isMobile = $q.screen.lt.md
-  const totalOffset = Math.max(0, Math.round(headerHeight + (isMobile || !showSubmenu.value ? 0 : measuredSubmenuHeight)))
+  const totalOffset = Math.max(0, Math.round(headerHeight + (showSubmenu.value ? measuredSubmenuHeight : 0)))
 
   pageMinHeight.value = `calc(100vh - ${totalOffset}px)`
   submenuHeight.value = `${showSubmenu.value ? Math.max(36, Math.round(measuredSubmenuHeight)) : 0}px`
-  pageBottomInset.value = isMobile && showSubmenu.value ? submenuHeight.value : '0px'
   syncReadingProgress()
 }
 
@@ -414,8 +411,7 @@ watch(() => route.fullPath, () => {
   ref="pageContainer"
   :style="{
     '--d-page-min-height': pageMinHeight,
-    '--d-submenu-height': submenuHeight,
-    '--d-page-bottom-inset': pageBottomInset
+    '--d-submenu-height': submenuHeight
   }"
   :class="[
     `d-page-layout--${pageLayout.mode}`,
@@ -576,7 +572,7 @@ watch(() => route.fullPath, () => {
 
 .content > div.scroll > div.q-scrollarea__content
   --d-page-content-padding-x: 15px
-  --d-page-content-padding-bottom: calc(15px + var(--d-page-bottom-inset, 0px) + var(--d-anchor-scroll-extra-bottom, 0px) + env(safe-area-inset-bottom, 0px))
+  --d-page-content-padding-bottom: calc(15px + var(--d-anchor-scroll-extra-bottom, 0px) + env(safe-area-inset-bottom, 0px))
   --d-footer-outlet-padding-x: var(--d-page-content-padding-x)
   --d-footer-outlet-padding-bottom: var(--d-page-content-padding-bottom)
   max-width: 100%
@@ -592,7 +588,7 @@ watch(() => route.fullPath, () => {
 .d-back-to-top
   position: fixed
   right: var(--d-back-to-top-right, 24px)
-  bottom: calc(24px + var(--d-page-bottom-inset, 0px) + env(safe-area-inset-bottom, 0px))
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px))
   width: 58px
   height: 58px
   z-index: 1200
@@ -731,14 +727,7 @@ body.body--dark
         margin-left: 6px
 
 #submenu.d-submenu--mobile
-  position: fixed
-  left: 0
-  right: 0
-  bottom: 0
-  z-index: 1500
   min-height: 40px
-  padding-bottom: env(safe-area-inset-bottom, 0px)
-  box-shadow: 0 -1px 2px rgba(0,0,0,0.12), 0 -2px 6px rgba(0,0,0,0.08)
 
   .d-submenu__content
     width: 100%
@@ -748,7 +737,14 @@ body.body--dark
 
   .toolbar-container
     display: flex
-    align-items: center
+    align-items: stretch
+
+  .q-btn-group
+    align-self: stretch
+    box-shadow: none
+
+    .q-btn
+      height: auto
 
   .d-submenu__toggle
     margin-right: 0
@@ -767,10 +763,6 @@ body.body--light
     background-color: #fff !important
     color: #000
     box-shadow: 0 10px 0 0 #fff
-
-  #submenu.d-submenu--mobile a.active,
-  #submenu.d-submenu--mobile button.active
-    box-shadow: 0 -10px 0 0 #fff
 // Dark
 body.body--dark
   #submenu a.active,
@@ -778,10 +770,6 @@ body.body--dark
     background-color: var(--q-dark-page) !important
     color: #fff
     box-shadow: 0 10px 0 0 var(--q-dark-page)
-
-  #submenu.d-submenu--mobile a.active,
-  #submenu.d-submenu--mobile button.active
-    box-shadow: 0 -10px 0 0 var(--q-dark-page)
 
 body.mobile.body--dark
   .q-drawer--right

@@ -97,6 +97,34 @@ export default {
     }
   },
 
+  '/basic/footer': {
+    config: {
+      icon: 'call_to_action',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Footer — Documentation of Docsector Reader',
+          'pt-BR': 'Rodapé — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Footer' },
+      'pt-BR': { title: 'Rodapé' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'footer legal links privacy cookies compliance powered by credit',
+        'pt-BR': 'rodapé links legais privacidade cookies compliance powered by crédito'
+      }
+    }
+  },
+
   '/basic/version-switcher': {
     config: {
       icon: 'swap_horiz',
