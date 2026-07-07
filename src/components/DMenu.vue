@@ -541,7 +541,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
     <div class="d-menu__brand-text col">
       <div class="text-weight-medium">{{ branding.name || 'Docsector' }}</div>
       <div class="text-caption q-pt-xs">{{ t('system.documentation') }}</div>
-      <q-select class="q-mr-md"
+      <q-select
         v-model="version" :options="versionOptions"
         emit-value map-options
         dense options-dense
@@ -738,6 +738,9 @@ body.body--light
   .d-menu__brand
     padding: 12px
     gap: 14px
+    max-width: 100%
+    // ? guard the sidebar against horizontal scroll: the flex row must never exceed the menu width
+    overflow: hidden
 
     .d-menu__brand-logo
       flex: 0 0 auto
@@ -746,9 +749,11 @@ body.body--light
 
     .d-menu__brand-text
       min-width: 0
+      flex: 1 1 0
 
     .q-select
       margin-top: 2px
+      max-width: 100%
 
   .q-list
     padding: 8px 0
