@@ -154,14 +154,12 @@ function onStatus (phase, detail = '') {
 
 // Keyboard and mouse data from xterm (mouse arrives as SGR escape sequences
 // once the guest application enables tracking). The terminal only captures
-// the keyboard after a click inside it (click-to-focus); Ctrl+C maps to stop().
+// the keyboard after a click inside it (click-to-focus). Ctrl+C is forwarded
+// as a raw byte (\x03) like any other key: the guest program owns interrupt
+// semantics (double-press confirmations, graceful restore); a runaway guest
+// is killed with the Stop button.
 function forwardInput (data) {
   if (state.value !== 'running' || !canInput.value) {
-    return
-  }
-
-  if (data === '\x03' && canStop.value) {
-    stop()
     return
   }
 
