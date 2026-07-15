@@ -668,6 +668,7 @@ const extractTerminalBlocks = (source = '') => {
       height: decodeHtmlEntities(attrs.height || '').trim(),
       autorun: parseBooleanAttribute(attrs.autorun, false),
       runLabel: decodeHtmlEntities(attrs['run-label'] || '').trim(),
+      minColumns: decodeHtmlEntities(attrs['min-columns'] || '').trim(),
       caption: String(rawCaption).trim()
     })
 

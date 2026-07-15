@@ -174,6 +174,7 @@ import DBlockApi from './DBlockApi.vue'
     :height="token.height"
     :autorun="token.autorun"
     :run-label="token.runLabel"
+    :min-columns="token.minColumns || 80"
   />
 
   <d-block-api

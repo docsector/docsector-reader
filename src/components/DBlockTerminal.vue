@@ -46,6 +46,10 @@ const props = defineProps({
   runLabel: {
     type: String,
     default: ''
+  },
+  minColumns: {
+    type: [String, Number],
+    default: 80
   }
 })
 
@@ -74,6 +78,7 @@ const statusDetail = ref('')
 const errorMessage = ref('')
 const engineReady = ref(false)
 const terminalFocused = ref(false)
+const isNarrow = ref(false)
 const engineMeta = ref({})
 const selectedCommand = ref(props.command || (props.commands[0]?.command ?? ''))
 const sourceOpen = ref(false)
@@ -90,6 +95,11 @@ let resizeObserver = null
 let intersectionObserver = null
 
 const frameTone = computed(() => $q.dark.isActive ? 'dark' : 'light')
+const minimumColumns = computed(() => {
+  const parsed = parseInt(props.minColumns, 10)
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 80
+})
 const displayTitle = computed(() => props.title || engineMeta.value.label || props.engine)
 const runButtonLabel = computed(() => {
   if (state.value === 'done' || state.value === 'error') {
@@ -225,7 +235,7 @@ async function ensureTerminal () {
   fitAddon = new FitAddon()
   term.loadAddon(fitAddon)
   term.open(viewportRef.value)
-  fitAddon.fit()
+  fit()
 
   term.onData(forwardInput)
   term.onBinary(forwardInput)
@@ -234,12 +244,37 @@ async function ensureTerminal () {
 
   resizeObserver = new ResizeObserver(() => {
     try {
-      fitAddon?.fit()
+      fit()
     } catch (err) {
       // ignore transient layout races during unmount
     }
   })
   resizeObserver.observe(viewportRef.value)
+}
+
+// FitAddon.fit() clamped to a column floor: TUI demos are authored for a
+// minimum terminal width, and narrow (mobile) containers would otherwise
+// wrap every box-drawing row into visual garbage. Below the floor the
+// terminal keeps `minColumns` and the screen pans horizontally instead
+// (isNarrow drives the scroll hint pill).
+function fit () {
+  if (!term || !fitAddon) {
+    return
+  }
+
+  const proposed = fitAddon.proposeDimensions()
+  if (!proposed || !Number.isFinite(proposed.cols) || !Number.isFinite(proposed.rows)) {
+    return
+  }
+
+  const columns = Math.max(minimumColumns.value, proposed.cols)
+  const rows = Math.max(2, proposed.rows)
+
+  isNarrow.value = proposed.cols < minimumColumns.value
+
+  if (term.cols !== columns || term.rows !== rows) {
+    term.resize(columns, rows)
+  }
 }
 
 async function run () {
@@ -590,6 +625,17 @@ onBeforeUnmount(() => {
     </div>
 
     <div
+      v-if="isNarrow && state !== 'idle'"
+      class="d-block-terminal__narrow"
+    >
+      <q-icon
+        name="swap_horiz"
+        size="14px"
+      />
+      <span>{{ minimumColumns }} columns — scroll sideways</span>
+    </div>
+
+    <div
       v-else-if="state === 'error' && errorMessage"
       class="d-block-terminal__overlay d-block-terminal__overlay--error"
     >
@@ -794,12 +840,47 @@ body.body--dark
     position: absolute
     right: 12px
 
+  &__narrow
+    align-items: center
+    background: rgba(12, 15, 13, 0.78)
+    border: 1px solid rgba(197, 220, 200, 0.25)
+    border-radius: 999px
+    bottom: 10px
+    color: #c7d4ca
+    display: flex
+    font-size: 12px
+    gap: 6px
+    left: 12px
+    padding: 4px 12px
+    pointer-events: none
+    position: absolute
+
   &__screen
     height: 100%
+    // Column floor (see fit()): when the container is narrower than the
+    // terminal's minimum columns, the screen pans horizontally instead of
+    // squeezing the terminal into wrapped box-drawing garbage
+    overflow-x: auto
+    scrollbar-color: rgba(197, 220, 200, 0.28) transparent
+    scrollbar-width: thin
     width: 100%
+
+    &::-webkit-scrollbar
+      height: 8px
+
+    &::-webkit-scrollbar-thumb
+      background: rgba(197, 220, 200, 0.28)
+      border-radius: 4px
+
+    &::-webkit-scrollbar-track
+      background: transparent
 
     .xterm
       height: 100%
+      // Track the terminal's real pixel width so the horizontal overflow is
+      // scrollable instead of clipped at the container edge
+      min-width: 100%
+      width: max-content
 
   &__overlay
     align-items: center
