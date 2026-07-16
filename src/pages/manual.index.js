@@ -153,6 +153,34 @@ export default {
     }
   },
 
+  '/basic/update-notification': {
+    config: {
+      icon: 'refresh',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Update Notification — Documentation of Docsector Reader',
+          'pt-BR': 'Notificação de Atualização — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Update Notification' },
+      'pt-BR': { title: 'Notificação de Atualização' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'update notification refresh banner deploy stale version.json build reload dismiss',
+        'pt-BR': 'atualização notificação banner deploy versão build recarregar dispensar'
+      }
+    }
+  },
+
   '/basic/d-page-anchor': {
     config: {
       icon: 'account_tree',

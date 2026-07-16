@@ -83,6 +83,17 @@ defaultLanguage: 'en-US'
 
 O idioma usado quando nenhuma preferência está armazenada no navegador do usuário.
 
+## Atualizações
+
+```javascript
+updates: &#123;
+  enabled: true,
+  interval: 300000
+&#125;
+```
+
+Controla a notificação de atualização — o banner que os leitores veem quando um deploy mais novo está no ar, com **Atualizar** e **Dispensar**. Habilitado por padrão em builds de produção; use `updates: false` para desabilitar por completo. `interval` é o tempo entre checagens em milissegundos (padrão 5 minutos, mínimo 30 segundos). Veja [Notificação de Atualização](/manual/basic/update-notification) para entender como a detecção funciona.
+
 ## Exemplo Completo
 
 ```javascript
@@ -113,6 +124,10 @@ export default &#123;
   languages: [
     &#123; image: '/images/flags/united-states-of-america.png', label: 'English', value: 'en-US' &#125;
   ],
-  defaultLanguage: 'en-US'
+  defaultLanguage: 'en-US',
+  updates: &#123;
+    enabled: true,
+    interval: 300000
+  &#125;
 &#125;
 ```

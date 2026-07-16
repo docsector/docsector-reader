@@ -101,7 +101,12 @@ const engineDefaults = {
     },
     system: {
       // {name} is the configured branding.name — locales control the word order
-      brand: '{name} Documentation'
+      brand: '{name} Documentation',
+      update: {
+        message: 'Updated content is available. Please refresh the page.',
+        refresh: 'Refresh',
+        dismiss: 'Dismiss'
+      }
     }
   },
   'pt-BR': {
@@ -183,7 +188,12 @@ const engineDefaults = {
     },
     system: {
       // {name} is the configured branding.name — locales control the word order
-      brand: 'Documentação {name}'
+      brand: 'Documentação {name}',
+      update: {
+        message: 'Há conteúdo atualizado disponível. Atualize a página.',
+        refresh: 'Atualizar',
+        dismiss: 'Dispensar'
+      }
     }
   }
 }

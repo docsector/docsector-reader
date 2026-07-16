@@ -3165,6 +3165,44 @@ function buildMcpServerCardPayload ({
 }
 
 /**
+ * Create a Vite plugin that emits `version.json` into the build output.
+ *
+ * The file carries the same build ID that `extendViteConf` bakes into the
+ * client bundle as `__DOCSECTOR_BUILD__`. The running SPA polls it to detect
+ * that a newer deploy is live (see src/composables/useUpdateCheck.js).
+ * A `Cache-Control: no-cache` rule is appended to `_headers` so CDNs
+ * (Cloudflare Pages) always revalidate the file instead of caching it.
+ */
+function createVersionFilePlugin (projectRoot, buildId) {
+  return {
+    name: 'docsector-version-file',
+    apply: 'build',
+    closeBundle () {
+      const distDir = resolve(projectRoot, 'dist', 'spa')
+      if (!existsSync(distDir)) return
+
+      writeFileSync(
+        resolve(distDir, 'version.json'),
+        JSON.stringify({ build: buildId, generatedAt: new Date().toISOString() }, null, 2) + '\n'
+      )
+
+      const headersPath = resolve(distDir, '_headers')
+      const headersRule = '/version.json\n  Cache-Control: no-cache\n'
+      if (existsSync(headersPath)) {
+        const existing = readFileSync(headersPath, 'utf-8')
+        if (!existing.includes('/version.json')) {
+          writeFileSync(headersPath, existing.trimEnd() + '\n\n' + headersRule)
+        }
+      } else {
+        writeFileSync(headersPath, headersRule)
+      }
+
+      console.log(`\x1b[36m[docsector]\x1b[0m Generated version.json (build ${buildId})`)
+    }
+  }
+}
+
+/**
  * Create a complete Quasar configuration for a docsector-reader consumer project.
  *
  * In **standalone** mode (docsector-reader running itself), all paths resolve
@@ -3199,6 +3237,14 @@ export function createQuasarConfig (options = {}) {
 
   const packageRoot = getPackageRoot(projectRoot)
   const isStandalone = projectRoot === packageRoot
+
+  // Build ID for stale-session detection — stable per deploy (Cloudflare Pages
+  // commit SHA), overridable via DOCSECTOR_BUILD_ID, unique per build otherwise.
+  // Baked into the client bundle (extendViteConf) AND emitted as version.json
+  // (createVersionFilePlugin) so the running SPA can compare the two.
+  const buildId = process.env.CF_PAGES_COMMIT_SHA
+    || process.env.DOCSECTOR_BUILD_ID
+    || new Date().toISOString()
 
   return {
     // Boot files — Quasar resolves these via 'boot/<name>' imports.
@@ -3242,12 +3288,21 @@ export function createQuasarConfig (options = {}) {
         createMarkdownEndpointPlugin(projectRoot),
         createMarkdownBuildPlugin(projectRoot),
         createPrerenderMetaPlugin(projectRoot),
+        createVersionFilePlugin(projectRoot, buildId),
         ...vitePlugins
       ],
 
       extendViteConf (viteConf) {
         viteConf.resolve = viteConf.resolve || {}
         viteConf.resolve.alias = viteConf.resolve.alias || {}
+
+        // Bake the build ID into the client bundle as a compile-time constant.
+        // The SPA compares it against the deployed version.json to detect that
+        // a newer build is live (see src/composables/useUpdateCheck.js).
+        viteConf.define = {
+          ...(viteConf.define || {}),
+          __DOCSECTOR_BUILD__: JSON.stringify(buildId)
+        }
 
         // When the pages watcher plugin triggers a restart, it sets this env
         // flag so we force Vite to generate a fresh browserHash. This busts

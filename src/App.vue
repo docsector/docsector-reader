@@ -1,6 +1,8 @@
 <template>
 <router-view />
 
+<d-update-banner />
+
 <q-dialog id="settings" v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false">
   <q-layout
     view="Lhh lpR fff"
@@ -121,6 +123,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 
 import docsectorConfig from 'docsector.config.js'
+import DUpdateBanner from './components/DUpdateBanner.vue'
+import { setupUpdateCheck } from './composables/useUpdateCheck'
 import { setupWebMcp } from './composables/useWebMcp'
 
 defineOptions({ name: 'App' })
@@ -132,6 +136,7 @@ const router = useRouter()
 const route = useRoute()
 
 let cleanupWebMcp = null
+let cleanupUpdateCheck = null
 
 const settings = reactive({
   general: {
@@ -225,12 +230,19 @@ onMounted(() => {
     translate: t,
     locale
   })
+
+  cleanupUpdateCheck = setupUpdateCheck()
 })
 
 onBeforeUnmount(() => {
   if (typeof cleanupWebMcp === 'function') {
     cleanupWebMcp()
     cleanupWebMcp = null
+  }
+
+  if (typeof cleanupUpdateCheck === 'function') {
+    cleanupUpdateCheck()
+    cleanupUpdateCheck = null
   }
 })
 </script>

@@ -2,6 +2,8 @@ import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 
+import { setupChunkReload } from '../composables/useUpdateCheck'
+
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -25,6 +27,11 @@ export default route(function (/* { store, ssrContext } */) {
     // quasar.config.js -> build -> publicPath
     history: createHistory(process.env.MODE === 'ssr' ? void 0 : process.env.VUE_ROUTER_BASE)
   })
+
+  // After a redeploy, hashed chunks of the bundle a stale tab is running no
+  // longer exist — lazy route imports reject. Recover with a full-page reload
+  // to the intended route instead of failing the navigation silently.
+  setupChunkReload({ router: Router })
 
   return Router
 })
