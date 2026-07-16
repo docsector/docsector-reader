@@ -2,13 +2,13 @@
 
 The update notification keeps long-lived reader sessions in sync with your latest deploy.
 
-When a new build of the documentation goes live, readers who still have an older session open see a floating notification at the top of the page — *"Updated content is available. Please refresh the page."* — with **Refresh** and **Dismiss** actions.
+When a new build of the documentation goes live, readers who still have an older session open see a floating notification at the bottom of the page — *"Updated content is available. Please refresh the page."* — with **Refresh** and **Dismiss** actions.
 
 It works out of the box in production builds. No configuration is required.
 
 ## What Readers Notice
 
-- A theme-colored banner floating at the top center when a newer deploy is live
+- A high-contrast banner floating at the bottom center (dark pill in light mode, light pill in dark mode) when a newer deploy is live
 - **Refresh** reloads the page onto the new build
 - **Dismiss** hides the banner for that deploy until the next session
 - Navigation keeps working right after a deploy, even from a stale session

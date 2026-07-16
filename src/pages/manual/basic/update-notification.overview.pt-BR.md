@@ -2,13 +2,13 @@
 
 A notificação de atualização mantém sessões de leitura antigas em sincronia com o seu deploy mais recente.
 
-Quando um novo build da documentação entra no ar, leitores que ainda têm uma sessão antiga aberta veem uma notificação flutuante no topo da página — *"Há conteúdo atualizado disponível. Atualize a página."* — com as ações **Atualizar** e **Dispensar**.
+Quando um novo build da documentação entra no ar, leitores que ainda têm uma sessão antiga aberta veem uma notificação flutuante na base da página — *"Há conteúdo atualizado disponível. Atualize a página."* — com as ações **Atualizar** e **Dispensar**.
 
 Funciona de fábrica em builds de produção. Nenhuma configuração é necessária.
 
 ## O Que os Leitores Percebem
 
-- Um banner na cor do tema flutuando no topo central quando um deploy mais novo está no ar
+- Um banner de alto contraste flutuando na base central (pill escuro no modo claro, claro no modo escuro) quando um deploy mais novo está no ar
 - **Atualizar** recarrega a página já no build novo
 - **Dispensar** esconde o banner para aquele deploy até a próxima sessão
 - A navegação continua funcionando logo após um deploy, mesmo numa sessão antiga

@@ -2,7 +2,8 @@
 <transition name="d-update-banner">
   <div
     v-if="updateAvailable"
-    class="d-update-banner bg-primary text-white shadow-4"
+    class="d-update-banner shadow-6"
+    :class="$q.dark.isActive ? 'bg-grey-2 text-grey-10' : 'bg-grey-10 text-white'"
     role="alert"
   >
     <q-icon name="refresh" size="20px" />
@@ -14,12 +15,17 @@
 </template>
 
 <script setup>
+import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
 import { dismissUpdate, updateAvailable } from '../composables/useUpdateCheck'
 
 defineOptions({ name: 'DUpdateBanner' })
 
+// Inverse surface (dark pill on light mode, light pill on dark mode): a
+// brand-colored pill can vanish against brand-colored chrome, so a neutral
+// inverse surface keeps the floating pill visible on any background.
+const $q = useQuasar()
 const { t } = useI18n()
 
 function refresh () {
@@ -30,7 +36,7 @@ function refresh () {
 <style lang="sass">
 .d-update-banner
   position: fixed
-  top: 12px
+  bottom: 16px
   left: 50%
   transform: translateX(-50%)
   z-index: 6000
@@ -51,5 +57,5 @@ function refresh () {
 
 .d-update-banner-enter-from, .d-update-banner-leave-to
   opacity: 0
-  transform: translate(-50%, -16px)
+  transform: translate(-50%, 16px)
 </style>
