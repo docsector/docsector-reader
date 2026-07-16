@@ -6,6 +6,8 @@ They are a good fit when the main section should stay short, but readers may sti
 
 The block is authored with the custom Markdown element `<d-block-expandable>`.
 
+The title supports inline Markdown — backtick code renders as a styled inline code chip. This also applies to native `<details><summary>` blocks (common in remote READMEs), which are normalized into expandables.
+
 ## HTML Example
 
 The custom element can be authored directly in page Markdown:

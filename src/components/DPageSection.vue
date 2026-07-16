@@ -19,6 +19,13 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // Page-level default for the code block meta row (language + copy button):
+  // true/false apply when a fence has no explicit :toolbar= attribute, null
+  // keeps the content-derived behavior. `default: null` preserves the tri-state.
+  codeToolbarDefault: {
+    type: Boolean,
+    default: null
+  },
   template: {
     type: Object,
     default: null
@@ -35,7 +42,9 @@ const tokenized = computed(() => {
     return []
   }
 
-  const tokens = tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')))
+  const tokens = tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')), {
+    codeToolbarDefault: props.codeToolbarDefault
+  })
 
   if (Array.isArray(props.template?.sections) && props.template.sections.length > 0) {
     return applyTemplateSections(tokens, props.template, locale.value, {

@@ -8,6 +8,11 @@ defineProps({
     type: String,
     default: ''
   },
+  // Inline-rendered title (inline code, emphasis, ...) — wins over `title`
+  titleHtml: {
+    type: String,
+    default: ''
+  },
   open: {
     type: Boolean,
     default: false
@@ -25,7 +30,8 @@ defineProps({
 >
   <template #header>
     <q-item-section>
-      <div class="d-page-expandable__title">{{ title }}</div>
+      <div v-if="titleHtml" class="d-page-expandable__title" v-html="titleHtml" />
+      <div v-else class="d-page-expandable__title">{{ title }}</div>
     </q-item-section>
   </template>
 

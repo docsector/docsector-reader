@@ -52,6 +52,8 @@ curl -fsSL https://example.com/install | bash
 
 A single-line install command is the usual case: it is short, but it is the one line every reader wants to copy.
 
+On a home page fed by a **remote README** (`homePage.source: 'remote-readme'`), the metadata bar is on by default for every code block — the README also renders on GitHub, so it cannot carry the `toolbar` attribute, and its one-liners are usually commands meant to be copied.
+
 The override works both ways — `:toolbar="false";` strips the bar from a block that would otherwise get one, which suits long output dumps and ASCII trees nobody copies:
 
 ````markdown

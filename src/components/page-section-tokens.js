@@ -114,6 +114,17 @@ const shieldMarkdownCodeSegments = (source = '') => {
   }
 }
 
+// Undo the entity escaping applied when a <summary> becomes a title attribute,
+// so the inline renderer re-escapes the plain text correctly (no double escape)
+const decodeBasicEntities = (value = '') => {
+  return String(value)
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
 const restoreShieldedCodeSegments = (source = '', codeSegmentsMap = new Map()) => {
   let restored = String(source)
 
@@ -915,7 +926,7 @@ const createSourceCodeTab = (element, meta) => ({
   breadcrumbs: parseBreadcrumb(meta.breadcrumb)
 })
 
-const pushSourceCodeToken = (tokens, element, parserState) => {
+const pushSourceCodeToken = (tokens, element, parserState, codeToolbarDefault = null) => {
   const meta = parseFenceMeta(element)
 
   if (meta.language === 'mermaid') {
@@ -927,7 +938,11 @@ const pushSourceCodeToken = (tokens, element, parserState) => {
   }
 
   const tab = createSourceCodeTab(element, meta)
-  const toolbar = parseFenceToolbar(meta.toolbar)
+
+  // ? an explicit :toolbar="..."; fence attribute wins over the page-level default
+  //   (e.g. remote README homepages force the meta row on copyable one-liners)
+  const explicitToolbar = parseFenceToolbar(meta.toolbar)
+  const toolbar = explicitToolbar !== null ? explicitToolbar : codeToolbarDefault
 
   if (meta.group) {
     const previous = tokens[tokens.length - 1]
@@ -988,6 +1003,15 @@ const renderInlineToken = (markdown, markdownInline, element, env) => {
   }
 
   return markdownInline.renderInline(element.content, env)
+}
+
+// Render an expandable title's inline markup (inline code, emphasis, ...).
+// The copyable-code affordances are stripped: inside a collapsible header a
+// nested role="button" would fight the expand/collapse toggle.
+const renderExpandableTitle = (markdownInline, title, env) => {
+  return markdownInline
+    .renderInline(decodeBasicEntities(title), env)
+    .replace(/<code\b[^>]*>/gi, '<code>')
 }
 
 const createMarkdownBlockParser = () => {
@@ -1068,7 +1092,8 @@ const getTimelineItemAnchorId = ({ item, itemTokens, itemIndex, parserState }) =
 export const tokenizePageSectionSource = (source = '', options = {}) => {
   const {
     allowHeadingTokens = true,
-    parserState = createParserState()
+    parserState = createParserState(),
+    codeToolbarDefault = null
   } = options
   // ? Convert native <details>/<summary> to the expandable syntax BEFORE shielding
   //   so any dedented body code is shielded/restored flush-left (not nested)
@@ -1103,6 +1128,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   expandableMap.forEach((data, marker) => {
     expandableMap.set(marker, {
       ...data,
+      // ? the title is shielded too (inline code in a <summary> becomes a marker)
+      title: restoreShieldedCodeSegments(data.title, codeSegmentsMap),
       content: restoreShieldedCodeSegments(data.content, codeSegmentsMap)
     })
   })
@@ -1296,7 +1323,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               items: data.items.map((item, itemIndex) => {
                 const itemTokens = tokenizePageSectionSource(item.content, {
                   allowHeadingTokens: false,
-                  parserState
+                  parserState,
+                  codeToolbarDefault
                 })
 
                 return {
@@ -1328,7 +1356,8 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
                 errorIcon: step.errorIcon,
                 tokens: tokenizePageSectionSource(step.content, {
                   allowHeadingTokens: false,
-                  parserState
+                  parserState,
+                  codeToolbarDefault
                 })
               }))
             })
@@ -1341,10 +1370,12 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
             tokens.push({
               tag: 'expandable',
               title: data.title,
+              titleHTML: renderExpandableTitle(markdownInline, data.title, markdownEnv),
               open: data.open,
               tokens: tokenizePageSectionSource(data.content, {
                 allowHeadingTokens: false,
-                parserState
+                parserState,
+                codeToolbarDefault
               })
             })
             break
@@ -1481,7 +1512,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
         }
 
         case 'fence':
-          pushSourceCodeToken(tokens, element, parserState)
+          pushSourceCodeToken(tokens, element, parserState, codeToolbarDefault)
           break
 
         case 'math_block':

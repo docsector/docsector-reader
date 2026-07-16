@@ -50,7 +50,15 @@ const usesRemoteReadmeHome = computed(() => {
   </header>
 
   <main>
-    <d-page-section :id="id" :render-primary-heading="usesRemoteReadmeHome" :template="template" />
+    <!-- Remote README homepages can't carry :toolbar= fence attributes (the file
+         renders on GitHub too), and their one-liners are usually copyable
+         commands — so the meta row defaults ON there -->
+    <d-page-section
+      :id="id"
+      :render-primary-heading="usesRemoteReadmeHome"
+      :code-toolbar-default="usesRemoteReadmeHome ? true : null"
+      :template="template"
+    />
   </main>
 </d-page>
 </template>

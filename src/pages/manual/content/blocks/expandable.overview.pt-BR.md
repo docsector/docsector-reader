@@ -6,6 +6,8 @@ Eles funcionam bem quando a seção principal precisa continuar curta, mas o lei
 
 O bloco é escrito com o custom element Markdown `<d-block-expandable>`.
 
+O título aceita Markdown inline — código entre crases é renderizado como um chip de código inline estilizado. Isso também vale para blocos nativos `<details><summary>` (comuns em READMEs remotos), que são normalizados em expansíveis.
+
 ## Exemplo em HTML
 
 O custom element pode ser escrito diretamente no Markdown da página:

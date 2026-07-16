@@ -229,6 +229,7 @@ import DBlockApi from './DBlockApi.vue'
   <d-block-expandable
     v-else-if="token.tag === 'expandable'"
     :title="token.title"
+    :title-html="token.titleHTML"
     :open="token.open"
   >
     <d-page-tokens

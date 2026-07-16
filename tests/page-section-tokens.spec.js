@@ -461,6 +461,90 @@ pnpm install
     expect(tokens[0].tabs).toHaveLength(2)
   })
 
+  it('applies the page-level toolbar default when a fence has no override', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash
+curl -fsSL https://bootgly.com/install | bash
+\`\`\`
+`, { codeToolbarDefault: true })
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      toolbar: true
+    })
+  })
+
+  it('lets an explicit :toolbar="false"; beat the page-level default', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`text :toolbar="false";
+one line
+\`\`\`
+`, { codeToolbarDefault: true })
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      toolbar: false
+    })
+  })
+
+  it('propagates the page-level toolbar default into expandable bodies', () => {
+    const tokens = tokenizePageSectionSource(`
+<details>
+<summary>Install</summary>
+
+\`\`\`bash
+php bootgly project create
+\`\`\`
+
+</details>
+`, { codeToolbarDefault: true })
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].tag).toBe('expandable')
+
+    const inner = tokens[0].tokens.find((token) => token.tag === 'code')
+    expect(inner).toMatchObject({
+      info: 'bash',
+      toolbar: true
+    })
+  })
+
+  it('restores inline code inside a <summary> title and renders it inline', () => {
+    const tokens = tokenizePageSectionSource(`
+<details>
+<summary>Import the \`bootgly.abc\` project and run the demo</summary>
+
+Body text.
+
+</details>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].tag).toBe('expandable')
+
+    // ? no shield marker may leak into the visible title
+    expect(tokens[0].title).not.toContain('@@DOCSECTOR_CODE_SEGMENT_')
+    expect(tokens[0].title).toContain('`bootgly.abc`')
+
+    expect(tokens[0].titleHTML).toContain('<code>bootgly.abc</code>')
+    expect(tokens[0].titleHTML).not.toContain('`')
+  })
+
+  it('renders inline markup in authored expandable titles', () => {
+    const tokens = tokenizePageSectionSource(`
+<d-block-expandable title="Configure \`docsector.config.js\` first">
+Body.
+</d-block-expandable>
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0].tag).toBe('expandable')
+    expect(tokens[0].titleHTML).toContain('<code>docsector.config.js</code>')
+  })
+
   it('marks markdown inline code as copyable rendered content', () => {
     const tokens = tokenizePageSectionSource('Run `npm run build` after editing the page.')
 

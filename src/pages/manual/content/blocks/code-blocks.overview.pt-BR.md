@@ -52,6 +52,8 @@ curl -fsSL https://example.com/install | bash
 
 O comando de instalação de uma linha é o caso clássico: é curto, mas é justamente a linha que todo leitor quer copiar.
 
+Numa home page alimentada por um **README remoto** (`homePage.source: 'remote-readme'`), a barra de metadados vem ligada por padrão em todos os blocos de código — o README também é renderizado no GitHub, então não pode carregar o atributo `toolbar`, e as linhas únicas dele costumam ser comandos feitos para copiar.
+
 O override funciona nos dois sentidos — `:toolbar="false";` tira a barra de um bloco que a ganharia por padrão, o que serve para saídas longas e árvores ASCII que ninguém copia:
 
 ````markdown
