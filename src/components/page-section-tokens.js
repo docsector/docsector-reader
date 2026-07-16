@@ -868,6 +868,30 @@ const parseFenceMeta = (element) => {
   }
 }
 
+/**
+ * Parse the `toolbar` fence attribute into an explicit override.
+ *
+ * Returns `true`/`false` to force the meta row on/off, or `null` when the
+ * attribute is absent (or not a recognized value), letting the block fall back
+ * to its content-derived default.
+ */
+const parseFenceToolbar = (raw) => {
+  if (raw === undefined || raw === null) {
+    return null
+  }
+
+  const value = String(raw).trim().toLowerCase()
+
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+
+  return null
+}
+
 const parseBreadcrumb = (raw = '') => {
   const value = String(raw).trim()
 
@@ -903,12 +927,18 @@ const pushSourceCodeToken = (tokens, element, parserState) => {
   }
 
   const tab = createSourceCodeTab(element, meta)
+  const toolbar = parseFenceToolbar(meta.toolbar)
 
   if (meta.group) {
     const previous = tokens[tokens.length - 1]
 
     if (previous?.tag === 'code' && previous.group === meta.group && Array.isArray(previous.tabs)) {
       previous.tabs.push(tab)
+
+      // ? a grouped block has one shared meta row: let any fence of the group set it
+      if (toolbar !== null) {
+        previous.toolbar = toolbar
+      }
       return
     }
 
@@ -920,6 +950,7 @@ const pushSourceCodeToken = (tokens, element, parserState) => {
       info: tab.language,
       filename: tab.filename,
       breadcrumbs: tab.breadcrumbs,
+      toolbar,
       tabs: [tab]
     })
     return
@@ -932,6 +963,7 @@ const pushSourceCodeToken = (tokens, element, parserState) => {
     info: tab.language,
     filename: tab.filename,
     breadcrumbs: tab.breadcrumbs,
+    toolbar,
     tabs: []
   })
 }
@@ -966,7 +998,7 @@ const createMarkdownBlockParser = () => {
   markdown.use(attrs, {
     leftDelimiter: ':',
     rightDelimiter: ';',
-    allowedAttributes: ['filename', 'group', 'tab', 'breadcrumb']
+    allowedAttributes: ['filename', 'group', 'tab', 'breadcrumb', 'toolbar']
   })
   markdown.use(taskLists, {
     enabled: false,

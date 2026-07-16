@@ -147,6 +147,7 @@ import DBlockApi from './DBlockApi.vue'
     :language="token.info"
     :filename="token.filename"
     :breadcrumbs="token.breadcrumbs"
+    :toolbar="token.toolbar"
     :tabs="token.tabs"
   />
 

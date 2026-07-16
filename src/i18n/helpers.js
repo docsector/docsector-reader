@@ -98,6 +98,10 @@ const engineDefaults = {
         afternoon: 'Good afternoon',
         evening: 'Good evening'
       }
+    },
+    system: {
+      // {name} is the configured branding.name — locales control the word order
+      brand: '{name} Documentation'
     }
   },
   'pt-BR': {
@@ -176,6 +180,10 @@ const engineDefaults = {
         afternoon: 'Boa tarde',
         evening: 'Boa noite'
       }
+    },
+    system: {
+      // {name} is the configured branding.name — locales control the word order
+      brand: 'Documentação {name}'
     }
   }
 }

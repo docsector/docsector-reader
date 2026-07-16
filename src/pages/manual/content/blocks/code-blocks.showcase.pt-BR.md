@@ -42,6 +42,33 @@ echo "Servidor rodando em http://localhost:8181"
 </template>
 ```
 
+### Bloco de Uma Linha
+
+Um bloco de uma linha é renderizado sem nada por padrão — sem barra de metadados, sem números de linha:
+
+```bash
+npm run dev
+```
+
+### Bloco de Uma Linha com a Barra Forçada
+
+O mesmo bloco com `:toolbar="true";` mantém o rótulo da linguagem e o botão de cópia — que é o que se quer num comando feito para ser copiado:
+
+```bash :toolbar="true";
+curl -fsSL https://example.com/install | bash
+```
+
+### Bloco Multi-linha com a Barra Desligada
+
+`:toolbar="false";` tira a barra de metadados de um bloco que ninguém copia. Os números de linha não são afetados — eles seguem a quantidade de linhas:
+
+```text :toolbar="false";
+project/
+├── src/
+│   └── index.js
+└── README.md
+```
+
 ### Exemplo com Abas
 
 ```php :group="ola-mundo"; :tab="OlaMundo.php"; :breadcrumb="src > examples > OlaMundo.php";
@@ -146,6 +173,7 @@ done
 - **Números de linha** no lado esquerdo de blocos multi-linha
 - **Label de linguagem** no canto superior direito
 - **Botão de cópia** ao lado do label de linguagem
+- **Barra de metadados sob demanda** — `:toolbar="true";` a adiciona num bloco de uma linha, `:toolbar="false";` a remove de qualquer bloco
 - **Abas** para blocos de código consecutivos com o mesmo grupo
 - **Breadcrumbs** acima de exemplos de código agrupados
 - **Breadcrumbs sem abas** para blocos de código simples

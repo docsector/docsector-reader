@@ -136,7 +136,6 @@
 
   // @
   system: {
-    documentation: 'Documentação',
     support: 'Patrocine este projeto',
     backToTop: 'Voltar para o topo'
   },

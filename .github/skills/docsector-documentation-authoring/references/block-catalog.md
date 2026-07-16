@@ -250,7 +250,17 @@ npm run dev
 ```
 ````
 
-Useful metadata attributes are `filename`, `group`, `tab`, and `breadcrumb` using `:attr;` syntax.
+Useful metadata attributes are `filename`, `group`, `tab`, `breadcrumb`, and `toolbar` using `:attr;` syntax.
+
+The metadata bar (language label + copy button) appears by default only on multi-line blocks, or on blocks with tabs or a breadcrumb — a single-line block renders bare. Override that per block with `toolbar`:
+
+````markdown
+```bash :toolbar="true";
+curl -fsSL https://example.com/install | bash
+```
+````
+
+Use `:toolbar="true";` on a single-line command readers are meant to copy, and `:toolbar="false";` to strip the bar from a block nobody copies, such as a long output dump or an ASCII tree.
 
 ### Mermaid Diagrams
 

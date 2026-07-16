@@ -137,7 +137,6 @@
 
   // @
   system: {
-    documentation: 'Documentation',
     support: 'Sponsor this project',
     backToTop: 'Back to top'
   },

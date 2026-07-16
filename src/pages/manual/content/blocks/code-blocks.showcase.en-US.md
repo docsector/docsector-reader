@@ -42,6 +42,33 @@ echo "Server running at http://localhost:8181"
 </template>
 ```
 
+### Single-Line Block
+
+A one-liner renders bare by default — no metadata row, no line numbers:
+
+```bash
+npm run dev
+```
+
+### Single-Line Block With The Toolbar Forced On
+
+The same one-liner with `:toolbar="true";` keeps the language label and the copy button, which is what you want for a command readers are meant to copy:
+
+```bash :toolbar="true";
+curl -fsSL https://example.com/install | bash
+```
+
+### Multi-Line Block With The Toolbar Forced Off
+
+`:toolbar="false";` strips the metadata row from a block nobody copies. Line numbers are unaffected — they follow the line count:
+
+```text :toolbar="false";
+project/
+├── src/
+│   └── index.js
+└── README.md
+```
+
 ### Tabbed Example
 
 ```php :group="hello-world"; :tab="HelloWorld.php"; :breadcrumb="src > examples > HelloWorld.php";
@@ -146,6 +173,7 @@ done
 - **Line numbers** on the left side of multi-line blocks
 - **Language label** in the top-right corner
 - **Copy button** next to the language label
+- **Metadata row on demand** — `:toolbar="true";` adds it to a single-line block, `:toolbar="false";` removes it from any block
 - **Tabs** for consecutive code blocks with the same group
 - **Breadcrumbs** above grouped code examples
 - **Breadcrumbs without tabs** for single code blocks

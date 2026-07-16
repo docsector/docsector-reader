@@ -24,7 +24,7 @@
             class="d-header__brand-logo q-mr-sm"
           />
           <span class="d-header__brand-text col column justify-center no-wrap">
-            <span class="d-header__brand-name ellipsis text-left">{{ brandName }}</span>
+            <span class="d-header__brand-name ellipsis text-left">{{ brandLockup }}</span>
             <span
               v-if="brandVersion"
               class="d-header__brand-version text-caption ellipsis text-left"
@@ -108,6 +108,9 @@ const router = useRouter()
 const store = useStore()
 const $q = useQuasar()
 const { t, locale } = useI18n()
+
+// Localized brand lockup — each locale owns the word order around {name}
+const brandLockup = computed(() => t('system.brand', { name: brandName }))
 
 const layout = ref({
   menu: false

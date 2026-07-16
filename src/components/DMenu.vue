@@ -19,6 +19,9 @@ const branding = docsectorConfig.branding || {}
 const links = docsectorConfig.links || {}
 const github = docsectorConfig.github || {}
 
+// Localized brand lockup — each locale owns the word order around {name}
+const brandLockup = computed(() => t('system.brand', { name: branding.name || 'Docsector' }))
+
 const term = ref(null)
 const founds = ref(false)
 const items = ref([])
@@ -539,8 +542,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
   <div class="d-menu__brand row items-center no-wrap" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
     <img class="d-menu__brand-logo" v-if="branding.logo" :src="branding.logo" :alt="branding.name" width="85" height="85" />
     <div class="d-menu__brand-text col">
-      <div class="text-weight-medium">{{ branding.name || 'Docsector' }}</div>
-      <div class="text-caption q-pt-xs">{{ t('system.documentation') }}</div>
+      <div class="text-weight-medium">{{ brandLockup }}</div>
       <q-select
         v-model="version" :options="versionOptions"
         emit-value map-options

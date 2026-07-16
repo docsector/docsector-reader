@@ -37,6 +37,11 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  // Explicit meta-row override: true/false force it on/off, null keeps the default
+  toolbar: {
+    type: Boolean,
+    default: null
+  },
   tabs: {
     type: Array,
     default: () => []
@@ -106,7 +111,14 @@ const activeBreadcrumbItems = computed(() => {
 const activeBreadcrumbTitle = computed(() => activeBreadcrumbs.value.join(' > '))
 const hasBreadcrumbs = computed(() => activeBreadcrumbs.value.length > 0)
 const lines = computed(() => countRenderedCodeLines(activeText.value))
-const showHeader = computed(() => hasTabs.value || hasBreadcrumbs.value || (lines.value && lines.value > 1))
+const showHeader = computed(() => {
+  // ? an explicit :toolbar="true|false"; fence attribute wins over the content-derived default
+  if (props.toolbar !== null) {
+    return props.toolbar
+  }
+
+  return Boolean(hasTabs.value || hasBreadcrumbs.value || lines.value > 1)
+})
 const codeLanguageClass = computed(() => `language-${activeLanguage.value}`)
 const highlighted = computed(() => {
   if (!activeText.value) {

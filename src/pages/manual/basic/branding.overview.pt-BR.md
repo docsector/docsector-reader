@@ -14,6 +14,25 @@ Os dados de branding vêm de `docsector.config.js`:
 - `links.github`, `links.discussions`, `links.chat`, `links.email`
 - `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore`
 
+## A Assinatura da Marca
+
+O header e o menu não mostram o `branding.name` sozinho — eles o renderizam como uma assinatura junto da palavra *Documentação*, para que o leitor sempre saiba em qual conjunto de docs está.
+
+O texto vive na chave de i18n `system.brand`, onde `{name}` é substituído pelo `branding.name`. Cada idioma é dono da frase inteira, inclusive da ordem das palavras:
+
+```text
+en-US:  '{name} Documentation'   →  Bootgly Documentation
+pt-BR:  'Documentação {name}'    →  Documentação Bootgly
+```
+
+Para mudar, sobrescreva `system.brand` nos seus próprios arquivos de idioma:
+
+```text
+system: {
+  brand: 'Documentação Oficial {name}'
+}
+```
+
 ## O Que o Leitor Percebe
 
 - Uma identidade reconhecível do projeto no menu

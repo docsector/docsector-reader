@@ -363,6 +363,104 @@ Body copy.
     expect(tokens[1].content).toContain('<d-block-expandable title="Literal">')
   })
 
+  it('leaves the toolbar override unset on a plain fence', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash
+npm run dev
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      toolbar: null
+    })
+  })
+
+  it('parses :toolbar="true"; as an opt-in override without eating the language', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash :toolbar="true";
+curl -fsSL https://bootgly.com/install | bash
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      toolbar: true
+    })
+    expect(tokens[0].content).toContain('curl -fsSL https://bootgly.com/install | bash')
+  })
+
+  it('parses :toolbar="false"; as an opt-out override', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`text :toolbar="false";
+first line
+second line
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'text',
+      toolbar: false
+    })
+  })
+
+  it('ignores an unrecognized toolbar value and keeps the default', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash :toolbar="maybe";
+npm run dev
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      toolbar: null
+    })
+  })
+
+  it('keeps the toolbar override alongside other fence attributes', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash :filename="install.sh"; :toolbar="true";
+curl -fsSL https://bootgly.com/install | bash
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      info: 'bash',
+      filename: 'install.sh',
+      toolbar: true
+    })
+  })
+
+  it('applies a toolbar override set by any fence of a grouped block', () => {
+    const tokens = tokenizePageSectionSource(`
+\`\`\`bash :group="install"; :tab="npm";
+npm install
+\`\`\`
+
+\`\`\`bash :group="install"; :tab="pnpm"; :toolbar="false";
+pnpm install
+\`\`\`
+`)
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({
+      tag: 'code',
+      group: 'install',
+      toolbar: false
+    })
+    expect(tokens[0].tabs).toHaveLength(2)
+  })
+
   it('marks markdown inline code as copyable rendered content', () => {
     const tokens = tokenizePageSectionSource('Run `npm run build` after editing the page.')
 
