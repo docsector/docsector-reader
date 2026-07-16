@@ -29,7 +29,7 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 - **status** — Status da página: `'done'`, `'draft'`, `'empty'` ou `'new'`; `new` é exibido em verde
 - **version** — Versão opcional em que a página foi introduzida, exibida abaixo da data de última atualização como `Novo em: ...` (por exemplo, `'v2.1.0'`)
 - **icon** — Nome do ícone Material Design exibido no menu lateral
-- **menu** — Objeto controlando exibição do menu (header, subheader, separator)
+- **menu** — Objeto controlando exibição do menu (header, subheader, separators)
 - **subpages** — Ativar abas adicionais: `showcase`, `vs`
 
 ## Nós de Categoria
@@ -64,9 +64,16 @@ menu: &#123;
 ```javascript
 menu: &#123;
   subheader: '.minha-secao',   // caminho i18n para label do subheader
-  separator: ' page'           // sufixo de classe CSS para separador
+  separators: &#123;
+    lineTop: true,             // linha ACIMA do item
+    lineBottom: true           // linha ABAIXO do item
+  &#125;
 &#125;
 ```
+
+O valor de um separador também pode nomear uma variante de espessura dos estilos do menu — `lineBottom: 'page'` ou `lineBottom: 'list'` renderizam uma linha mais grossa.
+
+A forma legada `separator: true` (ou uma string de sufixo de classe como `' page'`) continua suportada e significa uma linha **abaixo** do item; quando `separators` está presente, ele vence.
 
 ## Convenção de Arquivos Markdown
 

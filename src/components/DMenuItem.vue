@@ -1,15 +1,17 @@
 <script setup>
 // defineProps is a compiler macro in <script setup>, no import needed
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { namespacedLabelI18nPath, routeTitleI18nPath } from '../i18n/path'
+import { menuSeparatorClass, normalizeMenuSeparators } from './menu-separators'
 
 const $route = useRoute()
 const $router = useRouter()
 const { t } = useI18n()
 
-defineProps({
+const props = defineProps({
   items: {
     type: Number,
     required: true
@@ -31,6 +33,9 @@ defineProps({
     required: true
   }
 })
+
+// Lines around the item — `separators.lineTop`/`lineBottom` (legacy `separator` = lineBottom)
+const separators = computed(() => normalizeMenuSeparators(props.subitem?.meta?.menu))
 
 const getMenuItemLabel = (item) => {
   if (!item?.path) {
@@ -150,6 +155,14 @@ const onMenuItemClick = (event, path, currentSubpage) => {
   </q-item-label>
 </q-item-section>
 
+<!-- Menu Separator - line above the item -->
+<li v-if="separators.lineTop" role="listitem">
+  <q-separator
+    :class="menuSeparatorClass(separators.lineTop)"
+    role="separator"
+  />
+</li>
+
 <q-item
   v-if="subitem?.path"
   :to="getMenuItemTo(subitem.path)"
@@ -176,10 +189,10 @@ const onMenuItemClick = (event, path, currentSubpage) => {
   </q-item-section>
 </q-item>
 
-<!-- Menu Separator -->
-<li v-if="subitem?.meta?.menu?.separator" role="listitem">
+<!-- Menu Separator - line below the item -->
+<li v-if="separators.lineBottom" role="listitem">
   <q-separator
-    :class="'separator' + (subitem.meta.menu.separator === true ? '' : subitem.meta.menu.separator)"
+    :class="menuSeparatorClass(separators.lineBottom)"
     role="separator"
   />
 </li>

@@ -58,6 +58,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧰 **Docsector CLI Skill Installer** — Install the built-in authoring skill into older scaffolds with `docsector install-skill`
 - 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, resize-safe drawer state, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection
+- ➖ **Explicit Menu Item Separators** — `menu.separators: { lineTop, lineBottom }` spells out whether the line renders above or below the item (values can name thickness variants like `'page'`/`'list'`); the legacy `menu.separator` form remains supported as a line below
 - 🔻 **Bottom-Pinned Social Links** — The menu's social links bar (Website, Email, Chat, Discussions, GitHub) is pinned to the bottom of the sidebar for constant access on mobile and while a documentation page is open — the project website button is opt-in via `links.website`
 - ⭐ **GitHub Stars Badge** — Optional star-count badge on the menu's GitHub button, opt-in via `github.stars` and derived from `links.github`, using the unauthenticated GitHub API cached for 6h in localStorage
 - 🔎 **Search** — Menu search across all documentation content and tags

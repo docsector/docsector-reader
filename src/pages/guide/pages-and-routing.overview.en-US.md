@@ -29,7 +29,7 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 - **status** — Page status: `'done'`, `'draft'`, `'empty'`, or `'new'`; `new` is shown in green
 - **version** — Optional version where the page was introduced, shown under the last updated date as `New in: ...` (for example, `'v2.1.0'`)
 - **icon** — Material Design icon name shown in the sidebar
-- **menu** — Object controlling menu display (header, subheader, separator)
+- **menu** — Object controlling menu display (header, subheader, separators)
 - **subpages** — Enable additional tabs: `showcase`, `vs`
 
 ## Category Nodes
@@ -64,9 +64,16 @@ menu: &#123;
 ```javascript
 menu: &#123;
   subheader: '.my-section',    // i18n path for subheader label
-  separator: ' page'           // CSS class suffix for separator
+  separators: &#123;
+    lineTop: true,             // line ABOVE the item
+    lineBottom: true           // line BELOW the item
+  &#125;
 &#125;
 ```
+
+A separator value can also name a thickness variant from the menu styles — `lineBottom: 'page'` or `lineBottom: 'list'` render a thicker line.
+
+The legacy form `separator: true` (or a class-suffix string like `' page'`) is still supported and means a line **below** the item; when `separators` is present, it wins.
 
 ## Markdown File Convention
 

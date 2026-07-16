@@ -45,7 +45,9 @@ export default {
       },
       book: 'guide',
       menu: {
-        separator: ' page'
+        separators: {
+          lineBottom: 'page'
+        }
       },
       subpages: {
         showcase: false
