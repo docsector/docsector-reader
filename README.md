@@ -45,6 +45,9 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- ⚡ **Build-Time Page Compilation** — Pages are tokenized at build into ready-to-render modules (math pre-rendered with KaTeX), keeping the markdown engine out of the client's critical path
+- 🚀 **Progressive Page Mounting** — The first blocks of a page render synchronously and the below-the-fold rest appends in idle batches, keeping the main thread responsive
+- 🌐 **Per-Locale Static Markdown** — The build emits `<route>.<lang>.md` files so copy-page and agent tools fetch pristine localized sources
 - 📋 **Clickable Inline Code** — Backtick-rendered inline code snippets are clickable across pages, subpages, and AI assistant answers
 - 🔽 **Nested Markdown Lists** — Ordered and unordered lists preserve sublist hierarchy across multiple indentation levels
 - ☑️ **Markdown Task Lists** — GitBook-style `- [ ]` and `- [x]` items render as read-only checkboxes with nested subtasks
