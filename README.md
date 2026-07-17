@@ -14,7 +14,7 @@
   </a>
 </p>
 
-Transform Markdown content into beautiful, navigable documentation sites — with i18n, syntax highlighting, dark/light mode, and anchor navigation.
+Transform Markdown content into beautiful, navigable documentation sites — with i18n, syntax highlighting, OS-aware dark/light theming, and anchor navigation.
 
 ---
 
@@ -50,11 +50,11 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ⌨️ **Keyboard Shortcut Keycaps** — Author GitBook-style shortcuts with raw `<kbd>...</kbd>` tags, rendered consistently across docs and AI assistant answers
 - 🖼️ **Block Image Captions & Zoom** — Standalone Markdown images render as zoomable figures, and raw `figure` / `picture` markup supports separate alt text and captions
 - 🧱 **Raw HTML in Markdown** — Renders inline and block HTML tags inside markdown sections (including homepage remote README content)
-- 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with automatic dark/light theme switching
+- 🧩 **Mermaid Diagrams** — Native support for fenced ` ```mermaid ` blocks, with diagrams re-rendered to match the active theme
 - ➗ **Math & KaTeX** — Native support for inline `$...$` and display `$$...$$` formulas rendered with KaTeX
 - 🚨 **GitHub-Style Alerts** — Native support for `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]`
 - 🌍 **Internationalization (i18n)** — Multi-language support with HJSON locale files and per-page translations
-- 🌗 **Dark/Light Mode** — Automatic theme switching with Quasar Dark Plugin
+- 🌗 **Auto / Light / Dark Theme** — Follows the reader's operating system colour scheme by default via `prefers-color-scheme`, switching live when the OS flips; Light and Dark pin the theme instead, persisted under `setting.theme` (migrated from the pre-4.16 boolean). A pre-paint inline script applies the theme before the first paint, so there is no flash — localized via `settings.appearance.theme.*`, no configuration needed
 - 🧰 **Docsector CLI Skill Installer** — Install the built-in authoring skill into older scaffolds with `docsector install-skill`
 - 🔗 **Anchor Navigation** — Right-side source-ordered Table of Contents tree with stable scroll tracking, resize-safe drawer state, auto-scroll to the active section, and active-heading resolution based on the last heading that crossed the content threshold
 - 🖱️ **Active Menu Item UX** — Active menu entries keep pointer cursor, clear URL hash without redundant navigation, and prevent accidental label text selection

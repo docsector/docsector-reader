@@ -1,6 +1,10 @@
-## Modo Escuro e Modo Claro
+## Modo Automático, Escuro e Claro
 
-O Docsector Reader suporta alternância automática de tema escuro/claro através do **Quasar Dark Plugin**. Os usuários podem alternar entre os modos no diálogo de Configurações.
+O Docsector Reader oferece três modos de tema — **Automático**, **Claro** e **Escuro** — selecionáveis no diálogo de Configurações. **Automático é o padrão**: o site segue o esquema de cores do sistema operacional do leitor e muda ao vivo quando essa configuração muda, sem recarregar.
+
+A escolha é guardada no `localStorage` sob `setting.theme` e aplicada antes da primeira pintura, então o leitor nunca vê um flash do tema errado. A renderização é feita pelo **Quasar Dark Plugin** através das classes `body--light` / `body--dark` descritas abaixo — nenhuma configuração é necessária.
+
+Veja [Tema](/manual/basic/theme) para entender como a detecção e a persistência funcionam.
 
 ## Variáveis Quasar
 

@@ -34,6 +34,7 @@ import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
 import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
 import { appendSitemapsToRobots, createSitemap } from './sitemap.js'
+import { THEME_INLINE_SCRIPT } from './theme.inline.js'
 
 /**
  * No-op configure wrapper.
@@ -3165,6 +3166,34 @@ function buildMcpServerCardPayload ({
 }
 
 /**
+ * Create a Vite plugin that injects the pre-paint theme script into index.html.
+ *
+ * The script (see src/theme.inline.js) stamps `body--light`/`body--dark` from
+ * the reader's stored preference — or their OS — while the page is still being
+ * parsed, so no reader ever sees a flash of the wrong theme.
+ *
+ * Injecting via `transformIndexHtml` rather than shipping the script inside
+ * index.html is deliberate: consumer projects own their own index.html (so a
+ * hand-edit would reach nobody), and Quasar's own html plugin runs its EJS
+ * template compile in an `enforce: 'pre'` hook — injecting from a default-order
+ * hook lands after it, keeping the script safe from `<%= %>` interpolation.
+ */
+function createThemeBootPlugin () {
+  return {
+    name: 'docsector-theme-boot',
+    transformIndexHtml () {
+      return [
+        {
+          tag: 'script',
+          children: THEME_INLINE_SCRIPT,
+          injectTo: 'body-prepend'
+        }
+      ]
+    }
+  }
+}
+
+/**
  * Create a Vite plugin that emits `version.json` into the build output.
  *
  * The file carries the same build ID that `extendViteConf` bakes into the
@@ -3289,6 +3318,7 @@ export function createQuasarConfig (options = {}) {
         createMarkdownBuildPlugin(projectRoot),
         createPrerenderMetaPlugin(projectRoot),
         createVersionFilePlugin(projectRoot, buildId),
+        createThemeBootPlugin(),
         ...vitePlugins
       ],
 
@@ -3438,7 +3468,13 @@ export function createQuasarConfig (options = {}) {
     },
 
     framework: {
-      config: {},
+      // `dark: 'auto'` is a fail-safe, not the mechanism: src/theme-init.js
+      // normally applies the reader's stored preference right after this value
+      // is consumed at install time (and before the first paint). It only shows
+      // through if theme-init fails — following the OS being the sane default.
+      // It cannot carry the preference itself: Quasar serializes framework.config
+      // with JSON.stringify, so it is always a build-time literal.
+      config: { dark: 'auto' },
       lang: 'en-US',
       plugins: [
         'Meta', 'Notify', 'LocalStorage', 'SessionStorage'

@@ -89,8 +89,6 @@
       }
     },
 
-    settings: 'Configurações',
-
     _404: 'Erro 404 - Não encontrado'
   },
   submenu: {
@@ -140,20 +138,8 @@
     backToTop: 'Voltar para o topo'
   },
   changelog: {},
-  settings: {
-    general: {
-      _: 'Configurações gerais',
-      language: {
-        _: 'Idioma'
-      }
-    },
-    appearance: {
-      _: 'Aparência',
-      background: {
-        _: 'Cor de fundo'
-      }
-    }
-  },
+  // settings.* vem dos defaults do engine (src/i18n/helpers.js) para alcançar
+  // todo consumer — sobrescreva qualquer chave aqui para mudar o texto.
 
   _a: ' e ',
   _o: ' ou ',

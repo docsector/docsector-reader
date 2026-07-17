@@ -77,13 +77,12 @@
             </q-item-section>
             <q-item-section>
               <q-select
-                v-model="settings.appearance.background.default" :options="settings.appearance.background.options"
+                v-model="theme" :options="themeOptions"
                 stack-label dense outlined
                 emit-value map-options
-                :label="$t('settings.appearance.background._')"
+                :label="$t('settings.appearance.theme._')"
                 behavior="menu"
                 options-selected-class="bg-primary text-white"
-                @update:model-value="setBackground"
               >
                 <template v-slot:option="scope">
                   <q-item v-bind="scope.itemProps">
@@ -115,9 +114,15 @@
 </q-dialog>
 </template>
 
+<script>
+// Module scope — runs before app.use(Quasar), which is the whole point.
+// See theme-init.js: it must beat the Dark plugin's install to the theme.
+import './theme-init.js'
+</script>
+
 <script setup>
 import { reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useQuasar } from 'quasar'
+import { Dark, useQuasar } from 'quasar'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
@@ -126,6 +131,7 @@ import docsectorConfig from 'docsector.config.js'
 import DUpdateBanner from './components/DUpdateBanner.vue'
 import { setupUpdateCheck } from './composables/useUpdateCheck'
 import { setupWebMcp } from './composables/useWebMcp'
+import { fromDarkValue, persistTheme, toDarkValue } from './theme.js'
 
 defineOptions({ name: 'App' })
 
@@ -155,25 +161,40 @@ const settings = reactive({
         }
       ]
     }
-  },
-  appearance: {
-    background: {
-      default: $q.localStorage.getItem('setting.background'),
-      options: [
-        {
-          icon: 'light_mode',
-          label: 'Modo Claro',
-          value: false
-        },
-        {
-          icon: 'dark_mode',
-          label: 'Modo Escuro',
-          value: true
-        }
-      ]
-    }
   }
 })
+
+// Appearance — $q.dark.mode is the reactive source of truth (it keeps the
+// literal 'auto'), so there is no local copy to drift out of sync when the OS
+// theme flips on its own.
+const theme = computed({
+  get () {
+    return fromDarkValue($q.dark.mode)
+  },
+  set (value) {
+    setTheme(value)
+  }
+})
+
+// A computed, not a reactive() literal: option labels must re-translate when
+// the reader switches language.
+const themeOptions = computed(() => [
+  {
+    icon: 'brightness_auto',
+    label: t('settings.appearance.theme.auto'),
+    value: 'auto'
+  },
+  {
+    icon: 'light_mode',
+    label: t('settings.appearance.theme.light'),
+    value: 'light'
+  },
+  {
+    icon: 'dark_mode',
+    label: t('settings.appearance.theme.dark'),
+    value: 'dark'
+  }
+])
 
 const toogleDialog = computed({
   get () {
@@ -196,10 +217,12 @@ function setLanguage (language) {
   router.go()
 }
 
-// Background
-function setBackground (mode) {
-  $q.localStorage.set('setting.background', mode)
-  $q.dark.set(mode)
+// Appearance
+function setTheme (value) {
+  const applied = persistTheme(value, { storage: window.localStorage })
+
+  // : live mutation — unlike setLanguage, no reload is needed
+  Dark.set(toDarkValue(applied))
 }
 
 onMounted(() => {
@@ -214,14 +237,8 @@ onMounted(() => {
   }
   locale.value = loc
 
-  // Background
-  let dark = $q.localStorage.getItem('setting.background')
-  if (dark === null) {
-    dark = false
-    $q.localStorage.set('setting.background', dark)
-    settings.appearance.background.default = dark
-  }
-  $q.dark.set(dark)
+  // ? the theme is applied by theme-init.js, before Quasar's Dark plugin
+  //   installs — doing it here would clobber it after the first paint
 
   cleanupWebMcp = setupWebMcp({
     router,

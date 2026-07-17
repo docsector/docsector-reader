@@ -1,6 +1,10 @@
-## Dark Mode & Light Mode
+## Auto, Dark & Light Mode
 
-Docsector Reader supports automatic dark/light theme switching through the **Quasar Dark Plugin**. Users can toggle between modes in the Settings dialog.
+Docsector Reader ships three theme modes — **Auto**, **Light** and **Dark** — selectable in the Settings dialog. **Auto is the default**: the site follows the reader's operating system colour scheme and switches live when the OS setting changes, without a reload.
+
+The choice is stored in `localStorage` under `setting.theme` and applied before the first paint, so readers never see a flash of the wrong theme. Rendering is driven by the **Quasar Dark Plugin** through the `body--light` / `body--dark` classes described below — no configuration is required.
+
+See [Theme](/manual/basic/theme) for how detection and persistence work.
 
 ## Quasar Variables
 

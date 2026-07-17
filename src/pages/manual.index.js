@@ -153,6 +153,35 @@ export default {
     }
   },
 
+  '/basic/theme': {
+    config: {
+      icon: 'brightness_auto',
+      status: 'new',
+      version: 'v4.16.0',
+      meta: {
+        description: {
+          'en-US': 'Theme — Documentation of Docsector Reader',
+          'pt-BR': 'Tema — Documentação do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Theme' },
+      'pt-BR': { title: 'Tema' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'theme auto dark light mode system prefers-color-scheme appearance settings flash',
+        'pt-BR': 'tema automático escuro claro modo sistema aparência configurações flash'
+      }
+    }
+  },
+
   '/basic/update-notification': {
     config: {
       icon: 'refresh',

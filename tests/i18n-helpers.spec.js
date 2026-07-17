@@ -145,6 +145,64 @@ describe('i18n message builder', () => {
     expect(t('system.brand', { name: 'Bootgly' })).toBe('Documentação Bootgly')
   })
 
+  it('provides the settings dialog strings to a consumer that defines none', () => {
+    // ? consumers ship their own language files; without engine defaults these
+    //   keys would render as raw key paths in every consumer project
+    const messages = buildMessages({
+      langModules,
+      mdModules,
+      books: {},
+      boot,
+      langs: ['en-US', 'pt-BR']
+    })
+
+    expect(messages['en-US'].settings.appearance).toEqual({
+      _: 'Appearance',
+      theme: {
+        _: 'Theme',
+        auto: 'Auto',
+        light: 'Light',
+        dark: 'Dark'
+      }
+    })
+    expect(messages['en-US'].settings.general.language._).toBe('Language')
+
+    expect(messages['pt-BR'].settings.appearance.theme).toEqual({
+      _: 'Tema',
+      auto: 'Automático',
+      light: 'Claro',
+      dark: 'Escuro'
+    })
+    expect(messages['pt-BR'].settings.general._).toBe('Configurações gerais')
+  })
+
+  it('lets a consumer override a settings label without losing the rest', () => {
+    const messages = buildMessages({
+      langModules: {
+        ...langModules,
+        './languages/en-US.hjson': {
+          ...langModules['./languages/en-US.hjson'],
+          settings: {
+            appearance: {
+              theme: {
+                _: 'Colour Scheme'
+              }
+            }
+          }
+        }
+      },
+      mdModules,
+      books: {},
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(messages['en-US'].settings.appearance.theme._).toBe('Colour Scheme')
+    // ? the deep merge keeps the engine defaults the consumer did not touch
+    expect(messages['en-US'].settings.appearance.theme.auto).toBe('Auto')
+    expect(messages['en-US'].settings.appearance._).toBe('Appearance')
+  })
+
   it('provides the update banner strings in both locales', () => {
     const messages = buildMessages({
       langModules,

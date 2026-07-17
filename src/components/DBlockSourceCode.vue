@@ -64,6 +64,8 @@ const lineAnchorScrollRetryDelay = 500
 const coloring = computed(() => $q.dark.isActive ? 'dark' : 'white')
 const anchor = computed(() => printToLetter(props.index + 1))
 
+// ? the dark read below is only tracked because every caller is a computed —
+//   keep it that way, or these icons stop following live OS theme changes
 const fileIconUrl = (label) => {
   if (!looksLikeFileName(label)) {
     return ''

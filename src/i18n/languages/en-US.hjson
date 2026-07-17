@@ -90,8 +90,6 @@
       }
     },
 
-    settings: 'Settings',
-
     _404: '404 Error - Not Found'
   },
   submenu: {
@@ -141,20 +139,8 @@
     backToTop: 'Back to top'
   },
   changelog: {},
-  settings: {
-    general: {
-      _: 'General Settings',
-      language: {
-        _: 'Language'
-      }
-    },
-    appearance: {
-      _: 'Appearance',
-      background: {
-        _: 'Background Color'
-      }
-    }
-  },
+  // settings.* comes from the engine defaults (src/i18n/helpers.js) so that
+  // every consumer gets it — override any key here to reword it.
 
   _a: ' and ',
   _o: ' or ',

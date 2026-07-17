@@ -48,6 +48,7 @@ const engineDefaults = {
       connectCodexCaption: 'Use this MCP in Codex'
     },
     menu: {
+      settings: 'Settings',
       status: {
         empty: {
           _: 'empty',
@@ -68,6 +69,23 @@ const engineDefaults = {
           released: 'released',
           draft: 'draft',
           deprecated: 'deprecated'
+        }
+      }
+    },
+    settings: {
+      general: {
+        _: 'General Settings',
+        language: {
+          _: 'Language'
+        }
+      },
+      appearance: {
+        _: 'Appearance',
+        theme: {
+          _: 'Theme',
+          auto: 'Auto',
+          light: 'Light',
+          dark: 'Dark'
         }
       }
     },
@@ -135,6 +153,7 @@ const engineDefaults = {
       connectCodexCaption: 'Use este MCP no Codex'
     },
     menu: {
+      settings: 'Configurações',
       status: {
         empty: {
           _: 'vazia',
@@ -155,6 +174,23 @@ const engineDefaults = {
           released: 'publicada',
           draft: 'rascunho',
           deprecated: 'obsoleta'
+        }
+      }
+    },
+    settings: {
+      general: {
+        _: 'Configurações gerais',
+        language: {
+          _: 'Idioma'
+        }
+      },
+      appearance: {
+        _: 'Aparência',
+        theme: {
+          _: 'Tema',
+          auto: 'Automático',
+          light: 'Claro',
+          dark: 'Escuro'
         }
       }
     },

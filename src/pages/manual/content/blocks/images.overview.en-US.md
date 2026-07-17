@@ -25,6 +25,8 @@ Use raw HTML when the accessibility text and the visible caption should be diffe
 </figure>
 ```
 
+`prefers-color-scheme` follows the reader's **operating system**, while the site theme follows their [Theme](/manual/basic/theme) setting. In the default Auto mode the two always agree. They diverge only for a reader who pins Light or Dark against their system — pick variants that stay legible either way, or swap the image with `body--dark` CSS instead.
+
 ## Good Practices
 
 - Write labels that still make sense without the visual, because plain Markdown uses the same text for caption and alt.
