@@ -451,7 +451,7 @@ watch(() => route.fullPath, () => {
           />
         </q-btn-group>
       </q-toolbar-title>
-      <q-btn v-if="showToc" class="d-submenu__toggle" :class="layoutMeta ? 'active' : null" @click="toggleSectionsTree" icon="account_tree">
+      <q-btn v-if="showToc" class="d-submenu__toggle" :class="layoutMeta ? 'active' : null" @click="toggleSectionsTree" icon="account_tree" :aria-label="$t('page.edit.anchor')">
         <q-tooltip>{{ $t('page.edit.anchor') }}</q-tooltip>
       </q-btn>
     </div>

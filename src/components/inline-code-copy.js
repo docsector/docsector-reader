@@ -33,7 +33,14 @@ export const decorateInlineCodeCopyTargets = (container, label = '') => {
   container.querySelectorAll(INLINE_CODE_COPY_SELECTOR).forEach((element) => {
     if (normalizedLabel) {
       element.setAttribute('title', normalizedLabel)
-      element.setAttribute('aria-label', normalizedLabel)
+
+      // ? The accessible name must contain the visible text (WCAG 2.5.3 /
+      //   label-content-name-mismatch) — prepend the code itself
+      const visibleText = String(element.textContent || '').trim()
+      element.setAttribute(
+        'aria-label',
+        visibleText ? `${visibleText} — ${normalizedLabel}` : normalizedLabel
+      )
     }
   })
 }
