@@ -36,6 +36,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🤖 **AI Assistant Panel** — Optional documentation assistant drawer backed by Cloudflare AI Search through an internal same-origin endpoint, with an opt-in page-context toggle in the composer
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
+- ⚡ **Early Hints (103)** — Per-book `Link` preload rules in `_headers` expose each route's critical request wave so Cloudflare can 103-hint it before the HTML body arrives
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
 - 📄 **llms.txt / llms-full.txt** — Auto-generated [llms.txt](https://llmstxt.org) index and full-content file for LLM discovery (requires `siteUrl` in config)
 
