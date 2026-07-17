@@ -2153,24 +2153,6 @@ function createRoutePreloadPlugin () {
   }
 }
 
-/**
- * Roboto ships without font-display, so text stays invisible while the font
- * downloads. Inject `font-display: optional` — text paints immediately with
- * the fallback font and never shifts mid-view; the webfont is cached for the
- * next navigation. Icon fonts keep their default (a fallback would flash
- * ligature text).
- */
-function createFontDisplayPlugin () {
-  return {
-    name: 'docsector-font-display',
-    transform (code, id) {
-      if (id.includes('roboto-font') && id.endsWith('.css')) {
-        return code.replace(/@font-face\s*\{/g, '@font-face{font-display:optional;')
-      }
-    }
-  }
-}
-
 function createMarkdownEndpointPlugin (projectRoot) {
   const pagesDir = resolve(projectRoot, 'src', 'pages')
 
@@ -3699,13 +3681,12 @@ export function createQuasarConfig (options = {}) {
       'app.sass'
     ],
 
-    // Icon fonts are intentionally absent: material icons ship as a
-    // tree-shaken SVG subset (virtual:docsector-icons + boot/icons.js) and
-    // the few FontAwesome glyphs are inlined SVG imports — together that
-    // saves ~280 KB of webfonts on every page load.
-    extras: [
-      'roboto-font'
-    ],
+    // No icon-font or roboto-font extras: material icons ship as a tree-shaken
+    // SVG subset (virtual:docsector-icons + boot/icons.js), the few FontAwesome
+    // glyphs are inlined SVG imports, and Roboto is a self-hosted variable
+    // woff2 declared in app.sass — together that saves ~320 KB of webfonts on
+    // every page load.
+    extras: [],
 
     build: {
       target: {
@@ -3719,7 +3700,6 @@ export function createQuasarConfig (options = {}) {
         createBooksPlugin(projectRoot),
         createCodeExamplesPlugin(),
         createTerminalsPlugin(),
-        createFontDisplayPlugin(),
         createIconsPlugin(projectRoot),
         createRoutePreloadPlugin(),
         createHjsonPlugin(),
