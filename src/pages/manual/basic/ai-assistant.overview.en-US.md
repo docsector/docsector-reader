@@ -9,6 +9,7 @@ The first provider is Cloudflare AI Search. It can crawl Docsector's generated M
 - A right-side assistant drawer on desktop.
 - A fullscreen assistant dialog on mobile.
 - Suggested prompts, opt-in current-page context, streaming responses, and source links.
+- Answers render as Markdown, and their code blocks always carry the language label and a copy button.
 - Build-time AI Search artifacts when `siteUrl` is configured.
 - A same-origin internal endpoint so credentials stay server-side.
 

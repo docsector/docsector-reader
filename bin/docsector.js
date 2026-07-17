@@ -24,7 +24,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '4.17.0'
+const VERSION = '4.17.1'
 const AUTHORING_SKILL_NAME = 'docsector-documentation-authoring'
 const AUTHORING_SKILL_DESCRIPTION = 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.'
 const AUTHORING_SKILL_PUBLIC_PATH = `/.well-known/agent-skills/${AUTHORING_SKILL_NAME}/SKILL.md`

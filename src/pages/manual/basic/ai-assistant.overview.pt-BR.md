@@ -9,6 +9,7 @@ O primeiro provedor é o Cloudflare AI Search. Ele pode rastrear o sitemap Markd
 - Um drawer lateral direito no desktop.
 - Um diálogo em tela cheia no mobile.
 - Prompts sugeridos, contexto opcional da página atual, respostas em streaming e links de fontes.
+- As respostas são renderizadas em Markdown, e os code blocks delas sempre trazem o rótulo da linguagem e o botão de copiar.
 - Artefatos de build para AI Search quando `siteUrl` está configurado.
 - Um endpoint interno same-origin para manter credenciais no servidor.
 

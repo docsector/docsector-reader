@@ -149,7 +149,13 @@ const renderMessageTokens = (message) => {
     return []
   }
 
-  return tokenizePageSectionSource(message?.content || '', { allowHeadingTokens: false })
+  // ? force the meta row on: answers are mostly copyable one-liners (a shell
+  //   command, an install line), and a model rarely bothers with a fence
+  //   attribute — an explicit :toolbar="false"; in the answer still wins
+  return tokenizePageSectionSource(message?.content || '', {
+    allowHeadingTokens: false,
+    codeToolbarDefault: true
+  })
 }
 
 const startResize = (event) => {
