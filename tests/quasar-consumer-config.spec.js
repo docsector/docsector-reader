@@ -83,9 +83,9 @@ describe('consumer Quasar config', () => {
     try {
       const config = createQuasarConfig({ projectRoot })
 
-      // ? boot files run after ALL boot chunks load (the i18n one is ~255 KB),
-      //   far too late to beat the first paint — theme-init.js owns this
-      expect(config.boot).toEqual(['store', 'QZoom', 'i18n', 'axios'])
+      // ? boot files run after ALL boot chunks load, far too late to beat the
+      //   first paint — theme-init.js owns the theme; no theme boot here
+      expect(config.boot).toEqual(['icons', 'store', 'QZoom', 'i18n', 'axios'])
     } finally {
       rmSync(projectRoot, { recursive: true, force: true })
     }

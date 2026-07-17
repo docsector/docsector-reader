@@ -312,7 +312,7 @@ function printToLetter(number) {
       <div class="lines" v-if="lines && lines > 1">
         <template v-for="(line, index) in lines" :key="index">
           <a class="line" :href="buildLineHref(line)" @click="navigateToLineAnchor($event, line)">
-            <i class="material-icons" aria-hidden="true" data-hidden="true">link</i>
+            <q-icon name="link" aria-hidden="true" data-hidden="true" />
             <span :id="buildLineAnchorId(line)" :data-anchor-offset-top="lineAnchorTopOffset">{{ line }}</span>
           </a>
         </template>

@@ -26,6 +26,7 @@
 import { readFileSync, existsSync, rmSync, mkdirSync, writeFileSync, readdirSync } from 'fs'
 import { execSync } from 'child_process'
 import { createHash } from 'crypto'
+import { createRequire } from 'module'
 import { resolve } from 'path'
 import { pathToFileURL } from 'url'
 import HJSON from 'hjson'
@@ -79,7 +80,8 @@ const DOCSECTOR_VIRTUAL_MODULE_IDS = Object.freeze([
   'virtual:docsector-books',
   'virtual:docsector-homepage-override',
   'virtual:docsector-code-examples',
-  'virtual:docsector-git-dates'
+  'virtual:docsector-git-dates',
+  'virtual:docsector-icons'
 ])
 
 const DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE = Object.freeze([
@@ -1881,6 +1883,145 @@ export async function resolveHomePageSources (projectRoot, config = {}, options 
   return { mode, byLang, defaultLang, langs }
 }
 
+/**
+ * Material icon subset — the ligature webfont weighed ~125 KB on every page
+ * load to cover 2100+ glyphs. This plugin scans the engine source, the
+ * consumer's page registry/markdown and docsector.config.js for icon names,
+ * and exposes `virtual:docsector-icons`: a name → SVG map tree-shaken from
+ * @quasar/extras/material-icons. boot/icons.js registers it as Quasar's
+ * iconMapFn, so dynamic names (`icon: 'rocket_launch'` in configs and
+ * markdown blocks) keep working — as inline SVGs instead of font ligatures.
+ * Names the scan cannot see (fully computed at runtime) can be forced via
+ * `icons: { include: ['name'] }` in docsector.config.js.
+ */
+const ICON_SCAN_EXTENSIONS = Object.freeze(['.vue', '.js', '.md'])
+const ICON_SCAN_SKIP_DIRS = Object.freeze(new Set(['node_modules', 'dist', 'tmp', '.git']))
+
+function materialIconExportName (name) {
+  const camel = String(name)
+    .split(/[_-]/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+
+  return `mat${camel}`
+}
+
+function collectIconTokens (source, tokens) {
+  for (const line of String(source).split('\n')) {
+    // ? only lines that mention icons — keeps ordinary strings out
+    if (!/icon/i.test(line)) continue
+
+    for (const match of line.matchAll(/['"]([a-z0-9][a-z0-9_]{1,40})['"]/g)) {
+      tokens.add(match[1])
+    }
+  }
+}
+
+function scanIconFiles (dir, tokens, seenFiles) {
+  if (!existsSync(dir)) return
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (!ICON_SCAN_SKIP_DIRS.has(entry.name)) {
+        scanIconFiles(resolve(dir, entry.name), tokens, seenFiles)
+      }
+      continue
+    }
+
+    const filePath = resolve(dir, entry.name)
+    if (seenFiles.has(filePath)) continue
+    if (!ICON_SCAN_EXTENSIONS.some(extension => entry.name.endsWith(extension))) continue
+
+    seenFiles.add(filePath)
+    collectIconTokens(readFileSync(filePath, 'utf-8'), tokens)
+  }
+}
+
+function createIconsPlugin (projectRoot) {
+  const virtualId = 'virtual:docsector-icons'
+  const resolvedId = '\0' + virtualId
+  let cachedModule = null
+
+  const buildModule = async () => {
+    if (cachedModule) return cachedModule
+
+    const packageRoot = getPackageRoot(projectRoot)
+
+    // ! Available SVG exports (resolved from the project's dependency tree)
+    const available = new Set()
+    try {
+      const projectRequire = createRequire(resolve(projectRoot, 'package.json'))
+      const extrasIndex = readFileSync(projectRequire.resolve('@quasar/extras/material-icons/index.js'), 'utf-8')
+
+      for (const match of extrasIndex.matchAll(/module\.exports\.(mat[A-Za-z0-9]+)\s*=/g)) {
+        available.add(match[1])
+      }
+    } catch (error) {
+      console.warn(`[docsector] Could not read @quasar/extras material icons: ${error?.message || String(error)}`)
+    }
+
+    // @ Scan engine source, consumer content and config for icon name tokens
+    const tokens = new Set()
+    const seenFiles = new Set()
+    scanIconFiles(resolve(packageRoot, 'src'), tokens, seenFiles)
+    scanIconFiles(resolve(projectRoot, 'src', 'pages'), tokens, seenFiles)
+
+    const configPath = resolve(projectRoot, 'docsector.config.js')
+    if (existsSync(configPath)) {
+      collectIconTokens(readFileSync(configPath, 'utf-8'), tokens)
+
+      try {
+        const { default: config } = await import(pathToFileURL(configPath).href)
+        for (const name of config.icons?.include || []) {
+          tokens.add(String(name))
+        }
+      } catch {
+        // config already validated elsewhere; scanning is best-effort
+      }
+    }
+
+    // ? Keep only tokens that are real material icon names
+    const entries = []
+    for (const name of [...tokens].sort()) {
+      const exportName = materialIconExportName(name)
+      if (available.has(exportName)) {
+        entries.push({ name, exportName })
+      }
+    }
+
+    const imports = [...new Set(entries.map(entry => entry.exportName))].join(', ')
+    const mapBody = entries
+      .map(entry => `  ${JSON.stringify(entry.name)}: ${entry.exportName}`)
+      .join(',\n')
+
+    cachedModule = entries.length === 0
+      ? 'export default {}'
+      : [
+          `import { ${imports} } from '@quasar/extras/material-icons'`,
+          'export default {',
+          mapBody,
+          '}'
+        ].join('\n')
+
+    console.log(`\x1b[36m[docsector]\x1b[0m Icon subset: ${entries.length} material icons bundled as SVG`)
+
+    return cachedModule
+  }
+
+  return {
+    name: 'docsector-icons',
+    resolveId (id) {
+      if (id === virtualId) return resolvedId
+    },
+    async load (id) {
+      if (id === resolvedId) {
+        return buildModule()
+      }
+    }
+  }
+}
+
 function createHomePageOverridePlugin (projectRoot) {
   const virtualId = 'virtual:docsector-homepage-override'
   const resolvedId = '\0' + virtualId
@@ -3545,6 +3686,7 @@ export function createQuasarConfig (options = {}) {
     // consumer-specific boot files are resolved via per-file Vite aliases
     // added in extendViteConf below.
     boot: [
+      'icons',
       'store',
       'QZoom',
       'i18n',
@@ -3557,12 +3699,12 @@ export function createQuasarConfig (options = {}) {
       'app.sass'
     ],
 
-    // fontawesome-v5 is intentionally absent: the few FA glyphs the engine
-    // uses are inlined as SVG imports from @quasar/extras/fontawesome-v5,
-    // which saves ~150 KB of icon fonts on every page load.
+    // Icon fonts are intentionally absent: material icons ship as a
+    // tree-shaken SVG subset (virtual:docsector-icons + boot/icons.js) and
+    // the few FontAwesome glyphs are inlined SVG imports — together that
+    // saves ~280 KB of webfonts on every page load.
     extras: [
-      'roboto-font',
-      'material-icons'
+      'roboto-font'
     ],
 
     build: {
@@ -3578,6 +3720,7 @@ export function createQuasarConfig (options = {}) {
         createCodeExamplesPlugin(),
         createTerminalsPlugin(),
         createFontDisplayPlugin(),
+        createIconsPlugin(projectRoot),
         createRoutePreloadPlugin(),
         createHjsonPlugin(),
         createHomePageOverridePlugin(projectRoot),
@@ -3675,7 +3818,7 @@ export function createQuasarConfig (options = {}) {
         // or embed stale consumer registry content in the optimizer cache.
         viteConf.optimizeDeps.exclude = [
           ...(viteConf.optimizeDeps.exclude || []),
-          'boot/i18n', 'boot/store', 'boot/QZoom', 'boot/axios',
+          'boot/i18n', 'boot/icons', 'boot/store', 'boot/QZoom', 'boot/axios',
           ...(!isStandalone ? DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE : [])
         ]
 
@@ -3744,6 +3887,9 @@ export function createQuasarConfig (options = {}) {
       // with JSON.stringify, so it is always a build-time literal.
       config: { dark: 'auto' },
       lang: 'en-US',
+      // SVG icons for Quasar internals — dynamic names resolve through the
+      // iconMapFn registered in boot/icons.js
+      iconSet: 'svg-material-icons',
       plugins: [
         'Meta', 'Notify', 'LocalStorage', 'SessionStorage'
       ]
