@@ -1,11 +1,27 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import {
+  loadMathSupport,
   parseCustomTagAttributes,
+  sourceHasMath,
   tokenizePageSectionSource
 } from '../src/components/page-section-tokens.js'
 
+// Math support is lazy at runtime (loaded when a page contains math); tests
+// exercise the full pipeline, so load it once upfront.
+beforeAll(async () => {
+  await loadMathSupport()
+})
+
 describe('page-section-tokens', () => {
+  it('detects dollar math outside code, ignoring code segments', () => {
+    expect(sourceHasMath('Einstein wrote $E = mc^2$ in prose.')).toBe(true)
+    expect(sourceHasMath('$$\n\\int_0^1 x^2 dx\n$$')).toBe(true)
+    expect(sourceHasMath('Use `$var` and `$other` in PHP.')).toBe(false)
+    expect(sourceHasMath('```php\n$a = 1;\n$b = 2;\n```')).toBe(false)
+    expect(sourceHasMath('No dollars here.')).toBe(false)
+  })
+
   it('parses kebab-case custom tag attributes', () => {
     expect(parseCustomTagAttributes('title="Details" data-kind="secondary" open="true"')).toEqual({
       title: 'Details',

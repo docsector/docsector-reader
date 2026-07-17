@@ -3,12 +3,14 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
+import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/extras/fontawesome-v5'
 
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
 import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
 import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
 import { matchesBookSearchTerm } from '../search/book-search'
+import { ensureContentIndex, getContentIndex } from '../search/content-index'
 
 const $q = useQuasar()
 const $route = useRoute()
@@ -242,14 +244,26 @@ function onVersionChange (versionId) {
   }
 }
 
-const searchTerm = (term) => {
-  if (term.length > 1) {
-    term = term.toLowerCase()
+const searchTerm = async (searched) => {
+  if (searched.length > 1) {
+    searched = searched.toLowerCase()
     const locale = $q.localStorage.getItem('setting.language')
+
+    // ? Page content lives in fetched per-locale indexes (lazy page sources)
+    await Promise.all([
+      ensureContentIndex(locale),
+      locale !== 'en-US' ? ensureContentIndex('en-US') : null
+    ])
+
+    // ? Stale guard: the input changed while the index was being fetched
+    if (searched !== String(term.value || '').toLowerCase()) {
+      return
+    }
+
     founds.value = []
 
     for (const group of items.value) {
-      searchTermIterate(group, term, locale)
+      searchTermIterate(group, searched, locale)
     }
   } else {
     founds.value = false
@@ -276,12 +290,24 @@ const searchTermIterate = (items, term, locale) => {
 
     // @ search in Page content
     if (founds.value[path] === false) {
-      founds.value[path] = searchTermInI18nTexts(path, term, locale)
+      founds.value[path] = searchTermInPageContent(path, term, locale)
       if (founds.value[path] === false && locale !== 'en-US') {
-        founds.value[path] = searchTermInI18nTexts(path, term, 'en-US')
+        founds.value[path] = searchTermInPageContent(path, term, 'en-US')
       }
     }
   }
+}
+
+const searchTermInPageContent = (route, term, locale) => {
+  // ? Fetched content index (lazy page sources); fall back to the in-memory
+  //   i18n messages when the index is unavailable (eager mode, fetch failure)
+  const contentIndex = getContentIndex(locale)
+  if (contentIndex !== null) {
+    const content = contentIndex[route]
+    return typeof content === 'string' && content.includes(term)
+  }
+
+  return searchTermInI18nTexts(route, term, locale)
 }
 
 const searchTermInI18nTexts = (route, term, locale) => {
@@ -683,19 +709,19 @@ watch([currentBookId, activeVersionId], rebuildItems)
 <div class="menu-social" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
   <div class="col text-center">
     <q-btn-group flat>
-      <q-btn v-if="links.website" icon="fas fa-globe" size="sm" @click="openURL(links.website)" aria-label="Website">
+      <q-btn v-if="links.website" :icon="fasGlobe" size="sm" @click="openURL(links.website)" aria-label="Website">
         <q-tooltip>Website</q-tooltip>
       </q-btn>
-      <q-btn v-if="links.email" icon="fas fa-at" size="sm" @click="openURL('mailto:' + links.email)" aria-label="Email">
+      <q-btn v-if="links.email" :icon="fasAt" size="sm" @click="openURL('mailto:' + links.email)" aria-label="Email">
         <q-tooltip>Email</q-tooltip>
       </q-btn>
-      <q-btn v-if="links.chat" icon="fas fa-comment" size="sm" @click="openURL(links.chat)" aria-label="Chat">
+      <q-btn v-if="links.chat" :icon="fasComment" size="sm" @click="openURL(links.chat)" aria-label="Chat">
         <q-tooltip>Chat</q-tooltip>
       </q-btn>
-      <q-btn v-if="links.discussions" icon="fas fa-comments" size="sm" @click="openURL(links.discussions)" aria-label="Discussions">
+      <q-btn v-if="links.discussions" :icon="fasComments" size="sm" @click="openURL(links.discussions)" aria-label="Discussions">
         <q-tooltip>Discussions</q-tooltip>
       </q-btn>
-      <q-btn v-if="links.github" icon="fab fa-github" size="sm" @click="openURL(links.github)" aria-label="Github">
+      <q-btn v-if="links.github" :icon="fabGithub" size="sm" @click="openURL(links.github)" aria-label="Github">
         <q-badge v-if="githubStars !== null" class="menu-social__stars" floating rounded>{{ formatStars(githubStars) }}</q-badge>
         <q-tooltip>Github</q-tooltip>
       </q-btn>

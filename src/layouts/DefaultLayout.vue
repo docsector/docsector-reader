@@ -14,12 +14,12 @@
           no-caps
           stretch
           to="/"
-          :aria-label="brandAriaLabel"
         >
           <img
             v-if="branding.logo"
             :src="branding.logo"
             :alt="brandName"
+            width="26"
             height="26"
             class="d-header__brand-logo q-mr-sm"
           />
@@ -97,9 +97,10 @@ import { resolveRoutePageLayout } from '../page-layout'
 defineOptions({ name: 'LayoutDefault' })
 
 const branding = docsectorConfig.branding || {}
+// The brand link's accessible name comes from its visible content (logo alt +
+// lockup text) — an aria-label would fail label-content-name-mismatch.
 const brandName = branding.name || 'Docsector'
 const brandVersion = typeof branding.version === 'string' ? branding.version.trim() : ''
-const brandAriaLabel = `Open ${brandName} home`
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantEnabled = assistantConfig.enabled === true
 

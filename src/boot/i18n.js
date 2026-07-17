@@ -2,6 +2,7 @@ import { boot } from 'quasar/wrappers'
 import { createI18n } from 'vue-i18n'
 
 import messages from 'src/i18n'
+import { bindI18n } from '../i18n/sources'
 
 export default boot(({ app }) => {
   // Detect available locales from messages and pick the best match
@@ -22,4 +23,7 @@ export default boot(({ app }) => {
 
   // Set i18n instance on app
   app.use(i18n)
+
+  // Lazy page sources merge into this composer at navigation time
+  bindI18n(i18n.global)
 })

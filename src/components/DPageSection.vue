@@ -1,12 +1,12 @@
 <script setup>
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
 import DPageTokens from './DPageTokens.vue'
 import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'
-import { tokenizePageSectionSource } from './page-section-tokens'
+import { hasMathSupport, loadMathSupport, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens'
 import { applyTemplateSections } from './page-template-sections'
 import docsectorConfig from 'docsector.config.js'
 
@@ -35,14 +35,32 @@ const props = defineProps({
 const store = useStore()
 const { t, locale } = useI18n()
 
-const tokenized = computed(() => {
+const source = computed(() => {
   const absolute = store.state.i18n.absolute
 
-  if (!absolute) {
+  return absolute ? t(pageValueI18nPath(absolute, 'source')) : ''
+})
+
+// ? Math (katex) loads on demand: render the page right away and re-tokenize
+//   once the engine arrives — pages without math never download it
+const mathReady = ref(hasMathSupport())
+watch(source, (value) => {
+  if (!mathReady.value && sourceHasMath(value)) {
+    loadMathSupport().then(() => {
+      mathReady.value = hasMathSupport()
+    })
+  }
+}, { immediate: true })
+
+const tokenized = computed(() => {
+  if (source.value === '') {
     return []
   }
 
-  const tokens = tokenizePageSectionSource(t(pageValueI18nPath(absolute, 'source')), {
+  // Re-tokenize when math support finishes loading
+  void mathReady.value
+
+  const tokens = tokenizePageSectionSource(source.value, {
     codeToolbarDefault: props.codeToolbarDefault
   })
 

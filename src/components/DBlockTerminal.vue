@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { openURL, useQuasar } from 'quasar'
+import { fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import { resolveTerminalEngine } from 'virtual:docsector-terminals'
 
@@ -494,7 +495,7 @@ onBeforeUnmount(() => {
       dense
       flat
       round
-      icon="fab fa-github"
+      :icon="fabGithub"
       :disable="!sourceUrl"
       aria-label="View source on GitHub"
       @click="openGitHub"

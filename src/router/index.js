@@ -2,6 +2,7 @@ import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 
+import { loadRouteSources } from '../i18n/sources'
 import { setupChunkReload } from '../composables/useUpdateCheck'
 
 /*
@@ -26,6 +27,12 @@ export default route(function (/* { store, ssrContext } */) {
     // quasar.config.js -> build -> vueRouterMode
     // quasar.config.js -> build -> publicPath
     history: createHistory(process.env.MODE === 'ssr' ? void 0 : process.env.VUE_ROUTER_BASE)
+  })
+
+  // Lazy page sources: merge the target page's markdown (every locale) into
+  // vue-i18n before the page renders. No-op when sources were bundled eagerly.
+  Router.beforeResolve(async (to) => {
+    await loadRouteSources(to.matched[0]?.meta)
   })
 
   // After a redeploy, hashed chunks of the bundle a stale tab is running no

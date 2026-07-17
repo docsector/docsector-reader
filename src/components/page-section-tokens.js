@@ -1,9 +1,7 @@
 import MarkdownIt from 'markdown-it'
 import attrs from 'markdown-it-attrs'
 import GithubSlugger from 'github-slugger'
-import katex from 'katex'
 import taskLists from 'markdown-it-task-lists'
-import texmath from 'markdown-it-texmath'
 
 import { installInlineCodeCopyRenderer } from './inline-code-copy'
 
@@ -29,6 +27,48 @@ const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
   strict: 'ignore'
+}
+
+// ! Math support (katex + markdown-it-texmath, ~350 KB) loads on demand:
+//   most pages have no math and never pay for it. Components detect math via
+//   sourceHasMath(), await loadMathSupport(), then re-tokenize.
+let katexEngine = null
+let texmathPlugin = null
+let mathSupportPromise = null
+
+export const loadMathSupport = () => {
+  if (mathSupportPromise === null) {
+    mathSupportPromise = Promise.all([
+      import('katex'),
+      import('markdown-it-texmath'),
+      import('katex/dist/katex.min.css')
+    ]).then(([katexModule, texmathModule]) => {
+      katexEngine = katexModule.default ?? katexModule
+      texmathPlugin = texmathModule.default ?? texmathModule
+    }).catch((error) => {
+      mathSupportPromise = null
+      console.warn('[docsector] Failed to load math support', error)
+    })
+  }
+
+  return mathSupportPromise
+}
+
+export const hasMathSupport = () => katexEngine !== null
+
+/**
+ * Whether a page source contains texmath dollar delimiters — checked on the
+ * shielded source, so `$` inside fenced blocks or inline code (PHP variables,
+ * shell) never counts.
+ */
+export const sourceHasMath = (source = '') => {
+  const normalized = normalizeNativeDetails(normalizePageSectionSource(String(source)))
+  if (!normalized.includes('$')) {
+    return false
+  }
+
+  const { source: shielded } = shieldMarkdownCodeSegments(normalized)
+  return /\$\$|\$[^\n$]+\$/.test(shielded)
 }
 
 const parseAlertMarker = (rawContent = '') => {
@@ -984,8 +1024,14 @@ const pushSourceCodeToken = (tokens, element, parserState, codeToolbarDefault = 
 }
 
 const installMathSupport = (markdown) => {
-  markdown.use(texmath, {
-    engine: katex,
+  // ? Math not loaded (yet): tokenize without it — the caller re-tokenizes
+  //   after loadMathSupport() resolves
+  if (katexEngine === null || texmathPlugin === null) {
+    return markdown
+  }
+
+  markdown.use(texmathPlugin, {
+    engine: katexEngine,
     delimiters: 'dollars',
     katexOptions: MATH_KATEX_OPTIONS
   })

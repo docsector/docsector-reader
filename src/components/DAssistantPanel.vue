@@ -14,7 +14,7 @@ import {
   isAssistantThinkingState
 } from '../ai-assistant/panel'
 import DPageTokens from './DPageTokens.vue'
-import { tokenizePageSectionSource } from './page-section-tokens'
+import { hasMathSupport, loadMathSupport, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens'
 
 const emit = defineEmits(['close', 'resize'])
 
@@ -144,15 +144,27 @@ const messageHasSources = (message) => {
   return hasSources.value && String(message?.id || '') === latestAssistantMessageId.value
 }
 
+// ? Math (katex) loads on demand — answers with math re-render once it lands
+const mathTick = ref(0)
+
 const renderMessageTokens = (message) => {
   if (message?.role !== 'assistant') {
     return []
   }
 
+  const content = message?.content || ''
+
+  // Reading mathTick makes the render re-run when math support arrives
+  if (mathTick.value >= 0 && !hasMathSupport() && sourceHasMath(content)) {
+    loadMathSupport().then(() => {
+      mathTick.value++
+    })
+  }
+
   // ? force the meta row on: answers are mostly copyable one-liners (a shell
   //   command, an install line), and a model rarely bothers with a fence
   //   attribute — an explicit :toolbar="false"; in the answer still wins
-  return tokenizePageSectionSource(message?.content || '', {
+  return tokenizePageSectionSource(content, {
     allowHeadingTokens: false,
     codeToolbarDefault: true
   })

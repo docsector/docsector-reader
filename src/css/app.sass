@@ -1,4 +1,4 @@
-@import 'katex/dist/katex.min.css'
+/* katex CSS loads on demand with the math engine — see page-section-tokens.js */
 
 /* --- Docsector Reader --- */
 @font-face
@@ -358,40 +358,42 @@ body.body--dark
         strong
           font-weight: 700
 
+      // Heading colors are darker than the border hues: on the tinted
+      // backgrounds the border colors sit under 4.5:1 (WCAG AA)
       &--note
         border-left-color: #0969da
         background-color: rgba(9, 105, 218, 0.12) !important
 
         .d-page-blockquote__heading
-          color: #0969da
+          color: #0550ae
 
       &--tip
         border-left-color: #1a7f37
         background-color: rgba(26, 127, 55, 0.12) !important
 
         .d-page-blockquote__heading
-          color: #1a7f37
+          color: #116329
 
       &--important
         border-left-color: #8250df
         background-color: rgba(130, 80, 223, 0.12) !important
 
         .d-page-blockquote__heading
-          color: #8250df
+          color: #6639ba
 
       &--warning
         border-left-color: #9a6700
         background-color: rgba(154, 103, 0, 0.14) !important
 
         .d-page-blockquote__heading
-          color: #9a6700
+          color: #7d4e00
 
       &--caution
         border-left-color: #cf222e
         background-color: rgba(207, 34, 46, 0.14) !important
 
         .d-page-blockquote__heading
-          color: #cf222e
+          color: #a40e26
     img
       border: 0
       max-width: 100%
@@ -525,3 +527,10 @@ body.body--light
 body.body--dark
   .q-tree__arrow
     color: #a9a9a9
+
+// * Accessibility
+// Touch target size (WCAG 2.5.8): stacked links in content lists need extra
+// vertical breathing room on touch devices
+@media (pointer: coarse)
+  .d-page-rich-content li
+    padding-block: 3px

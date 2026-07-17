@@ -1,6 +1,7 @@
 <script setup>
 import { computed, markRaw, ref, watch } from 'vue'
 import { openURL, Quasar, useQuasar } from 'quasar'
+import { fabCodepen, fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import { resolveCodeExample } from 'virtual:docsector-code-examples'
 import docsectorConfig from 'docsector.config.js'
@@ -233,7 +234,7 @@ function openGitHub () {
       dense
       flat
       round
-      icon="fab fa-github"
+      :icon="fabGithub"
       :disable="!canOpenGitHub"
       aria-label="View example on GitHub"
       @click="openGitHub"
@@ -247,7 +248,7 @@ function openGitHub () {
       dense
       flat
       round
-      icon="fab fa-codepen"
+      :icon="fabCodepen"
       :disable="!canOpenCodepen"
       aria-label="Edit in CodePen"
       @click="openCodepen"

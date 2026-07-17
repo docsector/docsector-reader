@@ -4,17 +4,25 @@
  * Extracts the markdown-to-i18n processing logic so consumer projects
  * can call it with their own import.meta.glob results.
  *
- * Usage in consumer's src/i18n/index.js:
+ * Usage in consumer's src/i18n/index.js (lazy page sources — preferred):
  *
  *   import { buildMessages } from '@docsector/docsector-reader/i18n'
  *   import boot from 'pages/boot'
- *   import { allPages as pages } from 'virtual:docsector-books'
+ *   import { books } from 'virtual:docsector-books'
  *
  *   const langModules = import.meta.glob('./languages/*.hjson', { eager: true })
- *   const mdModules = import.meta.glob('all markdown files under ../pages recursively', { eager: true, query: '?raw', import: 'default' })
+ *   const mdModules = import.meta.glob('all markdown files under ../pages recursively', { query: '?raw', import: 'default' })
+ *   const homepageModules = import.meta.glob('the Homepage markdown files under ../pages', { eager: true, query: '?raw', import: 'default' })
  *
- *   export default buildMessages({ langModules, mdModules, pages, boot })
+ *   export default buildMessages({ langModules, mdModules, homepageModules, books, boot })
+ *
+ * Passing an EAGER mdModules glob still works (legacy mode): every page source
+ * is inlined into the returned messages. With a non-eager glob, page sources
+ * stay out of the boot bundle — buildMessages() registers the loaders in
+ * ./sources.js and the router merges each page's markdown on navigation.
  */
+
+import { registerSourceLoaders } from './sources'
 
 /**
  * Engine default i18n keys, keyed by locale.
@@ -285,7 +293,8 @@ export function filter (source) {
  *
  * @param {Object} options
  * @param {Object} options.langModules - Result of import.meta.glob('./languages/*.hjson', { eager: true })
- * @param {Object} options.mdModules - Result of recursively globbing markdown files under ../pages with eager raw imports
+ * @param {Object} options.mdModules - Result of recursively globbing markdown files under ../pages as raw imports (eager = inlined sources; non-eager = lazy-loaded sources)
+ * @param {Object} [options.homepageModules] - Eager raw glob of the Homepage markdown files (required for lazy mdModules; ignored when mdModules is eager)
  * @param {Object} [options.pages] - Legacy merged page registry from virtual:docsector-books (allPages)
  * @param {Object} [options.books] - Book registry from virtual:docsector-books (preferred, avoids path collisions)
  * @param {Array} [options.pageEntries] - Version-aware page entries from virtual:docsector-books
@@ -294,7 +303,7 @@ export function filter (source) {
  * @param {Object<string,string>} [options.homePageOverride] - Optional per-language Home markdown override
  * @returns {Object} Complete i18n messages object keyed by locale
  */
-export function buildMessages ({ langModules, mdModules, pages, books, pageEntries, boot, langs, homePageOverride = {} }) {
+export function buildMessages ({ langModules, mdModules, homepageModules, pages, books, pageEntries, boot, langs, homePageOverride = {} }) {
   // Auto-detect languages from HJSON files if not provided
   if (!langs) {
     langs = Object.keys(langModules).map(key => {
@@ -303,6 +312,16 @@ export function buildMessages ({ langModules, mdModules, pages, books, pageEntri
       return match ? match[1] : null
     }).filter(Boolean)
   }
+
+  // ? Lazy mode: a non-eager glob maps each key to a loader function
+  const lazySources = Object.values(mdModules || {}).some(value => typeof value === 'function')
+  if (lazySources) {
+    registerSourceLoaders({ loaders: mdModules, langs, filter })
+  }
+
+  const homepageMdModules = (homepageModules && Object.keys(homepageModules).length > 0)
+    ? homepageModules
+    : (lazySources ? {} : mdModules)
 
   const i18n = {}
 
@@ -329,7 +348,7 @@ export function buildMessages ({ langModules, mdModules, pages, books, pageEntri
     const key = `../pages/Homepage.${lang}.md`
     const fallbackKey = '../pages/Homepage.en-US.md'
 
-    const content = mdModules[key] ?? mdModules[fallbackKey]
+    const content = homepageMdModules[key] ?? homepageMdModules[fallbackKey]
     if (!content) {
       console.warn(`[i18n] Missing homepage markdown: ${key}`)
       return ''
@@ -360,7 +379,7 @@ export function buildMessages ({ langModules, mdModules, pages, books, pageEntri
     const key = `../pages/Homepage.${lang}.md`
     const fallbackKey = '../pages/Homepage.en-US.md'
 
-    const content = mdModules[key] ?? mdModules[fallbackKey]
+    const content = homepageMdModules[key] ?? homepageMdModules[fallbackKey]
     if (!content) {
       return ''
     }
@@ -505,6 +524,11 @@ export function buildMessages ({ langModules, mdModules, pages, books, pageEntri
 
       const hasInternalLink = typeof config?.link?.to === 'string' && config.link.to.trim().length > 0
       if (hasInternalLink) {
+        continue
+      }
+
+      // ? Lazy mode: sources stay as '' seeds — merged at navigation time (./sources.js)
+      if (lazySources) {
         continue
       }
 

@@ -194,6 +194,55 @@ function resolveMarkdownSourceFile (pagesDir, entry, subpage, lang) {
 }
 
 /**
+ * Build the page-content search index of one language: route path (leading
+ * slash, no subpage) → lowercased markdown of every enabled subpage. Emitted
+ * as `search-index.<lang>.json` and fetched by the sidebar search on demand
+ * (see src/search/content-index.js) — with lazy page sources the client no
+ * longer holds page markdown in memory to scan.
+ */
+export function buildSearchContentIndex (pagesDir, pageEntries, lang) {
+  const index = {}
+
+  for (const entry of pageEntries) {
+    const { page } = entry
+    if (page.config === null) continue
+    if (page.config.status === 'empty') continue
+    if (typeof page.config?.link?.to === 'string' && page.config.link.to.trim().length > 0) continue
+
+    const subpages = ['overview']
+    if (page.config.subpages?.showcase) subpages.push('showcase')
+    if (page.config.subpages?.vs) subpages.push('vs')
+
+    const parts = []
+    for (const subpage of subpages) {
+      const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, lang)
+      if (!existsSync(srcFile)) continue
+
+      parts.push(readFileSync(srcFile, 'utf-8').toLowerCase())
+    }
+
+    if (parts.length === 0) continue
+
+    index[buildPageRoutePath(entry, '', { leadingSlash: true })] = parts.join('\n')
+  }
+
+  return index
+}
+
+function resolveSearchIndexLangs (config) {
+  const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+  const langs = (config.languages || [])
+    .map(language => language?.value)
+    .filter(Boolean)
+
+  if (!langs.includes(defaultLang)) {
+    langs.unshift(defaultLang)
+  }
+
+  return langs
+}
+
+/**
  * List top-level page registry definition files.
  *
  * Includes:
@@ -1800,6 +1849,81 @@ function createHomePageOverridePlugin (projectRoot) {
  * The language served is determined by the `?lang=` query parameter, falling back to the
  * `defaultLanguage` from `docsector.config.js`.
  */
+/**
+ * Every route renders through DefaultLayout, but the browser only discovers
+ * that lazy chunk after boot + router resolution — extra network rounds on
+ * the critical path of every first paint. Inject modulepreload links for it
+ * (and its not-yet-preloaded static imports) into the built index.html so it
+ * downloads in parallel with the entry.
+ *
+ * DSubpage is intentionally NOT preloaded: its chunk is large enough that
+ * preloading it contends with the render-blocking CSS on slow links and
+ * measurably worsens FCP/LCP.
+ */
+function createRoutePreloadPlugin () {
+  const FACADES = ['/layouts/DefaultLayout.vue']
+
+  return {
+    name: 'docsector-route-preload',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler (html, ctx) {
+        const bundle = ctx.bundle
+        if (!bundle) return html
+
+        const chunks = Object.values(bundle)
+        const entry = chunks.find((chunk) => chunk.type === 'chunk' && chunk.isEntry)
+        const preloaded = new Set([entry?.fileName, ...(entry?.imports || [])])
+
+        const files = []
+        const collect = (fileName) => {
+          if (!fileName || preloaded.has(fileName) || files.includes(fileName)) return
+
+          const chunk = bundle[fileName]
+          if (!chunk || chunk.type !== 'chunk') return
+
+          files.push(fileName)
+          for (const imported of chunk.imports || []) collect(imported)
+        }
+
+        for (const chunk of chunks) {
+          if (chunk.type !== 'chunk' || !chunk.facadeModuleId) continue
+
+          if (FACADES.some((facade) => chunk.facadeModuleId.endsWith(facade))) {
+            collect(chunk.fileName)
+          }
+        }
+
+        if (files.length === 0) return html
+
+        // Root-relative hrefs — matches Quasar's default publicPath
+        const links = files
+          .map((file) => `<link rel="modulepreload" crossorigin href="/${file}">`)
+          .join('\n  ')
+
+        return html.replace('</head>', `  ${links}\n</head>`)
+      }
+    }
+  }
+}
+
+/**
+ * Roboto ships without font-display, so text stays invisible while the font
+ * downloads. Inject `font-display: swap` — text paints with the fallback font
+ * immediately. Icon fonts keep their default (swap would flash ligature text).
+ */
+function createFontDisplayPlugin () {
+  return {
+    name: 'docsector-font-display',
+    transform (code, id) {
+      if (id.includes('roboto-font') && id.endsWith('.css')) {
+        return code.replace(/@font-face\s*\{/g, '@font-face{font-display:swap;')
+      }
+    }
+  }
+}
+
 function createMarkdownEndpointPlugin (projectRoot) {
   const pagesDir = resolve(projectRoot, 'src', 'pages')
 
@@ -1881,6 +2005,8 @@ function createMarkdownEndpointPlugin (projectRoot) {
         }
       })()
 
+      let booksRegistryPromise = null
+
       server.middlewares.use(async (req, res, next) => {
         await configReady
 
@@ -1888,6 +2014,25 @@ function createMarkdownEndpointPlugin (projectRoot) {
         const accept = (req.headers.accept || '').toLowerCase()
         const wantsMarkdown = accept.includes('text/markdown')
         const lang = url.searchParams.get('lang') || defaultLang
+
+        // Serve the page-content search index in dev (built at request time)
+        const searchIndexMatch = url.pathname.match(/^\/search-index\.([A-Za-z0-9-]+)\.json$/)
+        if (searchIndexMatch) {
+          try {
+            booksRegistryPromise = booksRegistryPromise || loadBooksRegistry(projectRoot)
+            const { pageEntries } = await booksRegistryPromise
+            const searchIndex = buildSearchContentIndex(pagesDir, pageEntries, searchIndexMatch[1])
+
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json; charset=utf-8')
+            res.end(JSON.stringify(searchIndex))
+          } catch (error) {
+            console.warn(`[docsector] Could not build search index: ${error?.message || String(error)}`)
+            res.statusCode = 404
+            res.end('{}')
+          }
+          return
+        }
 
         const homepagePath = url.pathname === '/' || url.pathname === '/index.html'
         const remoteHomepage = homepageByLang?.[lang] || homepageByLang?.[defaultLang] || null
@@ -2108,6 +2253,14 @@ function createMarkdownBuildPlugin (projectRoot) {
       }
 
       console.log(`\x1b[36m[docsector]\x1b[0m Generated ${count} static .md files`)
+
+      // Generate per-language search content indexes (fetched on first sidebar content search)
+      const searchIndexLangs = resolveSearchIndexLangs(config)
+      for (const lang of searchIndexLangs) {
+        const searchIndex = buildSearchContentIndex(pagesDir, pageEntries, lang)
+        writeFileSync(resolve(distDir, `search-index.${lang}.json`), JSON.stringify(searchIndex))
+      }
+      console.log(`\x1b[36m[docsector]\x1b[0m Generated ${searchIndexLangs.length} search index file(s)`)
 
       const siteUrl = (config.siteUrl || '').replace(/\/+$/, '')
       const generatedAt = new Date().toISOString()
@@ -3298,8 +3451,10 @@ export function createQuasarConfig (options = {}) {
       'app.sass'
     ],
 
+    // fontawesome-v5 is intentionally absent: the few FA glyphs the engine
+    // uses are inlined as SVG imports from @quasar/extras/fontawesome-v5,
+    // which saves ~150 KB of icon fonts on every page load.
     extras: [
-      'fontawesome-v5',
       'roboto-font',
       'material-icons'
     ],
@@ -3316,6 +3471,8 @@ export function createQuasarConfig (options = {}) {
         createBooksPlugin(projectRoot),
         createCodeExamplesPlugin(),
         createTerminalsPlugin(),
+        createFontDisplayPlugin(),
+        createRoutePreloadPlugin(),
         createHjsonPlugin(),
         createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),

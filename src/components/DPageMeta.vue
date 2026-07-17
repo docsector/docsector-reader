@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
+import { fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import docsectorConfig from 'docsector.config.js'
 import { pageValueI18nPath, routeTitleI18nPath } from '../i18n/path'
@@ -194,7 +195,7 @@ const getRouteTitle = (path) => {
   <div v-if="!hideRemoteHomeFooterMeta" class="row justify-between q-mt-lg">
     <div id="d-page-edit" class="col">
       <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github">
-        <q-icon class="q-mr-xs" name="fab fa-github" size="20px" />
+        <q-icon class="q-mr-xs" :name="fabGithub" size="20px" />
         <span class="hm" v-if="status === 'done' || status === 'new'">{{ $t('page.edit.github.edit') }}</span>
         <span class="hm" v-else-if="status === 'draft'">{{ $t('page.edit.github.complete') }}</span>
         <span class="hm" v-else-if="status === 'empty'">{{ $t('page.edit.github.start') }}</span>

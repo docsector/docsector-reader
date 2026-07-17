@@ -312,7 +312,7 @@ function printToLetter(number) {
       <div class="lines" v-if="lines && lines > 1">
         <template v-for="(line, index) in lines" :key="index">
           <a class="line" :href="buildLineHref(line)" @click="navigateToLineAnchor($event, line)">
-            <i class="fa fa-link" aria-hidden="true" data-hidden="true"></i>
+            <i class="material-icons" aria-hidden="true" data-hidden="true">link</i>
             <span :id="buildLineAnchorId(line)" :data-anchor-offset-top="lineAnchorTopOffset">{{ line }}</span>
           </a>
         </template>
@@ -345,6 +345,10 @@ function printToLetter(number) {
       .info .copy
         background-color: #fff
 
+      // ? 4.5:1 on white (base gray is 3.9:1)
+      .info .language
+        color: #666
+
       .source-code-meta-row
         box-shadow: 0 2px 4px rgb(0 0 0 / 8%)
 
@@ -370,6 +374,10 @@ function printToLetter(number) {
       .info .language,
       .info .copy
         background-color: #000
+
+      // ? 4.5:1 on black
+      .info .language
+        color: #949494
 
       .source-code-meta-row
         box-shadow: 0 3px 10px rgb(255 255 255 / 24%)
