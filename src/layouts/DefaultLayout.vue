@@ -70,7 +70,13 @@
     </q-tabs>
   </q-header>
 
-  <q-drawer v-if="showSidebar" elevated show-if-above side="left" v-model="layout.menu">
+  <!-- ? :behavior from the real screen width: QLayout measures its own width
+       only after mount, so the default breakpoint logic renders the first
+       frame without the drawer and shows it a tick later — a layout shift
+       (CLS) on every desktop load -->
+  <q-drawer v-if="showSidebar" elevated show-if-above side="left" v-model="layout.menu"
+    :behavior="$q.screen.width > 1023 ? 'desktop' : 'mobile'"
+  >
     <d-menu />
   </q-drawer>
 
@@ -114,7 +120,10 @@ const { t, locale } = useI18n()
 const brandLockup = computed(() => t('system.brand', { name: brandName }))
 
 const layout = ref({
-  menu: false
+  // ? open from the very first frame on desktop — waiting for show-if-above
+  //   to flip it after mount paints the page without the drawer and then
+  //   shifts the whole layout (CLS)
+  menu: $q.screen.width > 1023
 })
 
 const pageLayout = computed(() => resolveRoutePageLayout(route))

@@ -44,11 +44,12 @@ const targetValue = (item) => {
 <div class="d-quick-links">
   <h3 v-if="title" class="d-quick-links__title">{{ title }}</h3>
 
-  <q-list bordered separator class="d-quick-links__list rounded-borders">
+  <q-list bordered separator class="d-quick-links__list rounded-borders" role="none">
     <q-item
       v-for="(item, index) in props.items"
       :key="index"
       clickable
+      role="link"
       :to="toTarget(item)"
       :href="hrefTarget(item)"
       :target="targetValue(item)"

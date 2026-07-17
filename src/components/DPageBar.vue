@@ -218,8 +218,8 @@ const copyPage = () => {
     size="sm"
     @click="copyPage"
   >
-    <q-list style="min-width: 240px">
-      <q-item clickable v-close-popup @click="copyPage" class="q-py-sm">
+    <q-list style="min-width: 240px" role="none">
+      <q-item clickable v-close-popup role="button" @click="copyPage" class="q-py-sm">
         <q-item-section avatar>
           <q-icon name="content_copy" />
         </q-item-section>
@@ -229,7 +229,7 @@ const copyPage = () => {
         </q-item-section>
       </q-item>
 
-      <q-item clickable v-close-popup :href="markdownURL" target="_blank" class="q-py-sm">
+      <q-item clickable v-close-popup role="link" :href="markdownURL" target="_blank" class="q-py-sm">
         <q-item-section avatar>
           <q-icon name="description" />
         </q-item-section>
@@ -244,7 +244,7 @@ const copyPage = () => {
 
       <q-separator />
 
-      <q-item clickable v-close-popup :href="chatgptURL" target="_blank" class="q-py-sm">
+      <q-item clickable v-close-popup role="link" :href="chatgptURL" target="_blank" class="q-py-sm">
         <q-item-section avatar>
           <q-icon :name="openaiIcon" size="xs" />
         </q-item-section>
@@ -257,7 +257,7 @@ const copyPage = () => {
         </q-item-section>
       </q-item>
 
-      <q-item clickable v-close-popup :href="claudeURL" target="_blank" class="q-py-sm">
+      <q-item clickable v-close-popup role="link" :href="claudeURL" target="_blank" class="q-py-sm">
         <q-item-section avatar>
           <q-icon :name="claudeIcon" size="xs" />
         </q-item-section>
@@ -273,7 +273,7 @@ const copyPage = () => {
       <template v-if="mcpURL">
         <q-separator />
 
-        <q-item clickable v-close-popup :href="mcpURL" target="_blank" class="q-py-sm">
+        <q-item clickable v-close-popup role="link" :href="mcpURL" target="_blank" class="q-py-sm">
           <q-item-section avatar>
             <q-icon :name="mcpIcon" size="xs" />
           </q-item-section>
@@ -286,7 +286,7 @@ const copyPage = () => {
           </q-item-section>
         </q-item>
 
-        <q-item clickable v-close-popup :href="vscodeMcpURL" class="q-py-sm">
+        <q-item clickable v-close-popup role="link" :href="vscodeMcpURL" class="q-py-sm">
           <q-item-section avatar>
             <q-icon :name="vscodeIcon" size="xs" />
           </q-item-section>
@@ -299,7 +299,7 @@ const copyPage = () => {
           </q-item-section>
         </q-item>
 
-        <q-item clickable v-close-popup :href="vscodeInsidersMcpURL" class="q-py-sm">
+        <q-item clickable v-close-popup role="link" :href="vscodeInsidersMcpURL" class="q-py-sm">
           <q-item-section avatar>
             <q-icon :name="vscodeInsidersIcon" size="xs" />
           </q-item-section>
@@ -312,7 +312,7 @@ const copyPage = () => {
           </q-item-section>
         </q-item>
 
-        <q-item clickable v-close-popup @click="copyMcpCommand(claudeCodeCommand, 'claude')" class="q-py-sm">
+        <q-item clickable v-close-popup role="button" @click="copyMcpCommand(claudeCodeCommand, 'claude')" class="q-py-sm">
           <q-item-section avatar>
             <q-icon :name="claudeIcon" size="xs" />
           </q-item-section>
@@ -325,7 +325,7 @@ const copyPage = () => {
           </q-item-section>
         </q-item>
 
-        <q-item clickable v-close-popup @click="copyMcpCommand(codexCommand, 'codex')" class="q-py-sm">
+        <q-item clickable v-close-popup role="button" @click="copyMcpCommand(codexCommand, 'codex')" class="q-py-sm">
           <q-item-section avatar>
             <q-icon :name="codexIcon" size="xs" />
           </q-item-section>

@@ -156,12 +156,12 @@ const onMenuItemClick = (event, path, currentSubpage) => {
 </q-item-section>
 
 <!-- Menu Separator - line above the item -->
-<li v-if="separators.lineTop" role="listitem">
+<div v-if="separators.lineTop" role="none">
   <q-separator
     :class="menuSeparatorClass(separators.lineTop)"
     role="separator"
   />
-</li>
+</div>
 
 <q-item
   v-if="subitem?.path"
@@ -169,6 +169,7 @@ const onMenuItemClick = (event, path, currentSubpage) => {
   :active="isMenuItemActive(subitem.path + subpage)"
   :class="{ 'd-menu-item--active': isMenuItemActive(subitem.path + subpage) }"
   clickable
+  role="link"
   @click="onMenuItemClick($event, subitem.path, subpage)"
   v-show="founds[subitem.path] || !founds"
 >
@@ -190,12 +191,12 @@ const onMenuItemClick = (event, path, currentSubpage) => {
 </q-item>
 
 <!-- Menu Separator - line below the item -->
-<li v-if="separators.lineBottom" role="listitem">
+<div v-if="separators.lineBottom" role="none">
   <q-separator
     :class="menuSeparatorClass(separators.lineBottom)"
     role="separator"
   />
-</li>
+</div>
 </template>
 
 <style lang="sass">

@@ -194,7 +194,7 @@ const getRouteTitle = (path) => {
 <div id="d-page-meta">
   <div v-if="!hideRemoteHomeFooterMeta" class="row justify-between q-mt-lg">
     <div id="d-page-edit" class="col">
-      <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github">
+      <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)">
         <q-icon class="q-mr-xs" :name="fabGithub" size="20px" />
         <span class="hm" v-if="status === 'done' || status === 'new'">{{ $t('page.edit.github.edit') }}</span>
         <span class="hm" v-else-if="status === 'draft'">{{ $t('page.edit.github.complete') }}</span>

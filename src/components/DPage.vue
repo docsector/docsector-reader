@@ -154,6 +154,18 @@ const rightRailState = computed(() => getAssistantRightRailState({
 const rightRailOpen = computed(() => {
   return !rightRailState.value.isMobile && (rightRailState.value.showToc || rightRailState.value.showAssistant)
 })
+// ? The right rail's top offset depends on the header height, which QLayout
+//   only learns after mount — rendering the drawer immediately paints it at
+//   top: 0 and shifts it down a frame later (CLS). Mount it once the layout
+//   has settled: it appears directly at its final position.
+const layoutSettled = ref(false)
+onMounted(() => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      layoutSettled.value = true
+    })
+  })
+})
 const mobileAssistantOpen = computed({
   get: () => assistantEnabled && rightRailState.value.isMobile && layoutAssistant.value,
   set: (value) => { layoutAssistant.value = value }
@@ -457,7 +469,10 @@ watch(() => route.fullPath, () => {
     </div>
   </q-toolbar>
 
-  <q-page id="page">
+  <!-- ? v-show pairs with the right rail's v-if: content and drawer appear in
+       the same patch (Vue settles all layout math before the browser paints),
+       so the page never paints wide and then re-wraps — zero layout shift -->
+  <q-page id="page" v-show="layoutSettled">
     <q-scroll-area class="content" :class="main" ref="pageScrollArea">
       <div id="scroll-container" :class="isFullwidthContent ? 'd-scroll-container--fullwidth' : null" @click="handleContentAnchorClick">
         <slot />
@@ -497,10 +512,11 @@ watch(() => route.fullPath, () => {
   </div>
 
   <q-drawer
-    v-if="!rightRailState.isMobile"
+    v-if="layoutSettled && !rightRailState.isMobile"
     elevated
     show-if-above
     side="right"
+    :behavior="$q.screen.width > 1023 ? 'desktop' : 'mobile'"
     :model-value="rightRailOpen"
     :width="rightRailState.totalWidth || 308"
     class="d-right-rail-drawer"

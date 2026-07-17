@@ -611,18 +611,21 @@ watch([currentBookId, activeVersionId], rebuildItems)
     </div>
   </div>
 
-  <q-list no-border link inset-delimiter role="list">
-    <q-item to="/" exact>
+  <!-- ? role=none (not list): children mix links, separators and expansion
+       headers — an ARIA list requires listitem-only children, and Quasar's
+       role=listitem is not allowed on <a href> anyway (axe aria-allowed-role) -->
+  <q-list no-border link inset-delimiter role="none">
+    <q-item to="/" exact role="link">
       <q-item-section side>
         <q-icon name="home" />
       </q-item-section>
       <q-item-section>{{ t('menu.home') }}</q-item-section>
     </q-item>
 
-    <li role="listitem">
+    <div role="none">
       <q-separator role="separator" />
-    </li>
-    <q-item v-if="links.changelog" :href="links.changelog" target="_blank">
+    </div>
+    <q-item v-if="links.changelog" :href="links.changelog" target="_blank" role="link">
       <q-item-section side>
         <q-icon name="assignment" />
       </q-item-section>
@@ -631,7 +634,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
         <q-icon name="open_in_new" size="xs" />
       </q-item-section>
     </q-item>
-    <q-item v-if="links.roadmap" :href="links.roadmap" target="_blank">
+    <q-item v-if="links.roadmap" :href="links.roadmap" target="_blank" role="link">
       <q-item-section side>
         <q-icon name="playlist_add_check_circle" />
       </q-item-section>
@@ -640,7 +643,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
         <q-icon name="open_in_new" size="xs" />
       </q-item-section>
     </q-item>
-    <q-item v-if="links.sponsor" :href="links.sponsor" target="_blank">
+    <q-item v-if="links.sponsor" :href="links.sponsor" target="_blank" role="link">
       <q-item-section side>
         <q-icon name="favorite" color="red" />
       </q-item-section>
@@ -651,11 +654,11 @@ watch([currentBookId, activeVersionId], rebuildItems)
     </q-item>
 
     <template v-if="links.explore && links.explore.length">
-      <li role="listitem">
+      <div role="none">
         <q-separator role="separator" spaced />
         <q-item-section side class="q-ml-md">{{ t('menu.explore') }}</q-item-section>
-      </li>
-      <q-item v-for="link in links.explore" :key="link.url" :href="link.url" target="_blank">
+      </div>
+      <q-item v-for="link in links.explore" :key="link.url" :href="link.url" target="_blank" role="link">
         <q-item-section>{{ link.label }}</q-item-section>
         <q-item-section side>
           <q-icon name="open_in_new" size="xs" />
@@ -667,13 +670,17 @@ watch([currentBookId, activeVersionId], rebuildItems)
   <q-separator class="separator list" />
 
   <q-list v-if="items !== null && items.constructor === Array && items.length > 0"
-    no-border link inset-delimiter role="list"
+    no-border link inset-delimiter role="none"
   >
     <template v-for="(item, index) in items" :key="index">
+      <!-- ? :label feeds the toggle's aria-label ("Collapse/Expand <name>") so
+           the accessible name contains the visible text (WCAG 2.5.3); the
+           header slot still owns the rendering -->
       <q-expansion-item class="menu-list-expansion"
         v-if="item && item.constructor === Array"
         expand-separator
         default-opened
+        :label="getMenuItemHeaderLabel(item[0].meta)"
       >
         <template v-slot:header>
           <q-item-section>
