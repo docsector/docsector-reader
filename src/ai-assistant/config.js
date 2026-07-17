@@ -3,9 +3,13 @@ export const DEFAULT_ASSISTANT_PROVIDER = 'aiSearch'
 export const DEFAULT_ASSISTANT_DRAWER_WIDTH = 380
 export const DEFAULT_ASSISTANT_WIDE_BREAKPOINT = 1280
 
+// A prompt is either a plain string or the self-describing object form:
+// { text: 'Summarize this page.', pageContext: true }
+// `pageContext: true` marks a prompt that only makes sense with the current
+// page attached, so clicking it turns the composer's page-context toggle on.
 const DEFAULT_SUGGESTED_PROMPTS = [
   'How do I get started?',
-  'Summarize this page.',
+  { text: 'Summarize this page.', pageContext: true },
   'Where is the related API reference?'
 ]
 
@@ -32,14 +36,29 @@ function toCleanString (value, fallback = '') {
   return trimmed || fallback
 }
 
+function normalizeSuggestedPrompt (value) {
+  const source = typeof value === 'string' ? { text: value } : (value || {})
+  const text = toCleanString(source.text)
+  if (!text) return null
+
+  return {
+    text,
+    pageContext: source.pageContext === true
+  }
+}
+
 function normalizeSuggestedPrompts (value) {
   const prompts = Array.isArray(value) ? value : DEFAULT_SUGGESTED_PROMPTS
   const normalized = prompts
-    .map(prompt => toCleanString(prompt))
+    .map(prompt => normalizeSuggestedPrompt(prompt))
     .filter(Boolean)
     .slice(0, 6)
 
-  return normalized.length > 0 ? normalized : [...DEFAULT_SUGGESTED_PROMPTS]
+  // The fallback runs through the normalizer too, or the defaults would ship
+  // without the `pageContext` field every consumer of this list expects.
+  return normalized.length > 0
+    ? normalized
+    : DEFAULT_SUGGESTED_PROMPTS.map(prompt => normalizeSuggestedPrompt(prompt))
 }
 
 export function isAssistantEnabled (config = {}) {

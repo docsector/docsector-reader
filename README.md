@@ -33,7 +33,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ✍️ **Docsector Authoring Skill** — Publishable `SKILL.md` that teaches agents Docsector blocks, page patterns, MCP lookup, and WebMCP tools
 - 🪪 **MCP Server Card** — Optional `/.well-known/mcp/server-card.json` for MCP server discovery before connection
 - 🌐 **WebMCP Browser Tools** — Optional registration of in-page tools via `navigator.modelContext` for browser agents
-- 🤖 **AI Assistant Panel** — Optional documentation assistant drawer backed by Cloudflare AI Search through an internal same-origin endpoint
+- 🤖 **AI Assistant Panel** — Optional documentation assistant drawer backed by Cloudflare AI Search through an internal same-origin endpoint, with an opt-in page-context toggle in the composer
 - 🗂️ **API Catalog Well-Known** — Auto-generates `/.well-known/api-catalog` as Linkset JSON for machine-readable API discovery
 - 🔗 **Homepage Link Headers** — Auto-generated `Link` response headers for agent discovery (`api-catalog`, `service-doc`, `service-desc`, `describedby`) per RFC 8288 / RFC 9727
 - 🔌 **MCP Server** — Auto-generated [MCP](https://modelcontextprotocol.io) server at `/mcp` for AI assistant integration (Claude Desktop, VS Code, etc.)
@@ -330,9 +330,11 @@ export default {
       drawerWidth: 380,
       wideBreakpoint: 1280,
       showCitations: true,
+      // A prompt is a plain string, or an object when it only makes sense with
+      // the current page attached — clicking it turns the page-context chip on.
       suggestedPrompts: [
         'How do I get started?',
-        'Summarize this page.',
+        { text: 'Summarize this page.', pageContext: true },
         'Where is the related API reference?'
       ]
     },

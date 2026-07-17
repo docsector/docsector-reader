@@ -88,7 +88,7 @@ export default {
       showCitations: true,
       suggestedPrompts: [
         'How do I get started?',
-        'Summarize this page.',
+        { text: 'Summarize this page.', pageContext: true },
         'Where is the related API reference?'
       ]
     },

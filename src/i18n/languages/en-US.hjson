@@ -113,7 +113,8 @@
     placeholder: 'Ask, search, or explain...',
     send: 'Send',
     stop: 'Stop',
-    context: 'Based on your context',
+    // assistant.pageContext.* comes from the Docsector engine defaults —
+    // override a key here only to reword it.
     sources: 'Sources',
     sourcesCount: '{count} sources',
     copyMessage: 'Copy message',

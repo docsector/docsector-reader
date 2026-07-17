@@ -112,7 +112,8 @@
     placeholder: 'Pergunte, pesquise ou explique...',
     send: 'Enviar',
     stop: 'Parar',
-    context: 'Com base no seu contexto',
+    // assistant.pageContext.* vem dos defaults do engine Docsector —
+    // sobrescreva uma chave aqui apenas para mudar o texto.
     sources: 'Fontes',
     sourcesCount: '{count} fontes',
     copyMessage: 'Copiar mensagem',

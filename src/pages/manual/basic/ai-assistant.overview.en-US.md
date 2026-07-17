@@ -8,7 +8,7 @@ The first provider is Cloudflare AI Search. It can crawl Docsector's generated M
 
 - A right-side assistant drawer on desktop.
 - A fullscreen assistant dialog on mobile.
-- Suggested prompts, current-page context, streaming responses, and source links.
+- Suggested prompts, opt-in current-page context, streaming responses, and source links.
 - Build-time AI Search artifacts when `siteUrl` is configured.
 - A same-origin internal endpoint so credentials stay server-side.
 
@@ -37,6 +37,32 @@ export default {
 
 Set `AI_SEARCH_INSTANCE_NAME` in Cloudflare Pages environment variables for deployed environments, or in `.dev.vars` when running `wrangler pages dev` locally.
 
+## Page Context
+
+The composer has a **Page context** chip. When it is on, the full Markdown of the page the reader is looking at is attached to the prompt, so the assistant can answer "summarize this page" or "what does this mean?" verbatim.
+
+It is **off by default**. Most questions are not about the current page, and attaching it anyway spends the model's context window on text nobody asked about. The reader turns it on when they want it, and the choice is remembered in `localStorage` under `docsector.assistant.context.v1`.
+
+Off does **not** mean the assistant is blind to the page. Retrieval still runs over your whole indexed documentation, and the current page is part of that index — the chip only controls the *guaranteed, verbatim* copy. The page title and route are always sent, and so is any text the reader has selected.
+
+When the chip is off, the endpoint skips the asset fetch entirely, so the request is cheaper and faster, not just shorter.
+
+### Page-dependent prompts
+
+A suggested prompt that only makes sense with the page attached can say so. Clicking it turns the chip on, so the reader sees why:
+
+```javascript
+suggestedPrompts: [
+  'How do I get started?',
+  { text: 'Summarize this page.', pageContext: true },
+  'Where is the related API reference?'
+]
+```
+
+Both forms work in the same list: a plain string is a prompt that does not need the page. The object form requires Docsector Reader 4.17.0 or newer — older versions ignore object entries.
+
+There is no configuration key for the default. To reword the chip, override `assistant.pageContext.label`, `assistant.pageContext.on` and `assistant.pageContext.off` in your language files.
+
 ## Cloudflare AI Search
 
 Create an AI Search instance and configure a Website data source. Docsector always publishes `/sitemap.xml` during build and advertises it from `robots.txt`, so Cloudflare's crawler can discover the site automatically.
@@ -51,7 +77,7 @@ The AI Search sitemap points to Markdown URLs, which are cleaner for retrieval t
 
 ## Runtime Endpoint
 
-The generated Pages Function accepts chat messages, current route metadata, locale, and optional selected page text. It forwards the request to AI Search by binding when available, or by REST using encrypted Cloudflare environment variables. The endpoint is an internal API for the drawer, not a page users navigate to.
+The generated Pages Function accepts chat messages, current route metadata, locale, optional selected page text, and the page-context flag. It reads the current page's Markdown from your deployed assets only when that flag is set, then forwards the request to AI Search by binding when available, or by REST using encrypted Cloudflare environment variables. The endpoint is an internal API for the drawer, not a page users navigate to.
 
 The browser never needs a Cloudflare API token.
 

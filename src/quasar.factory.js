@@ -2270,8 +2270,11 @@ function createMarkdownBuildPlugin (projectRoot) {
         mkdirSync(functionsDir, { recursive: true })
 
         if (existsSync(templatePath)) {
+          // Replacer function, not a plain string: `$&`, `` $` `` and `$'` in a
+          // consumer's config (a suggested prompt, say) would otherwise be
+          // interpolated into the generated endpoint.
           const serverCode = readFileSync(templatePath, 'utf-8')
-            .replaceAll('__AI_ASSISTANT_CONFIG__', JSON.stringify(assistantConfig, null, 2))
+            .replaceAll('__AI_ASSISTANT_CONFIG__', () => JSON.stringify(assistantConfig, null, 2))
 
           writeFileSync(resolve(functionsDir, 'assistant.js'), serverCode)
           console.log(`\x1b[36m[docsector]\x1b[0m Generated AI Assistant endpoint at functions/assistant.js`)
@@ -2866,12 +2869,14 @@ export async function onRequest (context) {
         const packageRoot = getPackageRoot(projectRoot)
         const templatePath = resolve(packageRoot, 'src', 'mcp', 'server.js')
         if (existsSync(templatePath)) {
+          // Replacer functions, not plain strings: `$&`, `` $` `` and `$'` in a
+          // consumer-supplied value would otherwise be interpolated.
           let serverCode = readFileSync(templatePath, 'utf-8')
           serverCode = serverCode
-            .replaceAll('__MCP_SERVER_NAME__', mcpServerName)
-            .replaceAll('__MCP_SERVER_VERSION__', mcpVersion)
-            .replaceAll('__MCP_TOOL_SUFFIX__', mcpToolSuffix)
-            .replaceAll('__MCP_SITE_URL__', siteUrl || '')
+            .replaceAll('__MCP_SERVER_NAME__', () => mcpServerName)
+            .replaceAll('__MCP_SERVER_VERSION__', () => mcpVersion)
+            .replaceAll('__MCP_TOOL_SUFFIX__', () => mcpToolSuffix)
+            .replaceAll('__MCP_SITE_URL__', () => siteUrl || '')
 
           const functionsDir = resolve(projectRoot, 'functions')
           mkdirSync(functionsDir, { recursive: true })

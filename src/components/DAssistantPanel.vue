@@ -71,7 +71,8 @@ const assistant = useAssistant({
   getContext: () => ({
     title: props.contextTitle,
     markdownUrl: props.markdownUrl,
-    selectedText: typeof window !== 'undefined' ? String(window.getSelection?.() || '') : ''
+    selectedText: typeof window !== 'undefined' ? String(window.getSelection?.() || '') : '',
+    includePageMarkdown: assistant.pageContext.value
   })
 })
 
@@ -329,6 +330,15 @@ const submit = async (value = input.value) => {
   if (!prompt) return
   input.value = ''
   await assistant.send(prompt)
+}
+
+const togglePageContext = () => assistant.setPageContext(!assistant.pageContext.value)
+
+const submitPrompt = async (prompt) => {
+  // Page-dependent prompts turn the toggle on, so the chip lights up and the
+  // reader can see why this prompt gets the page attached.
+  if (prompt?.pageContext === true) assistant.setPageContext(true)
+  await submit(prompt?.text)
 }
 
 const scrollToBottomAction = () => {
@@ -600,12 +610,12 @@ onBeforeUnmount(() => {
     <div v-if="!assistant.hasMessages.value" class="d-assistant-panel__prompts">
       <q-btn
         v-for="prompt in prompts"
-        :key="prompt"
+        :key="prompt.text"
         dense no-caps unelevated
         class="d-assistant-panel__prompt"
-        @click="submit(prompt)"
+        @click="submitPrompt(prompt)"
       >
-        {{ prompt }}
+        {{ prompt.text }}
       </q-btn>
     </div>
 
@@ -621,10 +631,22 @@ onBeforeUnmount(() => {
         @keydown="handleKeydown"
       />
       <div class="d-assistant-panel__composer-row">
-        <span class="d-assistant-panel__context">
-          <q-icon name="smart_toy" size="16px" />
-          {{ t('assistant.context') }}
-        </span>
+        <q-chip
+          clickable
+          :ripple="false"
+          class="d-assistant-panel__context"
+          :class="{ 'd-assistant-panel__context--on': assistant.pageContext.value }"
+          role="switch"
+          :aria-checked="assistant.pageContext.value ? 'true' : 'false'"
+          :aria-label="t('assistant.pageContext.label')"
+          @click="togglePageContext"
+        >
+          <q-icon name="description" size="16px" />
+          <span class="d-assistant-panel__context-label">{{ t('assistant.pageContext.label') }}</span>
+          <q-tooltip>
+            {{ assistant.pageContext.value ? t('assistant.pageContext.on') : t('assistant.pageContext.off') }}
+          </q-tooltip>
+        </q-chip>
         <q-btn
           no-caps flat dense
           class="d-assistant-panel__send"
@@ -740,6 +762,16 @@ onBeforeUnmount(() => {
       background: rgba(24, 24, 24, 0.86)
       border-color: rgba(255, 142, 111, 0.74)
       box-shadow: 0 0 0 1px rgba(255, 142, 111, 0.3), 0 14px 36px rgba(0, 0, 0, 0.32)
+
+    .d-assistant-panel__context
+      border-color: rgba(255, 255, 255, 0.16)
+
+      // Compound on purpose: `--dark .__context` is two classes and would
+      // outrank the single-class `--on` modifier otherwise.
+      &.d-assistant-panel__context--on
+        border-color: rgba(255, 142, 111, 0.74)
+        background: rgba(255, 142, 111, 0.18)
+        color: #ffad98
 
     .d-assistant-panel__input
       .q-field__native,
@@ -922,13 +954,41 @@ onBeforeUnmount(() => {
     margin-top: 2px
 
   &__context
-    display: inline-flex
-    align-items: center
-    gap: 5px
+    height: auto
+    min-height: 28px
     min-width: 0
+    max-width: calc(100% - 92px)
+    margin: 0
+    padding: 3px 10px
+    border: 1px solid rgba(15, 23, 42, 0.16)
+    border-radius: 999px
+    background: transparent
+    color: inherit
     font-size: 0.76rem
     font-weight: 600
-    opacity: 0.7
+    opacity: 0.62
+    transition: opacity 0.14s ease, background 0.14s ease, border-color 0.14s ease, color 0.14s ease
+
+    // QChip renders slot children inside `.q-chip__content`, so the gap has to
+    // live there — a gap on the root would do nothing.
+    .q-chip__content
+      gap: 5px
+      min-width: 0
+
+    &:hover
+      opacity: 0.92
+
+    &--on
+      border-color: var(--q-primary)
+      background: var(--q-primary)
+      color: #fff
+      opacity: 1
+
+  &__context-label
+    min-width: 0
+    overflow: hidden
+    text-overflow: ellipsis
+    white-space: nowrap
 
   &__send
     flex: 0 0 auto

@@ -24,7 +24,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '4.16.0'
+const VERSION = '4.17.0'
 const AUTHORING_SKILL_NAME = 'docsector-documentation-authoring'
 const AUTHORING_SKILL_DESCRIPTION = 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.'
 const AUTHORING_SKILL_PUBLIC_PATH = `/.well-known/agent-skills/${AUTHORING_SKILL_NAME}/SKILL.md`
@@ -196,7 +196,9 @@ export default {
   //     showCitations: true,
   //     suggestedPrompts: [
   //       'How do I get started?',
-  //       'Summarize this page.',
+  //       // pageContext marks a prompt that needs the current page, so
+  //       // clicking it turns the composer's page-context chip on.
+  //       { text: 'Summarize this page.', pageContext: true },
   //       'Where is the related API reference?'
   //     ]
   //   },

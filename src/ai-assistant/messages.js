@@ -35,7 +35,10 @@ export function createAssistantRequestPayload ({ messages = [], route, locale, c
     context: {
       title: typeof context?.title === 'string' ? context.title.trim() : '',
       markdownUrl: typeof context?.markdownUrl === 'string' ? context.markdownUrl.trim() : '',
-      selectedText: cleanContent(context?.selectedText, options.maxSelectedTextLength || 1200)
+      selectedText: cleanContent(context?.selectedText, options.maxSelectedTextLength || 1200),
+      // Opt-in: only when this is exactly `true` does the endpoint attach the
+      // current page markdown. Anything else means off.
+      includePageMarkdown: context?.includePageMarkdown === true
     }
   }
 }

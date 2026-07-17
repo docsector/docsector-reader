@@ -3,12 +3,16 @@ import { computed, nextTick, ref, watch } from 'vue'
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { createAssistantRequestPayload } from '../ai-assistant/messages'
+import { loadPersistedPageContext, savePersistedPageContext } from '../ai-assistant/page-context'
 import { clearAssistantSession, loadAssistantSession, saveAssistantSession } from '../ai-assistant/session'
 import { extractAssistantStreamDelta, normalizeAssistantSourceChunks, parseServerSentEvents } from '../ai-assistant/stream'
 
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantMessages = ref([])
 const assistantSources = ref([])
+// Module scope on purpose: the panel mounts twice (desktop rail + mobile
+// dialog) and shares one conversation, so it must share one toggle too.
+const assistantPageContext = ref(loadPersistedPageContext())
 let assistantSessionReady = false
 let assistantSessionWatcherReady = false
 let assistantSessionPersistTimer = null
@@ -99,11 +103,17 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
 
   const messages = assistantMessages
   const sources = assistantSources
+  const pageContext = assistantPageContext
   const loading = ref(false)
   const error = ref('')
   const abortController = ref(null)
 
   const hasMessages = computed(() => messages.value.length > 0)
+
+  const setPageContext = (value) => {
+    pageContext.value = value === true
+    savePersistedPageContext(pageContext.value)
+  }
 
   const clear = () => {
     messages.value = []
@@ -286,6 +296,8 @@ export default function useAssistant ({ route, locale, getContext } = {}) {
     loading,
     error,
     hasMessages,
+    pageContext,
+    setPageContext,
     send,
     retryFromUserMessage,
     stop,

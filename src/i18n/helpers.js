@@ -98,7 +98,13 @@ const engineDefaults = {
       placeholder: 'Ask, search, or explain...',
       send: 'Send',
       stop: 'Stop',
-      context: 'Based on your context',
+      // "Attach", never "exclude": turning this off only drops the verbatim
+      // copy of the page — retrieval can still surface it from the index.
+      pageContext: {
+        label: 'Page context',
+        on: 'This page is attached to your prompt. Click to detach.',
+        off: 'Attach this page to your prompt.'
+      },
       sources: 'Sources',
       sourcesCount: '{count} sources',
       copyMessage: 'Copy message',
@@ -203,7 +209,11 @@ const engineDefaults = {
       placeholder: 'Pergunte, pesquise ou explique...',
       send: 'Enviar',
       stop: 'Parar',
-      context: 'Com base no seu contexto',
+      pageContext: {
+        label: 'Contexto da página',
+        on: 'Esta página está anexada ao seu prompt. Clique para desanexar.',
+        off: 'Anexe esta página ao seu prompt.'
+      },
       sources: 'Fontes',
       sourcesCount: '{count} fontes',
       copyMessage: 'Copiar mensagem',

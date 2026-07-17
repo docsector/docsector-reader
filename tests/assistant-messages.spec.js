@@ -43,4 +43,29 @@ describe('assistant message helpers', () => {
       }
     })
   })
+
+  it('leaves the page markdown out of the payload by default', () => {
+    const payload = createAssistantRequestPayload({
+      messages: [{ role: 'user', content: 'Hi' }],
+      context: { title: 'Guide', markdownUrl: 'https://docs.example.com/guide.md' }
+    })
+
+    expect(payload.context.includePageMarkdown).toBe(false)
+    // The URL still ships when the toggle is off: the client does not encode
+    // server policy, and the endpoint short-circuits before reading it.
+    expect(payload.context.markdownUrl).toBe('https://docs.example.com/guide.md')
+  })
+
+  it('opts in only for a literal true', () => {
+    const build = (includePageMarkdown) => createAssistantRequestPayload({
+      messages: [{ role: 'user', content: 'Hi' }],
+      context: { includePageMarkdown }
+    }).context.includePageMarkdown
+
+    expect(build(true)).toBe(true)
+
+    for (const value of ['true', 1, 'yes', {}, undefined]) {
+      expect(build(value)).toBe(false)
+    }
+  })
 })

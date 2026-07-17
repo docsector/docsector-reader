@@ -53,7 +53,10 @@ describe('i18n message builder', () => {
     expect(messages['en-US'].assistant).toMatchObject({
       placeholder: 'Ask, search, or explain...',
       send: 'Send',
-      context: 'Based on your context',
+      pageContext: {
+        label: 'Page context',
+        off: 'Attach this page to your prompt.'
+      },
       greeting: {
         afternoon: 'Good afternoon'
       }
@@ -62,7 +65,10 @@ describe('i18n message builder', () => {
     expect(messages['pt-BR'].assistant).toMatchObject({
       placeholder: 'Pergunte, pesquise ou explique...',
       send: 'Enviar',
-      context: 'Com base no seu contexto',
+      pageContext: {
+        label: 'Contexto da página',
+        off: 'Anexe esta página ao seu prompt.'
+      },
       greeting: {
         afternoon: 'Boa tarde'
       }
