@@ -12,6 +12,13 @@ defineProps({
     type: Boolean,
     default: false
   },
+  // Page-level default for the code block meta row, applied at render time so
+  // build-compiled tokens stay page-agnostic: a fence without an explicit
+  // :toolbar= attribute (token.toolbar === null) falls back to this value.
+  codeToolbarDefault: {
+    type: Boolean,
+    default: null
+  },
   tokens: {
     type: Array,
     default: () => []
@@ -147,7 +154,7 @@ import DBlockApi from './DBlockApi.vue'
     :language="token.info"
     :filename="token.filename"
     :breadcrumbs="token.breadcrumbs"
-    :toolbar="token.toolbar"
+    :toolbar="token.toolbar ?? codeToolbarDefault"
     :tabs="token.tabs"
   />
 
@@ -209,6 +216,7 @@ import DBlockApi from './DBlockApi.vue'
     <template #default="{ item }">
       <d-page-tokens
         :id="id"
+        :code-toolbar-default="codeToolbarDefault"
         :tokens="item.tokens"
       />
     </template>
@@ -221,6 +229,7 @@ import DBlockApi from './DBlockApi.vue'
     <template #default="{ step }">
       <d-page-tokens
         :id="id"
+        :code-toolbar-default="codeToolbarDefault"
         :tokens="step.tokens"
       />
     </template>
@@ -234,6 +243,7 @@ import DBlockApi from './DBlockApi.vue'
   >
     <d-page-tokens
       :id="id"
+      :code-toolbar-default="codeToolbarDefault"
       :tokens="token.tokens"
     />
   </d-block-expandable>

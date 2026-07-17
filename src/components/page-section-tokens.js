@@ -3,7 +3,10 @@ import attrs from 'markdown-it-attrs'
 import GithubSlugger from 'github-slugger'
 import taskLists from 'markdown-it-task-lists'
 
-import { installInlineCodeCopyRenderer } from './inline-code-copy'
+// ? Explicit extensions: this module is also imported by the build-time page
+//   compiler under plain Node ESM resolution (no Vite resolver)
+import { installInlineCodeCopyRenderer } from './inline-code-copy.js'
+import { loadMathCss } from './page-tokens-support.js'
 
 const ALERT_MESSAGE_TYPES = new Set([
   'note',
@@ -34,24 +37,29 @@ const MATH_KATEX_OPTIONS = {
 //   sourceHasMath(), await loadMathSupport(), then re-tokenize.
 let katexEngine = null
 let texmathPlugin = null
-let mathSupportPromise = null
+let mathEnginePromise = null
 
-export const loadMathSupport = () => {
-  if (mathSupportPromise === null) {
-    mathSupportPromise = Promise.all([
+// ? Engine only (katex + texmath, no stylesheet): also used by the build-time
+//   page compiler, where importing CSS would crash Node
+export const loadMathEngine = () => {
+  if (mathEnginePromise === null) {
+    mathEnginePromise = Promise.all([
       import('katex'),
-      import('markdown-it-texmath'),
-      import('katex/dist/katex.min.css')
+      import('markdown-it-texmath')
     ]).then(([katexModule, texmathModule]) => {
       katexEngine = katexModule.default ?? katexModule
       texmathPlugin = texmathModule.default ?? texmathModule
     }).catch((error) => {
-      mathSupportPromise = null
+      mathEnginePromise = null
       console.warn('[docsector] Failed to load math support', error)
     })
   }
 
-  return mathSupportPromise
+  return mathEnginePromise
+}
+
+export const loadMathSupport = () => {
+  return Promise.all([loadMathEngine(), loadMathCss()]).then(() => {})
 }
 
 export const hasMathSupport = () => katexEngine !== null

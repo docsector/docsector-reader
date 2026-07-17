@@ -325,6 +325,13 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
 
   const i18n = {}
 
+  // ? Build-compiled page module ({ v, tokens, ... }) — passes through as-is:
+  //   the vue-i18n escape filter only exists to survive t() compilation, which
+  //   compiled token modules never go through
+  const isCompiled = (value) => {
+    return typeof value === 'object' && value !== null && typeof value.tokens === 'string'
+  }
+
   function load (topPage, path, subpage, lang, sourceRoot = '') {
     const normalizedSourceRoot = String(sourceRoot || '').replace(/^\/+|\/+$/g, '')
     const key = `../pages/${normalizedSourceRoot ? normalizedSourceRoot + '/' : ''}${topPage}/${path}.${subpage}.${lang}.md`
@@ -335,12 +342,19 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
       return ''
     }
 
+    if (isCompiled(content)) {
+      return content
+    }
+
     const source = filter(typeof content === 'string' ? content : String(content))
     return source
   }
 
   function loadHomepage (lang) {
     const override = homePageOverride?.[lang] ?? homePageOverride?.['en-US']
+    if (isCompiled(override)) {
+      return override
+    }
     if (typeof override === 'string' && override.length > 0) {
       return filter(override)
     }
@@ -354,12 +368,19 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
       return ''
     }
 
+    if (isCompiled(content)) {
+      return content
+    }
+
     const source = filter(typeof content === 'string' ? content : String(content))
     return source
   }
 
   function extractHeadingFromHomepage (lang) {
     const override = homePageOverride?.[lang] ?? homePageOverride?.['en-US']
+    if (isCompiled(override)) {
+      return override.heading || ''
+    }
     if (typeof override === 'string' && override.length > 0) {
       const htmlHeadingMatch = override.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
       if (htmlHeadingMatch) {
@@ -382,6 +403,10 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
     const content = homepageMdModules[key] ?? homepageMdModules[fallbackKey]
     if (!content) {
       return ''
+    }
+
+    if (isCompiled(content)) {
+      return content.heading || ''
     }
 
     const raw = typeof content === 'string' ? content : String(content)

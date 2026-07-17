@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -14,9 +14,13 @@ import { getAssistantRightRailState } from '../ai-assistant/layout'
 import { resolveRoutePageLayout } from '../page-layout'
 
 import DPageAnchor from './DPageAnchor.vue'
-import DAssistantPanel from './DAssistantPanel.vue'
 import DFooterOutlet from './DFooterOutlet.vue'
 import DPageMeta from './DPageMeta.vue'
+
+// ? Async on purpose: the assistant graph (composer, markdown tokenizer for
+//   LLM answers) loads only when the panel actually renders — it would
+//   otherwise drag markdown-it into every page's critical path
+const DAssistantPanel = defineAsyncComponent(() => import('./DAssistantPanel.vue'))
 
 const store = useStore()
 const router = useRouter()

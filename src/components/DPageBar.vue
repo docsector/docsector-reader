@@ -12,7 +12,7 @@ import { pageValueI18nPath } from '../i18n/path'
 const $q = useQuasar()
 const store = useStore()
 const route = useRoute()
-const { t, locale } = useI18n()
+const { t, tm, locale } = useI18n()
 
 const copied = ref(false)
 
@@ -72,7 +72,14 @@ const rawMarkdown = computed(() => {
   const absolute = store.state.i18n.absolute
   if (!absolute) return ''
 
-  const source = t(pageValueI18nPath(absolute, 'source'))
+  const path = pageValueI18nPath(absolute, 'source')
+
+  // ? Build-compiled pages ({ v, tokens, ... }) don't carry the raw source —
+  //   copyPage() fetches the pristine static .md instead
+  const raw = tm(path)
+  if (typeof raw === 'object' && raw !== null) return ''
+
+  const source = t(path)
   if (!source) return ''
 
   return String(source)
@@ -80,6 +87,16 @@ const rawMarkdown = computed(() => {
     .replace(/&#125;/g, '}')
     .replace(/\{'([^']+)'\}/g, '$1')
     .replace(/&amp;/g, '&')
+})
+
+// : The static .md twins emitted at build — current locale first, default last
+const markdownFetchURLs = computed(() => {
+  if (store.state.page.base === 'home') {
+    return [`/homepage.${locale.value}.md`, '/homepage.md']
+  }
+
+  const path = route.path.replace(/\/+$/, '')
+  return [`${path}.${locale.value}.md`, `${path}.md`]
 })
 
 const markdownURL = computed(() => {
@@ -187,10 +204,27 @@ const copyMcpCommand = (command, type) => {
   })
 }
 
-const copyPage = () => {
-  if (!rawMarkdown.value) return
+const copyPage = async () => {
+  let markdown = rawMarkdown.value
 
-  copyToClipboard(rawMarkdown.value).then(() => {
+  // @ Compiled build: pull the pristine markdown from the static .md files
+  if (!markdown) {
+    for (const url of markdownFetchURLs.value) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) continue
+
+        markdown = await response.text()
+        break
+      } catch {
+        // ? Unreachable file — try the next candidate
+      }
+    }
+  }
+
+  if (!markdown) return
+
+  copyToClipboard(markdown).then(() => {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2000)
   })

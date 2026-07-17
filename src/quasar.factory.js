@@ -2077,6 +2077,42 @@ function createIconsPlugin (projectRoot) {
   }
 }
 
+/**
+ * Compile page markdown at build time — the client then receives each page as
+ * a ready-to-render token list ({ v, math, heading, headers, tokens }) instead
+ * of a raw string, so the markdown-it tokenizer graph (markdown-it + attrs +
+ * task-lists + texmath + katex engine) drops out of the critical path and the
+ * per-page parse cost moves from every visitor's main thread to the build.
+ *
+ * Dev mode is untouched (raw strings, live tokenization, .md HMR) — the client
+ * lazy-loads the tokenizer only when it meets a string source.
+ */
+function createPageTokensPlugin (projectRoot) {
+  const pagesPrefix = resolve(projectRoot, 'src', 'pages') + '/'
+
+  return {
+    name: 'docsector-page-tokens',
+    apply: 'build',
+    enforce: 'pre',
+
+    async load (id) {
+      const [path, query] = id.split('?')
+
+      // ? Only the raw page-source modules the i18n glob imports
+      if (!query || !/(^|&)raw(&|$|=)/.test(query)) return null
+      if (!path.startsWith(pagesPrefix) || !path.endsWith('.md')) return null
+      // ? Homepage files belong to the homepage-override plugin (remote README)
+      if (/\/Homepage\.[A-Za-z0-9-]+\.md$/.test(path)) return null
+      if (!existsSync(path)) return null
+
+      const { compilePageTokens } = await import('./components/page-tokens-compile.js')
+      const compiled = await compilePageTokens(readFileSync(path, 'utf-8'))
+
+      return `export default ${JSON.stringify(compiled)}`
+    }
+  }
+}
+
 function createHomePageOverridePlugin (projectRoot) {
   const virtualId = 'virtual:docsector-homepage-override'
   const resolvedId = '\0' + virtualId
@@ -2099,8 +2135,24 @@ function createHomePageOverridePlugin (projectRoot) {
     return loadPromise
   }
 
+  // ? In build, homepage sources ship compiled like every other page (see
+  //   createPageTokensPlugin — which deliberately skips Homepage files)
+  let isBuild = false
+
+  const compileForBuild = async (content) => {
+    if (!isBuild || typeof content !== 'string' || content.length === 0) {
+      return content
+    }
+
+    const { compilePageTokens } = await import('./components/page-tokens-compile.js')
+    return await compilePageTokens(content)
+  }
+
   return {
     name: 'docsector-homepage-override',
+    configResolved (config) {
+      isBuild = config.command === 'build'
+    },
     resolveId (id) {
       if (id === virtualId) return resolvedId
     },
@@ -2115,9 +2167,16 @@ function createHomePageOverridePlugin (projectRoot) {
     async load (id) {
       if (id === resolvedId) {
         const sources = await ensureSources()
+        const byLang = sources?.byLang || {}
+
+        const compiledByLang = {}
+        for (const [lang, content] of Object.entries(byLang)) {
+          compiledByLang[lang] = await compileForBuild(content)
+        }
+
         return [
           `export const homePageSourceMode = ${JSON.stringify(sources?.mode || 'local')}`,
-          `export default ${JSON.stringify(sources?.byLang || {})}`
+          `export default ${JSON.stringify(compiledByLang)}`
         ].join('\n')
       }
 
@@ -2131,7 +2190,7 @@ function createHomePageOverridePlugin (projectRoot) {
       const content = sources.byLang[lang]
       if (typeof content !== 'string') return null
 
-      return `export default ${JSON.stringify(content)}`
+      return `export default ${JSON.stringify(await compileForBuild(content))}`
     }
   }
 }
@@ -2494,6 +2553,8 @@ function createMarkdownBuildPlugin (projectRoot) {
       const assistantConfig = normalizeAiAssistantConfig(config)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+      const staticLangs = (config.languages || []).map(language => language?.value).filter(Boolean)
+      if (!staticLangs.includes(defaultLang)) staticLangs.push(defaultLang)
       let count = 0
 
       for (const entry of pageEntries) {
@@ -2506,16 +2567,30 @@ function createMarkdownBuildPlugin (projectRoot) {
         if (page.config.subpages?.vs) subpages.push('vs')
 
         for (const subpage of subpages) {
-          const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
-          if (!existsSync(srcFile)) continue
-
           const routePath = buildPageRoutePath(entry, subpage)
-          const destFile = resolve(distDir, `${routePath}.md`)
-          const destDir = resolve(destFile, '..')
+          const destDir = resolve(distDir, `${routePath}.md`, '..')
+          let wrote = false
 
-          mkdirSync(destDir, { recursive: true })
-          writeFileSync(destFile, readFileSync(srcFile, 'utf-8'))
-          count++
+          // @ One static .md per language: <route>.md (default) + <route>.<lang>.md —
+          //   raw sources no longer ship in the client bundle (pages are compiled
+          //   to token modules), so copy-page and WebMCP fetch these instead
+          for (const lang of staticLangs) {
+            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, lang)
+            if (!existsSync(srcFile)) continue
+
+            if (!wrote) {
+              mkdirSync(destDir, { recursive: true })
+            }
+
+            const content = readFileSync(srcFile, 'utf-8')
+            writeFileSync(resolve(distDir, `${routePath}.${lang}.md`), content)
+            if (lang === defaultLang) {
+              writeFileSync(resolve(distDir, `${routePath}.md`), content)
+            }
+            wrote = true
+          }
+
+          if (wrote) count++
         }
       }
 
@@ -3757,6 +3832,7 @@ export function createQuasarConfig (options = {}) {
         createIconsPlugin(projectRoot),
         createRoutePreloadPlugin(),
         createHjsonPlugin(),
+        createPageTokensPlugin(projectRoot),
         createHomePageOverridePlugin(projectRoot),
         createGitDatesPlugin(projectRoot),
         createMarkdownEndpointPlugin(projectRoot),

@@ -318,10 +318,14 @@ const searchTermInI18nTexts = (route, term, locale) => {
     const path = routeSubpageSourceI18nPath(route, subpage)
     const msgExists = te(path, locale)
     if (msgExists) {
-      source = tm(path, locale)
+      const raw = tm(path, locale)
+      // ? Compiled token modules carry the page text inside the tokens JSON
+      source = typeof raw === 'string'
+        ? raw
+        : (raw && typeof raw.tokens === 'string' ? raw.tokens : '')
     }
 
-    if (msgExists && source.toLowerCase().includes(term)) {
+    if (msgExists && source && source.toLowerCase().includes(term)) {
       found = true
       break
     }

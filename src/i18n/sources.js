@@ -87,7 +87,10 @@ function loadSource (routeMeta, subpage, lang) {
   const segments = routeMeta.i18nSegments
   const loading = loader()
     .then((raw) => {
-      const source = filterSource(typeof raw === 'string' ? raw : String(raw ?? ''))
+      // ? Build-compiled token modules ({ v, tokens, ... }) merge untouched —
+      //   the escape filter only exists for raw strings that go through t()
+      const compiled = typeof raw === 'object' && raw !== null && typeof raw.tokens === 'string'
+      const source = compiled ? raw : filterSource(typeof raw === 'string' ? raw : String(raw ?? ''))
       composer.mergeLocaleMessage(lang, buildSourceMessage(segments, subpage, source))
       mergedKeys.add(key)
     })

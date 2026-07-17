@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
 import DPageTokens from './DPageTokens.vue'
 import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'
-import { hasMathSupport, loadMathSupport, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens'
+import { isCompiledPageSource, loadMathCss, parseCompiledPageTokens } from './page-tokens-support'
 import { applyTemplateSections } from './page-template-sections'
 import docsectorConfig from 'docsector.config.js'
 
@@ -40,36 +40,71 @@ const props = defineProps({
 })
 
 const store = useStore()
-const { t, locale } = useI18n()
+const { t, tm, locale } = useI18n()
 
+// ? Build-compiled pages arrive as objects ({ v, tokens, ... }) — read them
+//   raw via tm(); raw markdown strings (dev) keep t() so vue-i18n literal
+//   escapes ({'@'}) are restored exactly as before
 const source = computed(() => {
   const absolute = store.state.i18n.absolute
+  if (!absolute) {
+    return ''
+  }
 
-  return absolute ? t(pageValueI18nPath(absolute, 'source')) : ''
+  const path = pageValueI18nPath(absolute, 'source')
+  const raw = tm(path)
+
+  return isCompiledPageSource(raw) ? raw : t(path)
 })
 
-// ? Math (katex) loads on demand: render the page right away and re-tokenize
-//   once the engine arrives — pages without math never download it
-const mathReady = ref(hasMathSupport())
+// ! Tokenization result — sync for compiled sources; async (lazy tokenizer
+//   chunk) for raw strings. shallowRef: token trees must not be deep-proxied.
+const tokenized = shallowRef([])
+let tokenizeGeneration = 0
+
 watch(source, (value) => {
-  if (!mathReady.value && sourceHasMath(value)) {
-    loadMathSupport().then(() => {
-      mathReady.value = hasMathSupport()
-    })
+  const generation = ++tokenizeGeneration
+
+  // ?: Compiled at build — parse and render; math pages only need the KaTeX CSS
+  //    (their formula HTML was pre-rendered by the build)
+  if (isCompiledPageSource(value)) {
+    if (value.math) {
+      loadMathCss()
+    }
+    tokenized.value = parseCompiledPageTokens(value)
+    return
   }
+
+  const text = typeof value === 'string' ? value : ''
+  if (text === '') {
+    tokenized.value = []
+    return
+  }
+
+  // @ Raw string (dev / fallback): tokenize on the client via the lazy
+  //   tokenizer chunk — markdown-it stays out of this component's graph
+  import('./page-section-tokens').then((tokenizer) => {
+    if (generation !== tokenizeGeneration) {
+      return
+    }
+
+    tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null })
+
+    // ? Math (katex) loads on demand: the page renders right away and
+    //   re-tokenizes once the engine arrives (unchanged dev behavior)
+    if (!tokenizer.hasMathSupport() && tokenizer.sourceHasMath(text)) {
+      tokenizer.loadMathSupport().then(() => {
+        if (generation !== tokenizeGeneration || !tokenizer.hasMathSupport()) {
+          return
+        }
+        tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null })
+      })
+    }
+  })
 }, { immediate: true })
 
-const tokenized = computed(() => {
-  if (source.value === '') {
-    return []
-  }
-
-  // Re-tokenize when math support finishes loading
-  void mathReady.value
-
-  const tokens = tokenizePageSectionSource(source.value, {
-    codeToolbarDefault: props.codeToolbarDefault
-  })
+const sectionTokens = computed(() => {
+  const tokens = tokenized.value
 
   if (Array.isArray(props.template?.sections) && props.template.sections.length > 0) {
     return applyTemplateSections(tokens, props.template, locale.value, {
@@ -81,7 +116,7 @@ const tokenized = computed(() => {
   return tokens
 })
 
-watch(tokenized, (tokens) => {
+watch(sectionTokens, (tokens) => {
   store.commit('page/setAnchorTree', buildPageAnchorTree(tokens))
 }, { immediate: true })
 
@@ -93,9 +128,11 @@ const INITIAL_BLOCKS = 24
 const REVEAL_BATCH = 16
 
 const visibleCount = ref(props.progressive ? INITIAL_BLOCKS : Infinity)
+// ! Generation guard: navigation restarts the reveal; stale loops must die
+let revealGeneration = 0
 
 const visibleTokens = computed(() => {
-  const tokens = tokenized.value
+  const tokens = sectionTokens.value
 
   return visibleCount.value >= tokens.length
     ? tokens
@@ -103,8 +140,8 @@ const visibleTokens = computed(() => {
 })
 
 // @@ Append one batch per idle period until the page is complete
-function reveal () {
-  if (visibleCount.value >= tokenized.value.length) {
+function reveal (generation) {
+  if (generation !== revealGeneration || visibleCount.value >= sectionTokens.value.length) {
     return
   }
 
@@ -113,15 +150,21 @@ function reveal () {
     : (callback) => window.setTimeout(callback, 48)
 
   idle(() => {
+    if (generation !== revealGeneration) {
+      return
+    }
+
     visibleCount.value += REVEAL_BATCH
-    reveal()
+    reveal(generation)
   })
 }
 
-onMounted(() => {
+function start () {
   if (!props.progressive) {
     return
   }
+
+  revealGeneration++
 
   // ? Deep links need their target block in the DOM right away
   if (window.location.hash) {
@@ -129,7 +172,22 @@ onMounted(() => {
     return
   }
 
-  reveal()
+  visibleCount.value = INITIAL_BLOCKS
+  reveal(revealGeneration)
+}
+
+onMounted(start)
+
+// ? Client-side navigation reuses this component — restart the reveal for the
+//   new page (the router scrolls back to the top, so the fold argument holds)
+watch(source, () => {
+  if (props.progressive) {
+    start()
+  }
+})
+
+onBeforeUnmount(() => {
+  revealGeneration++
 })
 </script>
 
@@ -138,6 +196,7 @@ onMounted(() => {
   <d-page-tokens
     :id="id"
     :render-primary-heading="renderPrimaryHeading"
+    :code-toolbar-default="codeToolbarDefault"
     :tokens="visibleTokens"
   />
 </section>

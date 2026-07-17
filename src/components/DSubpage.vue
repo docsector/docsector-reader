@@ -53,13 +53,14 @@ const usesRemoteReadmeHome = computed(() => {
     <!-- Remote README homepages can't carry :toolbar= fence attributes (the file
          renders on GitHub too), and their one-liners are usually copyable
          commands — so the meta row defaults ON there -->
-    <!-- The remote README home is one huge page: mount it progressively so the
-         first paint isn't blocked by hundreds of below-the-fold blocks -->
+    <!-- Every page mounts progressively: the first blocks render synchronously
+         and the below-the-fold rest appends in idle batches, so the initial
+         render task (and Total Blocking Time) stays small on long pages -->
     <d-page-section
       :id="id"
       :render-primary-heading="usesRemoteReadmeHome"
       :code-toolbar-default="usesRemoteReadmeHome ? true : null"
-      :progressive="usesRemoteReadmeHome"
+      progressive
       :template="template"
     />
   </main>

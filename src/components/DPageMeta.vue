@@ -12,7 +12,35 @@ import { pageValueI18nPath, routeTitleI18nPath } from '../i18n/path'
 const store = useStore()
 const route = useRoute()
 const router = useRouter()
-const { t, locale, availableLocales, te, tm } = useI18n()
+const { t, locale, availableLocales, getLocaleMessage } = useI18n()
+
+// ? Per-locale source read via getLocaleMessage — tm() ignores its locale
+//   argument on the composer, and sources may now be compiled token modules
+const readSource = (lang, path) => {
+  let node = getLocaleMessage(lang)
+
+  for (const segment of String(path).split('.')) {
+    node = node?.[segment]
+    if (node === undefined || node === null) {
+      return null
+    }
+  }
+
+  return node
+}
+
+// : Header count of a source — baked at build for compiled modules, counted
+//   live for raw strings (dev); null when the source is missing
+const countHeaders = (value) => {
+  if (typeof value === 'object' && value !== null && typeof value.headers === 'number') {
+    return value.headers
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return (value.match(/^#{2,6}\s+.+/gm) || []).length
+  }
+
+  return null
+}
 
 function normalizeEditBaseUrl (url = '') {
   const normalized = String(url).trim().replace(/\/+$/, '')
@@ -85,14 +113,11 @@ const progress = computed(() => {
 
   // Count headers (## and ###) in the default language source
   const defaultSourcePath = pageValueI18nPath(i18nPathAbsolute, 'source')
-  const defaultSource = te(defaultSourcePath, defaultLang) ? tm(defaultSourcePath, defaultLang) : ''
+  const defaultHeaders = countHeaders(readSource(defaultLang, defaultSourcePath))
 
-  if (!defaultSource || typeof defaultSource !== 'string') {
+  if (defaultHeaders === null) {
     return '?%'
   }
-
-  const headerRegex = /^#{2,6}\s+.+/gm
-  const defaultHeaders = (defaultSource.match(headerRegex) || []).length
 
   if (defaultHeaders === 0) {
     return '100%'
@@ -104,13 +129,12 @@ const progress = computed(() => {
   }
 
   // Count headers in the current language source
-  const currentSource = te(defaultSourcePath, currentLang) ? tm(defaultSourcePath, currentLang) : ''
+  const currentHeaders = countHeaders(readSource(currentLang, defaultSourcePath))
 
-  if (!currentSource || typeof currentSource !== 'string') {
+  if (currentHeaders === null) {
     return '0%'
   }
 
-  const currentHeaders = (currentSource.match(headerRegex) || []).length
   const percent = Math.min(100, Math.floor((currentHeaders / defaultHeaders) * 100))
 
   return `${percent}%`
@@ -128,13 +152,12 @@ const languages = computed(() => {
   let i18nLocalesAvailable = 0
   for (let i = 0; i < i18nLocales.length; i++) {
     const currentLocale = i18nLocales[i]
+    const source = readSource(currentLocale, sourcePath)
 
-    if (!te(sourcePath, currentLocale)) {
-      continue
-    }
-
-    const source = tm(sourcePath, currentLocale)
+    // ? Available when a raw string (dev) or a compiled token module exists
     if (typeof source === 'string' && source.trim().length > 0) {
+      i18nLocalesAvailable++
+    } else if (typeof source === 'object' && source !== null && typeof source.tokens === 'string') {
       i18nLocalesAvailable++
     }
   }

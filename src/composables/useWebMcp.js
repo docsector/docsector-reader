@@ -254,9 +254,31 @@ function createToolDefinitions ({
 
         let content = ''
         if (includeContent && absolute) {
-          const source = translate(pageValueI18nPath(absolute, 'source'))
-          if (source) {
+          const sourcePath = pageValueI18nPath(absolute, 'source')
+          const source = translate(sourcePath)
+          // ? t() echoes the key when the message is a compiled token module —
+          //   only a real raw string (dev) can be decoded directly
+          if (typeof source === 'string' && source.length > 0 && source !== sourcePath) {
             content = decodeMarkdownSource(source)
+          }
+        }
+
+        // @ Compiled build: the raw source doesn't ship — fetch the static .md
+        if (includeContent && !content) {
+          const candidates = currentPath === '/'
+            ? [`/homepage.${locale}.md`, '/homepage.md']
+            : [`${path}.${locale}.md`, `${path}.md`]
+
+          for (const candidate of candidates) {
+            try {
+              const response = await fetch(candidate)
+              if (!response.ok) continue
+
+              content = await response.text()
+              break
+            } catch {
+              // ? Unreachable file — try the next candidate
+            }
           }
         }
 
