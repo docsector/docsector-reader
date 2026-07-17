@@ -1910,15 +1910,17 @@ function createRoutePreloadPlugin () {
 
 /**
  * Roboto ships without font-display, so text stays invisible while the font
- * downloads. Inject `font-display: swap` — text paints with the fallback font
- * immediately. Icon fonts keep their default (swap would flash ligature text).
+ * downloads. Inject `font-display: optional` — text paints immediately with
+ * the fallback font and never shifts mid-view; the webfont is cached for the
+ * next navigation. Icon fonts keep their default (a fallback would flash
+ * ligature text).
  */
 function createFontDisplayPlugin () {
   return {
     name: 'docsector-font-display',
     transform (code, id) {
       if (id.includes('roboto-font') && id.endsWith('.css')) {
-        return code.replace(/@font-face\s*\{/g, '@font-face{font-display:swap;')
+        return code.replace(/@font-face\s*\{/g, '@font-face{font-display:optional;')
       }
     }
   }
