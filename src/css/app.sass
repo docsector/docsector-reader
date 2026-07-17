@@ -19,6 +19,18 @@
   font-display: optional
   src: url("./fonts/roboto-latin-ext.woff2") format("woff2")
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF
+// Metric-matched fallback: a local sans-serif (Arial / Liberation Sans /
+// Helvetica) re-scaled to Roboto's exact line box via the override descriptors.
+// With font-display: optional a throttled first paint usually shows the
+// fallback (Roboto rarely wins the ~100 ms block), so matching its metrics
+// keeps the layout — and Speed Index — identical whether Roboto lands or not.
+@font-face
+  font-family: "Roboto Fallback"
+  src: local("Arial"), local("Liberation Sans"), local("Helvetica Neue"), local("Roboto")
+  ascent-override: 92.7734%
+  descent-override: 24.4141%
+  line-gap-override: 0%
+  size-adjust: 100.3699%
 @font-face
   font-family: "Fira Code Nerd Font"
   src: local('Fira Code Nerd Font'), local('FiraCode Nerd Font')
@@ -26,7 +38,10 @@
   font-style: normal
 // * General
 body
-  font-family: "Roboto", "Consolas"
+  // ? "Consolas" was a broken fallback — a monospace absent on most test
+  //   machines, cascading to the browser's default serif. The real chain:
+  //   Roboto → metric-matched sans-serif → generic sans-serif.
+  font-family: "Roboto", "Roboto Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", sans-serif
 
 // * Coloring
 // Light mode
