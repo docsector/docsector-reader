@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
@@ -29,6 +29,13 @@ const props = defineProps({
   template: {
     type: Object,
     default: null
+  },
+  // Mount the page in idle batches instead of one long task (used by the huge
+  // remote README home): the first blocks render synchronously, the rest append
+  // below the fold — anchors/ToC still index the full page (see anchor watch).
+  progressive: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -77,6 +84,53 @@ const tokenized = computed(() => {
 watch(tokenized, (tokens) => {
   store.commit('page/setAnchorTree', buildPageAnchorTree(tokens))
 }, { immediate: true })
+
+// # Progressive reveal
+// ! Enough blocks to overfill the tallest first viewport — the deferred tail
+//   mounts strictly below the fold, so LCP candidates and CLS are untouched
+const INITIAL_BLOCKS = 24
+// ! Small enough that each idle batch mounts in well under 50ms (no TBT)
+const REVEAL_BATCH = 16
+
+const visibleCount = ref(props.progressive ? INITIAL_BLOCKS : Infinity)
+
+const visibleTokens = computed(() => {
+  const tokens = tokenized.value
+
+  return visibleCount.value >= tokens.length
+    ? tokens
+    : tokens.slice(0, visibleCount.value)
+})
+
+// @@ Append one batch per idle period until the page is complete
+function reveal () {
+  if (visibleCount.value >= tokenized.value.length) {
+    return
+  }
+
+  const idle = typeof window.requestIdleCallback === 'function'
+    ? (callback) => window.requestIdleCallback(callback, { timeout: 200 })
+    : (callback) => window.setTimeout(callback, 48)
+
+  idle(() => {
+    visibleCount.value += REVEAL_BATCH
+    reveal()
+  })
+}
+
+onMounted(() => {
+  if (!props.progressive) {
+    return
+  }
+
+  // ? Deep links need their target block in the DOM right away
+  if (window.location.hash) {
+    visibleCount.value = Infinity
+    return
+  }
+
+  reveal()
+})
 </script>
 
 <template>
@@ -84,7 +138,7 @@ watch(tokenized, (tokens) => {
   <d-page-tokens
     :id="id"
     :render-primary-heading="renderPrimaryHeading"
-    :tokens="tokenized"
+    :tokens="visibleTokens"
   />
 </section>
 </template>

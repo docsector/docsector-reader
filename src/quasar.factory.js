@@ -1409,6 +1409,34 @@ function createHjsonPlugin () {
  *
  * Zero external dependencies — no Puppeteer or headless browser required.
  */
+/**
+ * Compose the Link header value used for Cloudflare Early Hints (103): the
+ * critical request wave of a page route — render-blocking CSS, the entry module
+ * graph the base HTML references, and the shared preload graph (boot chunks +
+ * DSubpage) injected per route. With the zone's Early Hints enabled, Cloudflare
+ * replays these Link headers as a 103 response, so the browser starts the whole
+ * wave before the HTML body arrives. One combined header line per rule keeps
+ * the _headers file far below Pages' rule limits.
+ */
+export function buildEarlyHintsLink ({ baseCss = [], entryScripts = [], sharedFiles = [], sharedCss = [] }) {
+  const seen = new Set()
+  const parts = []
+
+  const push = (file, descriptor) => {
+    if (!file || seen.has(file)) return
+    seen.add(file)
+    parts.push(`</${file}>; ${descriptor}`)
+  }
+
+  // ! Render-blocking CSS first, then the module graph
+  for (const file of baseCss) push(file, 'rel=preload; as=style')
+  for (const file of entryScripts) push(file, 'rel=modulepreload; crossorigin')
+  for (const file of sharedFiles) push(file, 'rel=modulepreload; crossorigin')
+  for (const file of sharedCss) push(file, 'rel=preload; as=style')
+
+  return parts.join(', ')
+}
+
 function createPrerenderMetaPlugin (projectRoot) {
   // Chunk graph captured at generateBundle time. closeBundle uses it to
   // inject route-specific modulepreload links into each pre-rendered HTML:
@@ -1489,7 +1517,7 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       const sharedFiles = []
       for (const suffix of [
-        '/src/boot/store.js', '/src/boot/QZoom.js', '/src/boot/i18n.js', '/src/boot/axios.js',
+        '/src/boot/store.js', '/src/boot/QZoom.js', '/src/boot/i18n.js',
         '/src/i18n/index.js', '/src/components/DSubpage.vue'
       ]) {
         collectGraph(findChunk(suffix), sharedFiles)
@@ -1514,6 +1542,7 @@ function createPrerenderMetaPlugin (projectRoot) {
       if (langs.length === 0) langs.push(defaultLang)
 
       let count = 0
+      const bookRoots = new Set()
 
       for (const entry of pageEntries) {
         const { page } = entry
@@ -1535,6 +1564,7 @@ function createPrerenderMetaPlugin (projectRoot) {
 
         for (const subpage of subpages) {
           const routePath = buildPageRoutePath(entry, subpage)
+          bookRoots.add(routePath.split('/')[0])
 
           const html = baseHtml
             .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
@@ -1601,6 +1631,31 @@ function createPrerenderMetaPlugin (projectRoot) {
             writeFileSync(resolve(baseDir, 'index.html'), routeHtml)
             writeFileSync(resolve(distDir, `${basePath}.html`), routeHtml)
           }
+        }
+      }
+
+      // @ Early Hints: expose the critical wave as Link headers so Cloudflare
+      //   can 103-hint it before the HTML body arrives. One wildcard rule per
+      //   book (+ the homepage) — the shared wave is identical for every route.
+      if (config.linkHeaders?.earlyHints !== false) {
+        const link = buildEarlyHintsLink({
+          baseCss: [...baseCss],
+          entryScripts: [...alreadyLoaded],
+          sharedFiles,
+          sharedCss: [...sharedCss]
+        })
+
+        if (link.length > 0) {
+          const paths = [...bookRoots].sort().map(root => `/${root}/*`).concat(['/', '/index.html'])
+          const rules = paths.map(path => `${path}\n  Link: ${link}`).join('\n\n') + '\n'
+
+          const headersPath = resolve(distDir, '_headers')
+          const currentHeaders = existsSync(headersPath)
+            ? readFileSync(headersPath, 'utf-8').trimEnd() + '\n\n'
+            : ''
+
+          writeFileSync(headersPath, currentHeaders + rules)
+          console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link rules for ${paths.length} path patterns`)
         }
       }
 
@@ -3629,7 +3684,7 @@ function createVersionFilePlugin (projectRoot, buildId) {
  * while content paths (pages, src/i18n) stay in the consumer project.
  *
  * Boot file resolution trick:
- *   - boot/store, boot/QZoom, boot/axios → package (relative imports: ../store/, ../components/)
+ *   - boot/store, boot/QZoom → package (relative imports: ../store/, ../components/)
  *   - boot/i18n → package file, BUT it imports 'src/i18n' which Quasar aliases to consumer's src/
  *
  * @param {Object} options - Configuration options
@@ -3672,7 +3727,6 @@ export function createQuasarConfig (options = {}) {
       'store',
       'QZoom',
       'i18n',
-      'axios',
       ...extraBoot
     ],
 
@@ -3798,7 +3852,7 @@ export function createQuasarConfig (options = {}) {
         // or embed stale consumer registry content in the optimizer cache.
         viteConf.optimizeDeps.exclude = [
           ...(viteConf.optimizeDeps.exclude || []),
-          'boot/i18n', 'boot/icons', 'boot/store', 'boot/QZoom', 'boot/axios',
+          'boot/i18n', 'boot/icons', 'boot/store', 'boot/QZoom',
           ...(!isStandalone ? DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE : [])
         ]
 
