@@ -1408,9 +1408,31 @@ function createHjsonPlugin () {
  * Zero external dependencies — no Puppeteer or headless browser required.
  */
 function createPrerenderMetaPlugin (projectRoot) {
+  // Chunk graph captured at generateBundle time. closeBundle uses it to
+  // inject route-specific modulepreload links into each pre-rendered HTML:
+  // a direct page hit then downloads the boot chunks, DSubpage and that
+  // route's markdown chunks in parallel with the entry, collapsing the
+  // three sequential discovery waves of a cold SPA load into one.
+  const chunkByFacade = new Map()
+  const chunkImports = new Map()
+  const chunkCss = new Map()
+
   return {
     name: 'docsector-prerender-meta',
     apply: 'build',
+
+    generateBundle (_options, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk') continue
+
+        if (chunk.facadeModuleId) {
+          chunkByFacade.set(chunk.facadeModuleId.split('?')[0], chunk.fileName)
+        }
+        chunkImports.set(chunk.fileName, chunk.imports || [])
+        chunkCss.set(chunk.fileName, [...(chunk.viteMetadata?.importedCss || [])])
+      }
+    },
+
     async closeBundle () {
       const distDir = resolve(projectRoot, 'dist', 'spa')
       const baseHtmlPath = resolve(distDir, 'index.html')
@@ -1436,6 +1458,58 @@ function createPrerenderMetaPlugin (projectRoot) {
         }
         return ''
       }
+
+      // ! Preload computation — shared graph (boot + DSubpage) and per-route
+      //   markdown chunks, minus everything the base index.html already loads
+      const alreadyLoaded = new Set()
+      for (const match of baseHtml.matchAll(/(?:href|src)="\/([^"]+\.js)"/g)) {
+        alreadyLoaded.add(match[1])
+      }
+      const baseCss = new Set(
+        [...baseHtml.matchAll(/href="\/([^"]+\.css)"/g)].map(match => match[1])
+      )
+
+      const findChunk = (suffix) => {
+        for (const [facade, fileName] of chunkByFacade) {
+          if (facade.endsWith(suffix)) return fileName
+        }
+        return null
+      }
+
+      const collectGraph = (fileName, into) => {
+        if (!fileName || alreadyLoaded.has(fileName) || into.includes(fileName)) return
+
+        into.push(fileName)
+        for (const imported of chunkImports.get(fileName) || []) {
+          collectGraph(imported, into)
+        }
+      }
+
+      const sharedFiles = []
+      for (const suffix of [
+        '/src/boot/store.js', '/src/boot/QZoom.js', '/src/boot/i18n.js', '/src/boot/axios.js',
+        '/src/i18n/index.js', '/src/components/DSubpage.vue'
+      ]) {
+        collectGraph(findChunk(suffix), sharedFiles)
+      }
+
+      const sharedCss = new Set()
+      for (const fileName of sharedFiles) {
+        for (const css of chunkCss.get(fileName) || []) {
+          if (!baseCss.has(css)) sharedCss.add(css)
+        }
+      }
+
+      const preloadLink = (fileName) => `<link rel="modulepreload" crossorigin href="/${fileName}">`
+      const styleLink = (fileName) => `<link rel="preload" as="style" href="/${fileName}">`
+      const sharedLinks = [
+        ...sharedFiles.map(preloadLink),
+        ...[...sharedCss].map(styleLink)
+      ]
+
+      const pagesDir = resolve(projectRoot, 'src', 'pages')
+      const langs = (config.languages || []).map(language => language?.value).filter(Boolean)
+      if (langs.length === 0) langs.push(defaultLang)
 
       let count = 0
 
@@ -1491,14 +1565,44 @@ function createPrerenderMetaPlugin (projectRoot) {
               (_, p1) => `${p1}${brandingLogo}"`
             )
 
+          // @ Inject the route's preloads (shared graph + this page's markdown)
+          const mdLinks = []
+          for (const lang of langs) {
+            const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, lang)
+            const fileName = chunkByFacade.get(srcFile)
+
+            if (fileName && !alreadyLoaded.has(fileName) && !sharedFiles.includes(fileName)) {
+              mdLinks.push(preloadLink(fileName))
+            }
+          }
+
+          const links = [...sharedLinks, ...mdLinks]
+          const routeHtml = links.length > 0
+            ? html.replace('</head>', `  ${links.join('\n  ')}\n</head>`)
+            : html
+
           const dir = resolve(distDir, routePath)
           mkdirSync(dir, { recursive: true })
-          writeFileSync(resolve(dir, 'index.html'), html)
+          writeFileSync(resolve(dir, 'index.html'), routeHtml)
+          // Slash-less twin: Cloudflare Pages serves <route>.html for /<route>
+          // directly, avoiding a 308 redirect to the trailing-slash form
+          writeFileSync(resolve(distDir, `${routePath}.html`), routeHtml)
           count++
+
+          // The bare page path (its '' child redirects to /overview) gets the
+          // same document, so shared links land pre-warmed too
+          if (subpage === 'overview') {
+            const basePath = buildPageRoutePath(entry, '')
+            const baseDir = resolve(distDir, basePath)
+
+            mkdirSync(baseDir, { recursive: true })
+            writeFileSync(resolve(baseDir, 'index.html'), routeHtml)
+            writeFileSync(resolve(distDir, `${basePath}.html`), routeHtml)
+          }
         }
       }
 
-      console.log(`\x1b[36m[docsector]\x1b[0m Pre-rendered meta tags for ${count} routes`)
+      console.log(`\x1b[36m[docsector]\x1b[0m Pre-rendered meta + route preloads for ${count} routes`)
     }
   }
 }
