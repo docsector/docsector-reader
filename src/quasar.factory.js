@@ -2235,6 +2235,10 @@ function createHomePageOverridePlugin (projectRoot) {
  * DSubpage is intentionally NOT preloaded: its chunk is large enough that
  * preloading it contends with the render-blocking CSS on slow links and
  * measurably worsens FCP/LCP.
+ *
+ * SPA-only: with SSR prerendering the first paint ships as HTML and needs no
+ * JS at all — there the same contention argument removes every modulepreload
+ * (see bin/ssr-prerender.mjs prioritizePaint), so this plugin stays quiet.
  */
 function createRoutePreloadPlugin () {
   const FACADES = ['/layouts/DefaultLayout.vue']
@@ -2245,6 +2249,8 @@ function createRoutePreloadPlugin () {
     transformIndexHtml: {
       order: 'post',
       handler (html, ctx) {
+        if (process.env.DOCSECTOR_SSR === '1') return html
+
         const bundle = ctx.bundle
         if (!bundle) return html
 

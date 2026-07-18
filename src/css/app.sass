@@ -610,6 +610,21 @@ body.body--dark
 html
   scrollbar-gutter: stable
 
+// * Lazy below-fold rendering (mobile)
+// Server-rendered pages arrive whole; on throttled phones styling + laying
+// out the entire article before the first paint delays LCP. The below-fold
+// blocks carrying the layout-expensive markup — code blocks are hundreds of
+// token spans, tables full grids — render on demand as they scroll in
+// (anchors and find-in-page still force-render their targets). Prose stays
+// eager: its layout is cheap, and a 400px placeholder on short/empty blocks
+// would inflate the scroll length and destabilize scroll anchoring as they
+// collapse in. Expansion items are born collapsed — already lazy. Desktop
+// stays fully eager — it is already instant there.
+@media (max-width: 1023px)
+  #page main > section > :is(.source-code, .d-table-wrapper):nth-child(n+9)
+    content-visibility: auto
+    contain-intrinsic-size: auto 400px
+
 // * Dark drawers without hydration
 // QDrawer only gets its dark class from JS — the sidebar menu's serialized
 // (light) aside keeps a white background for dark visitors until the menu

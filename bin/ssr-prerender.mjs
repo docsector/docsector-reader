@@ -21,22 +21,38 @@ const woffRE = /\.woff$/
 const woff2RE = /\.woff2$/
 
 // : Mirrors src-ssr/server.js renderPreloadTag (that module needs the Vite
-//   `#q-app` alias and cannot be imported under plain Node)
+//   `#q-app` alias and cannot be imported under plain Node) — minus JS: the
+//   first paint is server-rendered, so preloading chunks only steals slow-link
+//   bandwidth from the render-blocking CSS (measured −1s FCP on slow-4G)
 function preloadTag (file) {
   if (jsRE.test(file) === true) {
-    return `<link rel="modulepreload" href="${file}" crossorigin>`
+    return ''
   }
   if (cssRE.test(file) === true) {
     return `<link rel="stylesheet" href="${file}" crossorigin>`
   }
+  // ? latin-ext glyphs (U+0100+) are absent from en-US/pt-BR prose — the
+  //   subset still loads on demand via unicode-range, just not preloaded
+  if (/latin-ext/.test(file) === true) {
+    return ''
+  }
   if (woffRE.test(file) === true) {
-    return `<link rel="preload" href="${file}" as="font" type="font/woff" crossorigin>`
+    return `<link rel="preload" href="${file}" as="font" type="font/woff" crossorigin fetchpriority="low">`
   }
   if (woff2RE.test(file) === true) {
-    return `<link rel="preload" href="${file}" as="font" type="font/woff2" crossorigin>`
+    return `<link rel="preload" href="${file}" as="font" type="font/woff2" crossorigin fetchpriority="low">`
   }
 
   return ''
+}
+
+// : Content first, interactivity second: drop every JS modulepreload the
+//   bundler emitted and demote the entry module fetch, so the render-blocking
+//   CSS owns the pipe until the server-rendered page has painted
+function prioritizePaint (html) {
+  return html
+    .replace(/<link rel="?modulepreload"?[^>]*>/g, '')
+    .replace(/(<script type="?module"?)(?=[^>]*\bsrc=)/, '$1 fetchpriority=low')
 }
 
 export async function prerenderSsr ({ projectRoot, packageRoot }) {
@@ -122,7 +138,7 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
     ssrContext._meta.runtimePageContent = runtimePageContent
     ssrContext._meta.endingHeadTags += renderPreloads(ssrContext.modules)
 
-    return renderTemplate(ssrContext)
+    return prioritizePaint(renderTemplate(ssrContext))
   }
 
   // ! Route worklist — same predicate the meta prerenderer used; internal-link
@@ -216,17 +232,19 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
   console.log(`\x1b[36m[docsector]\x1b[0m SSR prerender: ${rendered} routes rendered (${failed} failed, ${linkRoutes.length} link redirects)`)
 
   // @ Early Hints: the critical wave is identical for every route — lift it
-  //   from the first rendered head and expose it as per-book Link rules
+  //   from the first rendered head and expose it as per-book Link rules.
+  //   Stylesheets only: hinting JS/fonts would refill the pipe the
+  //   modulepreload strip just cleared for the render-blocking CSS
   if (config.linkHeaders?.earlyHints !== false && firstHtml !== null) {
     const head = firstHtml.slice(0, firstHtml.indexOf('</head>'))
     const targets = []
-    const linkPattern = /<link rel="(modulepreload|stylesheet)"[^>]*href="([^"]+)"[^>]*>/g
+    // ? the bundler emits minified (quote-less) attributes, the SSR preloads
+    //   emit quoted ones — match both
+    const linkPattern = /<link rel="?stylesheet"?[^>]*href="?([^">\s]+)"?[^>]*>/g
 
     let match
     while ((match = linkPattern.exec(head)) !== null) {
-      targets.push(match[1] === 'stylesheet'
-        ? `<${match[2]}>; rel=preload; as=style`
-        : `<${match[2]}>; rel=modulepreload; crossorigin`)
+      targets.push(`<${match[1]}>; rel=preload; as=style`)
     }
 
     if (targets.length > 0) {
