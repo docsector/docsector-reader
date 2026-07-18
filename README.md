@@ -45,6 +45,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 🖥️ **Static SSR (SSG)** — Opt-in `ssr.enabled` renders every route to hydration-ready static HTML at build time (real `renderToString` markup, per-route meta, manifest-driven preloads, static link redirects) — deployed as plain files, no Node server
+- 💧 **Lazy Hydration** — Server-rendered pages hydrate the visible blocks first; below-the-fold content hydrates on scroll and the sidebar menu on interaction, keeping Total Blocking Time low
 - ⚡ **Build-Time Page Compilation** — Pages are tokenized at build into ready-to-render modules (math pre-rendered with KaTeX), keeping the markdown engine out of the client's critical path
 - 🚀 **Progressive Page Mounting** — The first blocks of a page render synchronously and the below-the-fold rest appends in idle batches, keeping the main thread responsive
 - 🌐 **Per-Locale Static Markdown** — The build emits `<route>.<lang>.md` files so copy-page and agent tools fetch pristine localized sources
