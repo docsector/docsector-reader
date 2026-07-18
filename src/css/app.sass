@@ -617,3 +617,17 @@ html
 body.body--dark
   aside.q-drawer
     background: var(--q-dark)
+
+    // ? Quasar fields (search input, version select) also serialize with
+    //   light text colors — dark them until hydration adds q-field--dark
+    .q-field:not(.q-field--dark)
+      .q-field__native,
+      .q-field__input
+        color: #fff
+
+        &::placeholder
+          color: rgba(255, 255, 255, 0.7)
+
+      .q-field__marginal,
+      .q-select__dropdown-icon
+        color: rgba(255, 255, 255, 0.7)
