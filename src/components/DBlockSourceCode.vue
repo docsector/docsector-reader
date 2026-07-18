@@ -342,7 +342,11 @@ function printToLetter(number) {
     border-bottom-color: #ccc
     border-radius: 3px
 
-    &.white
+    // ? tone classes hydrate as the serialized "white" and only flip to
+    //   "dark" post-mount (useSsrSafeDark) — key the palettes on the body
+    //   theme too, so dark visitors never see the light first frame and the
+    //   class flip becomes a visual no-op
+    body:not(.body--dark) &.white
       background-color: white
 
       .source-code-meta-row,
@@ -372,7 +376,7 @@ function printToLetter(number) {
           background-color: white
           color: #222
 
-    &.dark
+    &.dark, body.body--dark &
       background-color: #000
 
       .source-code-meta-row,
@@ -622,7 +626,8 @@ function printToLetter(number) {
         display: block
         padding: 0
 
-    &.white
+    // ? same body-theme keying as the frame tones above
+    body:not(.body--dark) &.white
       .language
         background-color: white
       .lines
@@ -693,7 +698,7 @@ function printToLetter(number) {
       .token.entity
         cursor: help
 
-    &.dark
+    &.dark, body.body--dark &
       .language
         background-color: #000
       .lines
