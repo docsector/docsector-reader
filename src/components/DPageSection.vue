@@ -1,16 +1,19 @@
 <script setup>
-import { computed, defineAsyncComponent, hydrateOnVisible, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, hydrateOnIdle, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
 import DPageTokens from './DPageTokens.vue'
 
 // ? Lazy-hydrating twin of DPageTokens (same chunk — the loader resolves from
-//   the module cache): SSR renders it fully, the client only hydrates it when
-//   it scrolls near the viewport. Keeps the initial hydration task small.
+//   the module cache): SSR renders it fully, the client hydrates it on idle —
+//   one small task per chunk, off the critical path. NOT hydrateOnVisible: its
+//   IntersectionObserver proved unreliable for these multi-block fragments
+//   inside the QScrollArea, leaving below-the-fold blocks dead (never
+//   hydrated: stale theme classes, unregistered ToC anchors).
 const DPageTokensLazy = defineAsyncComponent({
   loader: () => import('./DPageTokens.vue'),
-  hydrate: hydrateOnVisible({ rootMargin: '400px' })
+  hydrate: hydrateOnIdle(2000)
 })
 import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'

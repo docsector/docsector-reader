@@ -217,6 +217,14 @@ const onAssistantResize = (value) => {
 
 const setRightRailOpen = (value) => {
   if (!value) {
+    // ? Ignore the synthetic close QDrawer emits while Quasar's Screen plugin
+    //   hasn't measured yet ($q.screen.width === 0 — SSR hydration runs before
+    //   onSSRHydrated starts it): persisting that close would permanently hide
+    //   the rail panels even after the real width arrives.
+    if ($q.screen.width === 0) {
+      return
+    }
+
     layoutMeta.value = false
     layoutAssistant.value = false
   }
@@ -373,11 +381,24 @@ const scrollToTop = () => {
   navigate(0)
 }
 
-onMounted(() => {
-  // ? Mobile shows the ToC as a tap-triggered dialog; never auto-open it on page entry
+// ? Mobile shows the ToC as a tap-triggered dialog; never auto-open it on page
+//   entry. Decided only once the Screen plugin has MEASURED: during SSR
+//   hydration components mount before onSSRHydrated, while width is still 0 —
+//   acting on that transient "mobile" state would permanently hide the
+//   desktop rail (layout.meta is a persisted store value).
+let mobileTocRuleApplied = false
+watch(() => $q.screen.width, (width) => {
+  if (mobileTocRuleApplied || width === 0) {
+    return
+  }
+
+  mobileTocRuleApplied = true
   if (rightRailState.value.isMobile) {
     layoutMeta.value = false
   }
+}, { immediate: true })
+
+onMounted(() => {
 
   window.addEventListener('keydown', handleMainScrollKeys)
   window.addEventListener('resize', schedulePageMinHeightUpdate)
@@ -414,8 +435,9 @@ onBeforeUnmount(() => {
 })
 
 watch(() => route.fullPath, () => {
-  // ? Close the mobile ToC dialog on navigation (including anchor taps); desktop keeps its rail
-  if (rightRailState.value.isMobile) {
+  // ? Close the mobile ToC dialog on navigation (including anchor taps);
+  //   desktop keeps its rail (width 0 = Screen not measured yet — skip)
+  if ($q.screen.width !== 0 && rightRailState.value.isMobile) {
     layoutMeta.value = false
   }
 

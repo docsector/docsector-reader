@@ -79,6 +79,12 @@
     </q-tabs>
   </q-header>
 
+  <router-view />
+
+  <!-- ? AFTER router-view on purpose: the drawer is position-fixed, so DOM
+       order is visually irrelevant — but in SSR the serialized menu weighs
+       ~130 KB (inline SVG icons) and placing it before the content would make
+       the LCP block wait for the whole menu to stream in on slow links. -->
   <!-- ? :behavior from the real screen width: QLayout measures its own width
        only after mount, so the default breakpoint logic renders the first
        frame without the drawer and shows it a tick later — a layout shift
@@ -88,8 +94,6 @@
   >
     <d-menu />
   </q-drawer>
-
-  <router-view />
 
   <d-footer-host />
 </q-layout>

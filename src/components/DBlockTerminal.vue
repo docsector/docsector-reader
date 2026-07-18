@@ -5,6 +5,8 @@ import { fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import { resolveTerminalEngine } from 'virtual:docsector-terminals'
 
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
+
 import DBlockSourceCode from './DBlockSourceCode.vue'
 
 defineOptions({
@@ -95,7 +97,9 @@ let enginePromise = null
 let resizeObserver = null
 let intersectionObserver = null
 
-const frameTone = computed(() => $q.dark.isActive ? 'dark' : 'light')
+// ? SSR-safe: hydration must render the serialized (light) tone first — see useSsrSafeDark
+const darkActive = useSsrSafeDark()
+const frameTone = computed(() => darkActive.value ? 'dark' : 'light')
 const minimumColumns = computed(() => {
   const parsed = parseInt(props.minColumns, 10)
 

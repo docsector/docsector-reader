@@ -10,6 +10,7 @@ import {
 } from './source-code-anchor'
 import { countRenderedCodeLines } from './source-code-lines'
 import { looksLikeFileName, resolveFileIconUrl } from '../composables/useFileIcon'
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
 import useNavigator from '../composables/useNavigator'
 
 defineOptions({
@@ -61,7 +62,12 @@ const activeTab = ref(0)
 const lineAnchorTopOffset = 34
 const lineAnchorScrollRetryDelay = 500
 
-const coloring = computed(() => $q.dark.isActive ? 'dark' : 'white')
+// ? SSR-safe theme: the server serializes the light tone; a hydrating client
+//   must render it identically on the first pass and flip after mount —
+//   Vue adopts the server DOM without patching class mismatches, so a direct
+//   $q.dark read would leave adopted markup light forever (see useSsrSafeDark)
+const darkActive = useSsrSafeDark()
+const coloring = computed(() => darkActive.value ? 'dark' : 'white')
 const anchor = computed(() => printToLetter(props.index + 1))
 
 // ? the dark read below is only tracked because every caller is a computed —
@@ -72,7 +78,7 @@ const fileIconUrl = (label) => {
   }
 
   return resolveFileIconUrl(label, {
-    preferLight: !$q.dark.isActive
+    preferLight: !darkActive.value
   })
 }
 
