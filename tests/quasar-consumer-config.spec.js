@@ -86,7 +86,8 @@ describe('consumer Quasar config', () => {
       // ? boot files run after ALL boot chunks load, far too late to beat the
       //   first paint — theme-init.js owns the theme; no theme boot here
       //   (no axios boot either: the engine fetches with the native Fetch API)
-      expect(config.boot).toEqual(['icons', 'store', 'QZoom', 'i18n'])
+      //   `hydration` runs first: it must flag SSR hydration before mount
+      expect(config.boot).toEqual(['hydration', 'icons', 'store', 'QZoom', 'i18n'])
     } finally {
       rmSync(projectRoot, { recursive: true, force: true })
     }

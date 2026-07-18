@@ -1,6 +1,15 @@
 <template>
 <q-layout view="lHh LpR lFf">
-  <q-header class="d-header" :class="showSidebar ? 'left-btn' : 'd-header--no-sidebar'" elevated>
+  <!-- ? height-hint: the real header height (toolbar 52 + separator 1 + book
+       tabs 56 — viewport-independent), so the SSR-rendered page-container
+       padding matches what QLayout measures after hydration. Without it the
+       server assumes 50px and the whole page shifts down on mount (CLS). -->
+  <q-header
+    class="d-header"
+    :class="showSidebar ? 'left-btn' : 'd-header--no-sidebar'"
+    :height-hint="sortedBooks.length > 0 ? 111 : 53"
+    elevated
+  >
     <q-toolbar color="primary">
       <q-btn v-if="showSidebar" class="filled" square icon="menu" aria-label="Toggle Menu" @click="toogleMenu" />
       <q-toolbar-title
@@ -87,13 +96,21 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, hydrateOnInteraction, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
-import { useMeta, colors, useQuasar } from 'quasar'
+import { useMeta, useQuasar } from 'quasar'
 
-import DMenu from '../components/DMenu.vue'
+// ? The sidebar menu is one of the heaviest shell subtrees (~200 entries).
+//   Under SSR its markup is already server-rendered with real <a href> links —
+//   hydrate it only when the user reaches for it (hover/touch/focus), keeping
+//   the initial hydration task (and Total Blocking Time) small. In SPA loads
+//   the async component mounts immediately as usual.
+const DMenu = defineAsyncComponent({
+  loader: () => import('../components/DMenu.vue'),
+  hydrate: hydrateOnInteraction(['pointerenter', 'touchstart', 'focusin', 'click'])
+})
 import DFooterHost from '../components/DFooterHost.vue'
 import docsectorConfig from 'docsector.config.js'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
@@ -145,11 +162,16 @@ const quasarBrandColorPattern = /^(primary|secondary|accent|dark|positive|negati
 const quasarUtilityColorPattern = /^(white|black|transparent|separator|dark-separator)$/
 const quasarPaletteColorPattern = /^(red|pink|purple|deep-purple|indigo|blue|light-blue|cyan|teal|green|light-green|lime|yellow|amber|orange|deep-orange|brown|grey|blue-grey)(-(?:[1-9]|1[0-4]))?$/
 
-const isQuasarColorToken = (token) => {
-  return quasarBrandColorPattern.test(token)
-    || quasarUtilityColorPattern.test(token)
-    || quasarPaletteColorPattern.test(token)
-}
+// ! Quasar's fixed utility color values (mirrors quasar/src/css/core/colors).
+//   Resolved statically so server render and client hydration serialize the
+//   SAME string — getPaletteColor() needs a live DOM and diverges on SSR.
+const quasarUtilityColorValues = Object.freeze({
+  white: '#ffffff',
+  black: '#000000',
+  transparent: 'transparent',
+  separator: 'rgba(0, 0, 0, 0.12)',
+  'dark-separator': 'rgba(255, 255, 255, 0.28)'
+})
 
 const normalizeBookTabColors = (book) => {
   const color = book?.color
@@ -199,18 +221,19 @@ const resolveBookTabColor = (token) => {
     return normalized
   }
 
-  if (isQuasarColorToken(normalized)) {
-    if (typeof document === 'undefined') {
-      return quasarBrandColorPattern.test(normalized)
-        ? `var(--q-${normalized})`
-        : normalized
-    }
-
-    try {
-      return colors.getPaletteColor(normalized)
-    } catch {
-      return normalized
-    }
+  // ? Isomorphic resolution — server render and client hydration MUST emit the
+  //   same string (no getPaletteColor: it needs a live DOM and diverges on SSR)
+  if (quasarUtilityColorPattern.test(normalized)) {
+    return quasarUtilityColorValues[normalized] || normalized
+  }
+  if (quasarBrandColorPattern.test(normalized)) {
+    // : CSS resolves the brand custom property identically on both sides
+    return `var(--q-${normalized})`
+  }
+  if (quasarPaletteColorPattern.test(normalized)) {
+    // ? Palette tokens (e.g. red-5) have no custom property nor a static map —
+    //   pass through unchanged (the .d-book-tab CSS carries a sane fallback)
+    return normalized
   }
 
   return normalized

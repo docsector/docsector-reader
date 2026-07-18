@@ -24,7 +24,7 @@ const packageRoot = resolve(__dirname, '..')
 const args = process.argv.slice(2)
 const command = args[0]
 
-const VERSION = '4.19.0'
+const VERSION = '4.20.0'
 const AUTHORING_SKILL_NAME = 'docsector-documentation-authoring'
 const AUTHORING_SKILL_DESCRIPTION = 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.'
 const AUTHORING_SKILL_PUBLIC_PATH = `/.well-known/agent-skills/${AUTHORING_SKILL_NAME}/SKILL.md`
@@ -888,6 +888,90 @@ function run (cmd, cmdArgs = []) {
   })
 }
 
+/**
+ * Like run(), but resolves with the exit code instead of exiting — used by the
+ * SSR build flow, which continues with the prerender pass after Quasar ends.
+ */
+function runAsync (cmd, cmdArgs = [], env = {}) {
+  const quasar = findQuasarBin()
+  const isNpx = quasar.startsWith('npx')
+
+  const spawnCmd = isNpx ? 'npx' : quasar
+  const spawnArgs = isNpx ? ['quasar', cmd, ...cmdArgs] : [cmd, ...cmdArgs]
+
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(spawnCmd, spawnArgs, {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        DOCSECTOR_ROOT: packageRoot,
+        ...env
+      }
+    })
+
+    child.on('close', (code) => resolvePromise(code ?? 1))
+    child.on('error', rejectPromise)
+  })
+}
+
+/**
+ * Whether this build should use SSR: the docsector.config `ssr.enabled` flag
+ * (or a `--ssr` CLI flag), overridable with DOCSECTOR_SSR=0 / `--spa`.
+ */
+async function resolveSsrBuildMode (cliArgs) {
+  if (cliArgs.includes('--spa') || process.env.DOCSECTOR_SSR === '0') {
+    return false
+  }
+  if (cliArgs.includes('--ssr') || process.env.DOCSECTOR_SSR === '1') {
+    return true
+  }
+
+  const configPath = resolve(process.cwd(), 'docsector.config.js')
+  if (!existsSync(configPath)) {
+    return false
+  }
+
+  try {
+    const { pathToFileURL } = await import('url')
+    const { default: config } = await import(pathToFileURL(configPath).href)
+    return config?.ssr?.enabled === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Quasar's SSR mode requires a src-ssr/ dir in the project — scaffold the
+ * reader's minimal webserver surface there when the consumer has none.
+ */
+function ensureSsrScaffold (projectRoot) {
+  const targetDir = resolve(projectRoot, 'src-ssr')
+  if (existsSync(targetDir)) {
+    return
+  }
+
+  cpSync(resolve(packageRoot, 'src-ssr'), targetDir, { recursive: true })
+  console.log('\x1b[36m[docsector]\x1b[0m Scaffolded src-ssr/ (Quasar SSR webserver surface — build-only, never deployed)')
+}
+
+async function buildWithSsr (cliArgs) {
+  const projectRoot = process.cwd()
+  ensureSsrScaffold(projectRoot)
+
+  const quasarArgs = cliArgs.filter((arg) => arg !== '--ssr' && arg !== '--spa')
+  const code = await runAsync('build', ['-m', 'ssr', ...quasarArgs], { DOCSECTOR_SSR: '1' })
+  if (code !== 0) {
+    process.exit(code)
+  }
+
+  process.env.DOCSECTOR_SSR = '1'
+  const { prerenderSsr } = await import('./ssr-prerender.mjs')
+  const { failed } = await prerenderSsr({ projectRoot, packageRoot })
+
+  process.exit(failed > 0 ? 1 : 0)
+}
+
 function copyAuthoringSkillTarget (targetDir, { force = false } = {}) {
   if (!existsSync(AUTHORING_SKILL_SOURCE_DIR)) {
     throw new Error(`Built-in authoring skill not found at ${AUTHORING_SKILL_SOURCE_DIR}`)
@@ -1084,9 +1168,17 @@ switch (command) {
     break
   }
 
-  case 'build':
-    run('build', args.slice(1))
+  case 'build': {
+    const cliArgs = args.slice(1)
+
+    if (await resolveSsrBuildMode(cliArgs)) {
+      await buildWithSsr(cliArgs)
+      break
+    }
+
+    run('build', cliArgs.filter((arg) => arg !== '--spa'))
     break
+  }
 
   case 'serve':
     run('serve', ['dist/spa', '--history', ...args.slice(1)])

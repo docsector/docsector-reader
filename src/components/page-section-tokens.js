@@ -96,6 +96,73 @@ const parseAlertMarker = (rawContent = '') => {
   }
 }
 
+const HTML_VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr'
+])
+
+/**
+ * Balance a raw HTML block: close unclosed tags, drop orphan closing tags.
+ *
+ * CommonMark splits author HTML like `<div align="right">` … markdown … `</div>`
+ * (blank-line separated) into SEPARATE html blocks, each carrying unbalanced
+ * markup. In the browser each block is parsed in isolation (innerHTML), so the
+ * parser auto-corrects it — but the SSR string render concatenates the raw
+ * fragments into one document, where an unclosed tag swallows its siblings and
+ * every element after it hydrates against the wrong node. Balancing each block
+ * reproduces exactly the DOM the isolated client parse always produced.
+ */
+export const balanceHtmlBlock = (html) => {
+  const text = String(html ?? '')
+  if (!text.includes('<')) {
+    return text
+  }
+
+  const tagPattern = /<\/?([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^"'>])*)>/g
+  const stack = []
+  let out = ''
+  let last = 0
+  let match
+
+  while ((match = tagPattern.exec(text)) !== null) {
+    const raw = match[0]
+    const name = match[1].toLowerCase()
+
+    out += text.slice(last, match.index)
+    last = match.index + raw.length
+
+    if (raw.startsWith('</')) {
+      if (stack.length > 0 && stack[stack.length - 1] === name) {
+        stack.pop()
+        out += raw
+      } else if (stack.includes(name)) {
+        // ? Implicitly close inner tags up to the match — parser behavior
+        while (stack.length > 0) {
+          const top = stack.pop()
+          out += `</${top}>`
+          if (top === name) break
+        }
+      }
+      // ?: Orphan closing tag — the parser discards it; so do we
+      continue
+    }
+
+    out += raw
+    if (!raw.endsWith('/>') && !HTML_VOID_TAGS.has(name)) {
+      stack.push(name)
+    }
+  }
+
+  out += text.slice(last)
+
+  // : Close whatever the author left open
+  while (stack.length > 0) {
+    out += `</${stack.pop()}>`
+  }
+
+  return out
+}
+
 export const parseCustomTagAttributes = (raw = '') => {
   const parsed = {}
   const pattern = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g
@@ -1589,7 +1656,9 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
           tokens.push({
             tag: 'html',
-            content: element.content
+            // ? Balanced so the SSR string render can't leak an unclosed tag
+            //   into sibling blocks (see balanceHtmlBlock)
+            content: balanceHtmlBlock(element.content)
           })
           break
         }

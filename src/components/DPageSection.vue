@@ -1,9 +1,17 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, hydrateOnVisible, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
 
 import DPageTokens from './DPageTokens.vue'
+
+// ? Lazy-hydrating twin of DPageTokens (same chunk — the loader resolves from
+//   the module cache): SSR renders it fully, the client only hydrates it when
+//   it scrolls near the viewport. Keeps the initial hydration task small.
+const DPageTokensLazy = defineAsyncComponent({
+  loader: () => import('./DPageTokens.vue'),
+  hydrate: hydrateOnVisible({ rootMargin: '400px' })
+})
 import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'
 import { isCompiledPageSource, loadMathCss, parseCompiledPageTokens } from './page-tokens-support'
@@ -127,7 +135,11 @@ const INITIAL_BLOCKS = 24
 // ! Small enough that each idle batch mounts in well under 50ms (no TBT)
 const REVEAL_BATCH = 16
 
-const visibleCount = ref(props.progressive ? INITIAL_BLOCKS : Infinity)
+// ? SSR renders the FULL page and the hydrating client must match it exactly —
+//   the progressive gate only applies to plain SPA loads and later navigations
+const suppressProgressive = typeof window === 'undefined' || window.__DOCSECTOR_HYDRATING__ === true
+
+const visibleCount = ref(props.progressive && !suppressProgressive ? INITIAL_BLOCKS : Infinity)
 // ! Generation guard: navigation restarts the reveal; stale loops must die
 let revealGeneration = 0
 
@@ -137,6 +149,32 @@ const visibleTokens = computed(() => {
   return visibleCount.value >= tokens.length
     ? tokens
     : tokens.slice(0, visibleCount.value)
+})
+
+// # Lazy hydration (SSR)
+// ! Head blocks hydrate synchronously (they overfill the first viewport);
+//   the below-the-fold tail hydrates per chunk as it scrolls into view —
+//   server and hydrating client MUST produce this exact same structure
+const HYDRATION_HEAD_BLOCKS = 24
+const HYDRATION_CHUNK_BLOCKS = 30
+
+const hydrationChunks = computed(() => {
+  if (!suppressProgressive) {
+    return null
+  }
+
+  const tokens = sectionTokens.value
+  const head = tokens.slice(0, HYDRATION_HEAD_BLOCKS)
+  const tail = []
+
+  for (let offset = HYDRATION_HEAD_BLOCKS; offset < tokens.length; offset += HYDRATION_CHUNK_BLOCKS) {
+    tail.push({
+      offset,
+      tokens: tokens.slice(offset, offset + HYDRATION_CHUNK_BLOCKS)
+    })
+  }
+
+  return { head, tail }
 })
 
 // @@ Append one batch per idle period until the page is complete
@@ -176,7 +214,12 @@ function start () {
   reveal(revealGeneration)
 }
 
-onMounted(start)
+onMounted(() => {
+  // ? Hydration/SSR first paint is already complete — no reveal to run
+  if (!suppressProgressive) {
+    start()
+  }
+})
 
 // ? Client-side navigation reuses this component — restart the reveal for the
 //   new page (the router scrolls back to the top, so the fold argument holds)
@@ -193,7 +236,26 @@ onBeforeUnmount(() => {
 
 <template>
 <section>
+  <!-- SSR / hydration: head blocks hydrate now, tail chunks hydrate on view -->
+  <template v-if="hydrationChunks">
+    <d-page-tokens
+      :id="id"
+      :render-primary-heading="renderPrimaryHeading"
+      :code-toolbar-default="codeToolbarDefault"
+      :tokens="hydrationChunks.head"
+    />
+    <d-page-tokens-lazy
+      v-for="chunk in hydrationChunks.tail"
+      :key="chunk.offset"
+      :id="id"
+      :code-toolbar-default="codeToolbarDefault"
+      :tokens="chunk.tokens"
+    />
+  </template>
+
+  <!-- SPA / dev: classic progressive reveal -->
   <d-page-tokens
+    v-else
     :id="id"
     :render-primary-heading="renderPrimaryHeading"
     :code-toolbar-default="codeToolbarDefault"

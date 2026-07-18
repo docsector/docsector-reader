@@ -162,7 +162,13 @@ const rightRailOpen = computed(() => {
 //   only learns after mount — rendering the drawer immediately paints it at
 //   top: 0 and shifts it down a frame later (CLS). Mount it once the layout
 //   has settled: it appears directly at its final position.
-const layoutSettled = ref(false)
+// ? SSR renders the settled (visible) state — a false init would serialize
+//   `display:none` and the static HTML would paint nothing. When hydrating,
+//   the client must start in that same serialized state (see boot/hydration).
+//   The 2×rAF gate below only applies to plain SPA first loads.
+const layoutSettled = ref(
+  typeof window === 'undefined' || window.__DOCSECTOR_HYDRATING__ === true
+)
 onMounted(() => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {

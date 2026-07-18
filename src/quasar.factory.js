@@ -48,6 +48,18 @@ export function configure (callback) {
 }
 
 /**
+ * The dist directory holding the deployable client build. In the default SPA
+ * flow that's `dist/spa`; in SSR builds (`DOCSECTOR_SSR=1`) the client bundle
+ * lands in `dist/ssr/client` — the bin moves it back to `dist/spa` after the
+ * prerender pass, so static hosts keep their configured output directory.
+ */
+export function resolveClientDistDir (projectRoot) {
+  return process.env.DOCSECTOR_SSR === '1'
+    ? resolve(projectRoot, 'dist', 'ssr', 'client')
+    : resolve(projectRoot, 'dist', 'spa')
+}
+
+/**
  * Resolve the docsector-reader package root.
  *
  * In consumer mode, the package lives in node_modules/@docsector/docsector-reader.
@@ -182,7 +194,7 @@ function normalizeBookConfig (rawConfig = {}, fallbackId = 'manual', index = 0) 
   }
 }
 
-function buildPageRoutePath (entry, subpage, { leadingSlash = false } = {}) {
+export function buildPageRoutePath (entry, subpage, { leadingSlash = false } = {}) {
   const versionPrefix = trimSlashes(entry?.versionPrefix || '')
   const base = trimSlashes(`${entry?.book || 'manual'}${entry?.pagePath || ''}`)
   const routePath = [versionPrefix, base, trimSlashes(subpage)].filter(Boolean).join('/')
@@ -1464,7 +1476,12 @@ function createPrerenderMetaPlugin (projectRoot) {
     },
 
     async closeBundle () {
-      const distDir = resolve(projectRoot, 'dist', 'spa')
+      // ? SSR builds don't need meta shells: the bin's prerender loop writes
+      //   real server-rendered HTML (meta via useMeta, preloads via manifest,
+      //   Early Hints included) — running here would only duplicate rules
+      if (process.env.DOCSECTOR_SSR === '1') return
+
+      const distDir = resolveClientDistDir(projectRoot)
       const baseHtmlPath = resolve(distDir, 'index.html')
       if (!existsSync(baseHtmlPath)) return
 
@@ -1517,7 +1534,7 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       const sharedFiles = []
       for (const suffix of [
-        '/src/boot/store.js', '/src/boot/QZoom.js', '/src/boot/i18n.js',
+        '/src/boot/hydration.js', '/src/boot/store.js', '/src/boot/QZoom.js', '/src/boot/i18n.js',
         '/src/i18n/index.js', '/src/components/DSubpage.vue'
       ]) {
         collectGraph(findChunk(suffix), sharedFiles)
@@ -2542,7 +2559,7 @@ function createMarkdownBuildPlugin (projectRoot) {
     name: 'docsector-markdown-build',
     apply: 'build',
     async closeBundle () {
-      const distDir = resolve(projectRoot, 'dist', 'spa')
+      const distDir = resolveClientDistDir(projectRoot)
       if (!existsSync(distDir)) return
 
       const pagesDir = resolve(projectRoot, 'src', 'pages')
@@ -3724,7 +3741,7 @@ function createVersionFilePlugin (projectRoot, buildId) {
     name: 'docsector-version-file',
     apply: 'build',
     closeBundle () {
-      const distDir = resolve(projectRoot, 'dist', 'spa')
+      const distDir = resolveClientDistDir(projectRoot)
       if (!existsSync(distDir)) return
 
       writeFileSync(
@@ -3798,6 +3815,7 @@ export function createQuasarConfig (options = {}) {
     // consumer-specific boot files are resolved via per-file Vite aliases
     // added in extendViteConf below.
     boot: [
+      'hydration',
       'icons',
       'store',
       'QZoom',
@@ -3854,6 +3872,22 @@ export function createQuasarConfig (options = {}) {
           ...(viteConf.define || {}),
           __DOCSECTOR_BUILD__: JSON.stringify(buildId)
         }
+
+        // Diagnostic-only: surface exact hydration mismatch nodes in prod builds
+        if (process.env.DOCSECTOR_HYDRATION_DEBUG === '1') {
+          viteConf.define.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = 'true'
+        }
+
+        // SSR: the reader must be BUNDLED into the server build, never
+        // externalized — its .vue SFCs, Vite aliases and virtual modules
+        // (docsector-books, icons, ...) only exist through the Vite pipeline,
+        // and its extensionless internal imports don't resolve under plain
+        // Node ESM. Harmless outside SSR builds.
+        viteConf.ssr = viteConf.ssr || {}
+        viteConf.ssr.noExternal = [
+          ...(Array.isArray(viteConf.ssr.noExternal) ? viteConf.ssr.noExternal : []),
+          '@docsector/docsector-reader'
+        ]
 
         // When the pages watcher plugin triggers a restart, it sets this env
         // flag so we force Vite to generate a fresh browserHash. This busts
@@ -4026,7 +4060,22 @@ export function createQuasarConfig (options = {}) {
         ],
         ...pwa
       }
-    }
+    },
+
+    // # SSR (build-time static rendering)
+    // ? `quasar build -m ssr` is used ONLY as a renderer: a post-build step
+    //   renders every route to static HTML and the client bundle deploys to a
+    //   static host — the Node webserver never runs in production (see
+    //   src-ssr/server.js). Gated by env so the default SPA flow is untouched.
+    ...(process.env.DOCSECTOR_SSR === '1'
+      ? {
+          ssr: {
+            middlewares: ['render'],
+            pwa: false,
+            prodPort: 3000
+          }
+        }
+      : {})
   }
 }
 
