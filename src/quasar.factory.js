@@ -3712,6 +3712,35 @@ function buildMcpServerCardPayload ({
  * template compile in an `enforce: 'pre'` hook — injecting from a default-order
  * hook lands after it, keeping the script safe from `<%= %>` interpolation.
  */
+/**
+ * Recover from a stale deploy on the FIRST paint: after a redeploy, cached
+ * HTML can reference hashed chunks that no longer exist — the module entry
+ * then fails MIME-type checking (the host answers 404 HTML) before ANY app
+ * code runs, leaving a dead black page. This inline head script catches those
+ * resource-level failures and reloads once (session-guarded); boot/hydration
+ * clears the guard when the app actually boots. Dynamic-import failures after
+ * boot are already covered by setupChunkReload.
+ */
+const STALE_ENTRY_RELOAD_SCRIPT = [
+  '(function(){try{var k="docsector.entry.reload";',
+  'addEventListener("error",function(e){var t=e.target;',
+  'if(t&&t.tagName==="SCRIPT"&&t.type==="module"&&sessionStorage.getItem(k)===null){',
+  'sessionStorage.setItem(k,"1");location.reload();}},true);}catch(err){}})()'
+].join('')
+
+function createStaleEntryReloadPlugin () {
+  return {
+    name: 'docsector-stale-entry-reload',
+    transformIndexHtml () {
+      return [{
+        tag: 'script',
+        injectTo: 'head',
+        children: STALE_ENTRY_RELOAD_SCRIPT
+      }]
+    }
+  }
+}
+
 function createThemeBootPlugin () {
   return {
     name: 'docsector-theme-boot',
@@ -3858,6 +3887,7 @@ export function createQuasarConfig (options = {}) {
         createPrerenderMetaPlugin(projectRoot),
         createVersionFilePlugin(projectRoot, buildId),
         createThemeBootPlugin(),
+        createStaleEntryReloadPlugin(),
         ...vitePlugins
       ],
 

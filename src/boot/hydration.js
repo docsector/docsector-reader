@@ -17,6 +17,14 @@ export default boot(() => {
     return
   }
 
+  // ? The app is booting — a previous stale-entry reload (see the inline
+  //   recovery script in quasar.factory.js) is resolved; re-arm the guard
+  try {
+    window.sessionStorage.removeItem('docsector.entry.reload')
+  } catch {
+    // Storage unavailable (private mode restrictions) — guard stays armed
+  }
+
   const container = document.getElementById('q-app')
   if (container !== null && container.hasChildNodes()) {
     window.__DOCSECTOR_HYDRATING__ = true

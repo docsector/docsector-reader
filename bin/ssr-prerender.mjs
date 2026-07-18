@@ -233,7 +233,12 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
       const link = targets.join(', ')
       const bookRoots = [...new Set(routes.map((route) => route.routePath.split('/')[0]))].sort()
       const paths = bookRoots.map((root) => `/${root}/*`).concat(['/', '/index.html'])
-      const rules = paths.map((path) => `${path}\n  Link: ${link}`).join('\n\n') + '\n'
+      // ! must-revalidate on the documents: after a redeploy a cached HTML
+      //   would reference hashed chunks that no longer exist (dead first
+      //   paint); the hashed assets themselves are immutable forever
+      const rules = paths
+        .map((path) => `${path}\n  Link: ${link}\n  Cache-Control: public, max-age=0, must-revalidate`)
+        .join('\n\n') + '\n\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n'
 
       const headersPath = resolve(clientDir, '_headers')
       const currentHeaders = existsSync(headersPath)
@@ -241,7 +246,7 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
         : ''
 
       writeFileSync(headersPath, currentHeaders + rules)
-      console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link rules for ${paths.length} path patterns`)
+      console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link + cache rules for ${paths.length} path patterns`)
     }
   }
 

@@ -31,15 +31,17 @@ afterEach(() => {
 })
 
 describe('assistant layout persistence', () => {
-  it('loads persisted assistant open state from storage', () => {
+  it('keeps the initial state server-parity and exposes the persisted value via the loader', () => {
     const storage = createStorage()
     storage.setItem(LAYOUT_ASSISTANT_STORAGE_KEY, 'true')
 
     expect(loadPersistedAssistantLayout({ storage })).toBe(true)
-    expect(createLayoutState.call({}).assistant).toBe(false)
 
+    // ? The INITIAL state must be identical on server and client (SSR has no
+    //   localStorage): always closed. App.vue applies the persisted value
+    //   after mount — reading it here would desync hydration.
     globalThis.window = { localStorage: storage }
-    expect(createLayoutState().assistant).toBe(true)
+    expect(createLayoutState().assistant).toBe(false)
   })
 
   it('persists assistant open state when the layout mutation runs', () => {

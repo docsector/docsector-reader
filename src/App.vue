@@ -130,6 +130,7 @@ import { useRouter, useRoute } from 'vue-router'
 import docsectorConfig from 'docsector.config.js'
 import DUpdateBanner from './components/DUpdateBanner.vue'
 import { setupUpdateCheck } from './composables/useUpdateCheck'
+import { loadPersistedAssistantLayout } from './store/Layout'
 import { setupWebMcp } from './composables/useWebMcp'
 import { fromDarkValue, persistTheme, toDarkValue } from './theme.js'
 
@@ -226,6 +227,13 @@ function setTheme (value) {
 }
 
 onMounted(() => {
+  // ? Persisted assistant drawer state applies only after mount: the store
+  //   must boot with server-parity values (SSR has no localStorage) or the
+  //   hydration mismatches and opens an empty assistant drawer.
+  if (loadPersistedAssistantLayout()) {
+    store.commit('layout/setAssistant', true)
+  }
+
   const defaultLang = docsectorConfig.defaultLanguage || 'en-US'
 
   // Language

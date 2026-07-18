@@ -58,7 +58,10 @@ export function createLayoutState () {
     scrolling: true,
     meta: true,
     metaToggle: false,
-    assistant: loadPersistedAssistantLayout(),
+    // ? Server parity: SSR can't read localStorage, so the initial state must
+    //   be identical on both sides or hydration mismatches (and an empty open
+    //   drawer) appear. The persisted value is applied post-mount by App.vue.
+    assistant: false,
     assistantWidth: 380
   }
 }
