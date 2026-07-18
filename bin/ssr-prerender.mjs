@@ -15,32 +15,19 @@ import { pathToFileURL } from 'node:url'
 //   live outside the Vue app and are re-synced by the client on boot
 const PRERENDER_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 DocsectorPrerender'
 
-const jsRE = /\.js$/
 const cssRE = /\.css$/
-const woffRE = /\.woff$/
-const woff2RE = /\.woff2$/
 
 // : Mirrors src-ssr/server.js renderPreloadTag (that module needs the Vite
-//   `#q-app` alias and cannot be imported under plain Node) — minus JS: the
-//   first paint is server-rendered, so preloading chunks only steals slow-link
-//   bandwidth from the render-blocking CSS (measured −1s FCP on slow-4G)
+//   `#q-app` alias and cannot be imported under plain Node) — reduced to
+//   stylesheets only. JS: the first paint is server-rendered, so preloading
+//   chunks only steals slow-link bandwidth from the render-blocking CSS
+//   (measured −1s FCP on slow-4G). Fonts: font-display: optional paints the
+//   metric-matched fallback regardless, while a preloaded font is chained
+//   into the text LCP dependency graph by Lighthouse's simulator (measured
+//   −600ms LCP without it); the @font-face fetch still warms the cache.
 function preloadTag (file) {
-  if (jsRE.test(file) === true) {
-    return ''
-  }
   if (cssRE.test(file) === true) {
     return `<link rel="stylesheet" href="${file}" crossorigin>`
-  }
-  // ? latin-ext glyphs (U+0100+) are absent from en-US/pt-BR prose — the
-  //   subset still loads on demand via unicode-range, just not preloaded
-  if (/latin-ext/.test(file) === true) {
-    return ''
-  }
-  if (woffRE.test(file) === true) {
-    return `<link rel="preload" href="${file}" as="font" type="font/woff" crossorigin fetchpriority="low">`
-  }
-  if (woff2RE.test(file) === true) {
-    return `<link rel="preload" href="${file}" as="font" type="font/woff2" crossorigin fetchpriority="low">`
   }
 
   return ''
