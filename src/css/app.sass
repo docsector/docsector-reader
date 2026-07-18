@@ -646,3 +646,8 @@ body.body--dark
       .q-field__marginal,
       .q-select__dropdown-icon
         color: rgba(255, 255, 255, 0.7)
+
+      // ? same story for the standard-field underline: it serializes as
+      //   black-alpha — invisible on the dark drawer (Quasar dark tone)
+      .q-field__control:before
+        border-color: rgba(255, 255, 255, 0.6)
