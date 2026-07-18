@@ -5,8 +5,6 @@ import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/extras/fontawesome-v5'
 
-import { useSsrSafeDark } from '../composables/useSsrSafeDark'
-
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
 import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
@@ -15,8 +13,6 @@ import { matchesBookSearchTerm } from '../search/book-search'
 import { ensureContentIndex, getContentIndex } from '../search/content-index'
 
 const $q = useQuasar()
-// ? SSR-safe theme — first hydration pass must match the serialized light markup
-const darkActive = useSsrSafeDark()
 const $route = useRoute()
 const $router = useRouter()
 const { t, te, tm } = useI18n()
@@ -571,9 +567,8 @@ watch([currentBookId, activeVersionId], rebuildItems)
   @mouseenter="handleMenuMouseEnter"
   @mouseleave="handleMenuMouseLeave"
   :visible="true"
-  :class="darkActive ? '' : 'bg-grey-2'"
 >
-  <div class="d-menu__brand row items-center no-wrap" :class="darkActive ? 'bg-dark' : 'bg-white'">
+  <div class="d-menu__brand row items-center no-wrap">
     <img class="d-menu__brand-logo" v-if="branding.logo" :src="branding.logo" :alt="branding.name" width="85" height="85" />
     <div class="d-menu__brand-text col">
       <div class="text-weight-medium">{{ brandLockup }}</div>
@@ -721,7 +716,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
   </q-list>
 </q-scroll-area>
 
-<div class="menu-social" :class="darkActive ? 'bg-dark' : 'bg-white'">
+<div class="menu-social">
   <div class="col text-center">
     <q-btn-group flat>
       <q-btn v-if="links.website" :icon="fasGlobe" size="sm" @click="openURL(links.website)" aria-label="Website">
@@ -755,7 +750,11 @@ body.body--light
   --d-menu-expansion-bg-color: rgb(245, 245, 245)
   --d-menu-item-opacity: 0.015
 
+// ? Menu tones are CSS-driven on purpose: this subtree is server-rendered
+//   and only hydrates on interaction — a JS-bound theme class would freeze
+//   the serialized (light) look for dark visitors until they touch the menu
 .menu-social
+  background: #fff
   display: flex
   align-items: center
   min-height: 50px
@@ -777,8 +776,10 @@ body.body--light
 #menu
   width: 100%
   height: calc(100% - 50px - 50px - env(safe-area-inset-bottom, 0px))
+  background: #f5f5f5
 
   .d-menu__brand
+    background: #fff
     padding: 12px
     gap: 14px
     max-width: 100%
@@ -915,4 +916,15 @@ label[for="search"]
 
   i.clear
     padding: 13px 8px
+
+// * Dark theme (CSS-driven — see the note above .menu-social)
+body.body--dark
+  #menu
+    background: transparent
+
+    .d-menu__brand
+      background: var(--q-dark)
+
+  .menu-social
+    background: var(--q-dark)
 </style>
