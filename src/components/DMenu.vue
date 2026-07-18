@@ -552,16 +552,17 @@ watch([currentBookId, activeVersionId], rebuildItems)
 </script>
 
 <template>
-<transition appear enter-active-class="animated zoomIn" leave-active-class="animated zoomOut">
-  <q-input for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300">
-    <template v-slot:prepend>
-      <q-icon class="q-ml-sm" name="search" />
-    </template>
-    <template v-slot:append>
-      <q-icon class="cursor-pointer clear" v-if="term" name="clear" @click="clearSearchTerm" />
-    </template>
-  </q-input>
-</transition>
+<!-- ? No <transition appear> here: Vue SSR serializes it as an inert
+     <template> tag, hiding the search bar until the menu hydrates (which
+     only happens on interaction). The entrance animation was cosmetic. -->
+<q-input for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300">
+  <template v-slot:prepend>
+    <q-icon class="q-ml-sm" name="search" />
+  </template>
+  <template v-slot:append>
+    <q-icon class="cursor-pointer clear" v-if="term" name="clear" @click="clearSearchTerm" />
+  </template>
+</q-input>
 
 <q-scroll-area id="menu"
   @mouseenter="handleMenuMouseEnter"
