@@ -42,6 +42,41 @@ function prioritizePaint (html) {
     .replace(/(<script type="?module"?)(?=[^>]*\bsrc=)/, '$1 fetchpriority=low')
 }
 
+// : useMeta renders the per-route <title> + description/OG/Twitter tags, but
+//   the template's static defaults stay behind them — duplicated tags in
+//   every head. Keep the rendered (data-qmeta) tag and drop its static twin;
+//   statics without a rendered counterpart survive as fallbacks.
+function dedupeMeta (html) {
+  const headEnd = html.indexOf('</head>')
+  if (headEnd === -1) {
+    return html
+  }
+
+  let head = html.slice(0, headEnd)
+  const rest = html.slice(headEnd)
+
+  // # <title>: the rendered one comes first — drop later twins
+  const titles = [...head.matchAll(/<title>[\s\S]*?<\/title>/g)]
+  for (const extra of titles.slice(1)) {
+    head = head.replace(extra[0], '')
+  }
+
+  // # meta: drop static tags whose name/property has a rendered counterpart
+  const metaRE = /<meta [^>]*?(?:name|property)=("?)([^">\s]+)\1[^>]*>/g
+  const rendered = new Set()
+  for (const match of head.matchAll(metaRE)) {
+    if (match[0].includes('data-qmeta')) {
+      rendered.add(match[2])
+    }
+  }
+  if (rendered.size > 0) {
+    head = head.replace(metaRE, (tag, _quote, key) =>
+      rendered.has(key) && !tag.includes('data-qmeta') ? '' : tag)
+  }
+
+  return head + rest
+}
+
 export async function prerenderSsr ({ projectRoot, packageRoot }) {
   const ssrDir = resolve(projectRoot, 'dist', 'ssr')
   const clientDir = resolve(ssrDir, 'client')
@@ -125,7 +160,7 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
     ssrContext._meta.runtimePageContent = runtimePageContent
     ssrContext._meta.endingHeadTags += renderPreloads(ssrContext.modules)
 
-    return prioritizePaint(renderTemplate(ssrContext))
+    return dedupeMeta(prioritizePaint(renderTemplate(ssrContext)))
   }
 
   // ! Route worklist — same predicate the meta prerenderer used; internal-link
