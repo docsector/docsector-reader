@@ -567,3 +567,45 @@ body.body--dark
 @media (pointer: coarse)
   .d-page-rich-content li
     padding-block: 3px
+
+// * SSR pre-hydration layout (desktop)
+// QDrawer always SERIALIZES closed (translateX off-screen) and QLayout only
+// applies header offsets / container paddings client-side after Quasar's
+// Screen measures — so the static first paint would show no drawers and a
+// full-width page, then shift everything (CLS ≈ 0.6 on desktop). Until
+// hydration hands over (App.vue adds `docsector-hydrated` after the first
+// real measurement), paint the FINAL desktop geometry via CSS — QLayout then
+// applies these exact same values inline and the hand-off is invisible.
+@media (min-width: 1024px)
+  body:not(.docsector-hydrated)
+    .q-layout:has(aside.q-drawer--left)
+      aside.q-drawer--left
+        transform: translateX(0) !important
+      > header.q-header
+        left: 300px !important
+      .q-page-container
+        padding-left: 300px !important
+    .q-layout:has(aside.q-drawer--right)
+      aside.q-drawer--right
+        transform: translateX(0) !important
+        top: 111px !important
+      .q-page-container
+        padding-right: 308px !important
+
+// * SSR pre-hydration layout (mobile)
+// Defense in depth: should the serialized markup ever carry desktop-style
+// paddings, neutralize them on small screens until hydration takes over.
+@media (max-width: 1023px)
+  body:not(.docsector-hydrated)
+    .q-page-container
+      padding-left: 0 !important
+      padding-right: 0 !important
+    aside.q-drawer
+      display: none !important
+
+// * Stable scrollbar gutter
+// The vertical scrollbar appears only once the (server-rendered) content
+// lays out — everything then narrows by the scrollbar width, a full-page
+// layout shift on desktop. Reserving the gutter up-front removes it.
+html
+  scrollbar-gutter: stable

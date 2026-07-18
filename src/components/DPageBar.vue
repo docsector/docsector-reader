@@ -8,8 +8,11 @@ import { copyToClipboard, useQuasar } from 'quasar'
 import docsectorConfig from 'docsector.config.js'
 import gitDates from 'virtual:docsector-git-dates'
 import { pageValueI18nPath } from '../i18n/path'
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
 
 const $q = useQuasar()
+// ? SSR-safe theme for the chat-icon fills (serialized light on hydration)
+const darkActive = useSsrSafeDark()
 const store = useStore()
 const route = useRoute()
 const { t, tm, locale } = useI18n()
@@ -22,7 +25,7 @@ const CLAUDE_PATH = 'M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.69
 // ? the dark read below is only tracked because every caller is a computed —
 //   keep it that way, or these icons stop following live OS theme changes
 function buildIconURI (paths, fillRule) {
-  const fill = $q.dark.isActive ? '#ccc' : '#555'
+  const fill = darkActive.value ? '#ccc' : '#555'
   const fr = fillRule ? ` fill-rule="${fillRule}"` : ''
   const pathArr = Array.isArray(paths) ? paths : [paths]
   const pathEls = pathArr.map(d => `<path d="${d}"/>`).join('')

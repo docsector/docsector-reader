@@ -7,6 +7,7 @@ import { resolveCodeExample } from 'virtual:docsector-code-examples'
 import docsectorConfig from 'docsector.config.js'
 
 import DBlockSourceCode from './DBlockSourceCode.vue'
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
 import {
   canCreateCodepenPayload,
   createCodeExampleGitHubUrl,
@@ -59,6 +60,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const darkActive = useSsrSafeDark()
 
 const isBusy = ref(false)
 const errorMessage = ref('')
@@ -70,7 +72,8 @@ const exampleFilePath = ref('')
 let requestIndex = 0
 
 const displayTitle = computed(() => props.title || props.src || 'Code example')
-const frameTone = computed(() => $q.dark.isActive ? 'dark' : 'light')
+// ? SSR-safe: hydration renders the serialized (light) tone first
+const frameTone = computed(() => darkActive.value ? 'dark' : 'light')
 const hasSource = computed(() => sourceText.value.trim().length > 0)
 const codepenUnsupportedReason = computed(() => {
   if (!hasSource.value) {

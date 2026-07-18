@@ -5,6 +5,8 @@ import { useQuasar, scroll, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/extras/fontawesome-v5'
 
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
+
 import DMenuItem from './DMenuItem.vue'
 import docsectorConfig from 'docsector.config.js'
 import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
@@ -13,6 +15,8 @@ import { matchesBookSearchTerm } from '../search/book-search'
 import { ensureContentIndex, getContentIndex } from '../search/content-index'
 
 const $q = useQuasar()
+// ? SSR-safe theme — first hydration pass must match the serialized light markup
+const darkActive = useSsrSafeDark()
 const $route = useRoute()
 const $router = useRouter()
 const { t, te, tm } = useI18n()
@@ -567,9 +571,9 @@ watch([currentBookId, activeVersionId], rebuildItems)
   @mouseenter="handleMenuMouseEnter"
   @mouseleave="handleMenuMouseLeave"
   :visible="true"
-  :class="$q.dark.isActive ? '' : 'bg-grey-2'"
+  :class="darkActive ? '' : 'bg-grey-2'"
 >
-  <div class="d-menu__brand row items-center no-wrap" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
+  <div class="d-menu__brand row items-center no-wrap" :class="darkActive ? 'bg-dark' : 'bg-white'">
     <img class="d-menu__brand-logo" v-if="branding.logo" :src="branding.logo" :alt="branding.name" width="85" height="85" />
     <div class="d-menu__brand-text col">
       <div class="text-weight-medium">{{ brandLockup }}</div>
@@ -717,7 +721,7 @@ watch([currentBookId, activeVersionId], rebuildItems)
   </q-list>
 </q-scroll-area>
 
-<div class="menu-social" :class="$q.dark.isActive ? 'bg-dark' : 'bg-white'">
+<div class="menu-social" :class="darkActive ? 'bg-dark' : 'bg-white'">
   <div class="col text-center">
     <q-btn-group flat>
       <q-btn v-if="links.website" :icon="fasGlobe" size="sm" @click="openURL(links.website)" aria-label="Website">

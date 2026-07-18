@@ -12,13 +12,14 @@
   >
     <q-toolbar color="primary">
       <q-btn v-if="showSidebar" class="filled" square icon="menu" aria-label="Toggle Menu" @click="toogleMenu" />
+      <!-- ? Viewport-dependent alignment/padding live in CSS media queries
+           (see the style block): class bindings from $q.screen serialize the
+           wrong breakpoint on SSR and shift the brand when Screen measures -->
       <q-toolbar-title
         class="d-header__brand-slot row no-wrap items-stretch self-stretch q-pa-none"
-        :class="$q.screen.lt.sm ? 'justify-start' : 'justify-center'"
       >
         <q-btn
           class="filled d-header__brand"
-          :class="$q.screen.lt.sm ? 'q-px-sm' : 'q-px-md'"
           align="left"
           no-caps
           stretch
@@ -90,7 +91,7 @@
        frame without the drawer and shows it a tick later — a layout shift
        (CLS) on every desktop load -->
   <q-drawer v-if="showSidebar" elevated show-if-above side="left" v-model="layout.menu"
-    :behavior="$q.screen.width > 1023 ? 'desktop' : 'mobile'"
+    :behavior="($q.screen.width || 1440) > 1023 ? 'desktop' : 'mobile'"
   >
     <d-menu />
   </q-drawer>
@@ -143,8 +144,10 @@ const brandLockup = computed(() => t('system.brand', { name: brandName }))
 const layout = ref({
   // ? open from the very first frame on desktop — waiting for show-if-above
   //   to flip it after mount paints the page without the drawer and then
-  //   shifts the whole layout (CLS)
-  menu: $q.screen.width > 1023
+  //   shifts the whole layout (CLS). width 0 = not measured yet (SSR /
+  //   hydration): assume desktop so the server serializes the open drawer;
+  //   pre-hydration CSS hides it on small screens (see app.sass).
+  menu: ($q.screen.width || 1440) > 1023
 })
 
 const pageLayout = computed(() => resolveRoutePageLayout(route))
@@ -422,9 +425,20 @@ store.commit('page/resetAnchors')
   &.left-btn
     .q-toolbar
       padding: 0
+  // ? Viewport-dependent bits are pure CSS on purpose: media queries apply to
+  //   the REAL viewport from the very first (server-rendered) paint, while
+  //   $q.screen class bindings only settle after Screen measures — shifting
+  //   the brand on every load (CLS)
+  .d-header__brand-slot
+    justify-content: center
+    @media (max-width: 599px)
+      justify-content: flex-start
   .d-header__brand
     min-width: 0
     max-width: 100%
+    padding-inline: 16px
+    @media (max-width: 599px)
+      padding-inline: 8px
   .d-header__brand-logo
     display: block
     flex-shrink: 0

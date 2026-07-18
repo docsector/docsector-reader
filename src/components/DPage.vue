@@ -151,7 +151,10 @@ const shouldShowBackToTopControl = computed(() => {
 const rightRailState = computed(() => getAssistantRightRailState({
   tocOpen: showToc.value && layoutMeta.value,
   assistantOpen: assistantEnabled && layoutAssistant.value,
-  screenWidth: $q.screen.width,
+  // ? width 0 = Quasar's Screen hasn't measured (server render / hydration):
+  //   assume desktop so SSR serializes the rail and its real paddings —
+  //   pre-hydration CSS hides it on small screens (see app.sass)
+  screenWidth: $q.screen.width || 1440,
   assistantWidth: assistantWidth.value,
   mobileBreakpoint: 768
 }))
@@ -462,16 +465,17 @@ watch(() => route.fullPath, () => {
     isFullwidthContent ? 'd-page-layout--fullwidth-content' : 'd-page-layout--contained-content'
   ]"
 >
+  <!-- ? mobile/desktop submenu styling is media-query CSS (see style block) —
+       $q.screen class bindings settle late on SSR and shift the bar -->
   <q-toolbar
     v-if="showSubmenu"
     id="submenu"
     ref="submenu"
     class="bg-grey-8 text-white"
-    :class="$q.screen.lt.md ? 'd-submenu--mobile' : 'd-submenu--desktop'"
   >
     <div class="d-submenu__content">
       <q-toolbar-title class="toolbar-container">
-        <q-btn-group :class="$q.screen.lt.md ? 'mobile' : null">
+        <q-btn-group>
           <q-btn
             v-if="overview && (showcase || vs)"
             no-caps flat
@@ -763,7 +767,9 @@ body.body--dark
     padding: 0
   .q-btn-group
     box-shadow: none
-    &.mobile
+    // ? icons-only below the desktop breakpoint — media query on purpose:
+    //   it holds from the very first (server-rendered) paint
+    @media (max-width: 1023px)
       .q-btn-inner
         div
           display: none
@@ -774,29 +780,33 @@ body.body--dark
       &:not(.focus-helper)
         margin-left: 6px
 
-#submenu.d-submenu--mobile
-  min-height: 40px
+// ? Media query (not a JS class binding): the mobile submenu styling must
+//   hold from the server-rendered first paint — $q.screen breakpoints only
+//   settle after Screen measures, shifting the bar (CLS)
+@media (max-width: 1023px)
+  #submenu
+    min-height: 40px
 
-  .d-submenu__content
-    width: 100%
-    max-width: none
-    margin: 0
-    align-items: stretch
+    .d-submenu__content
+      width: 100%
+      max-width: none
+      margin: 0
+      align-items: stretch
 
-  .toolbar-container
-    display: flex
-    align-items: stretch
+    .toolbar-container
+      display: flex
+      align-items: stretch
 
-  .q-btn-group
-    align-self: stretch
-    box-shadow: none
+    .q-btn-group
+      align-self: stretch
+      box-shadow: none
 
-    .q-btn
-      height: auto
+      .q-btn
+        height: auto
 
-  .d-submenu__toggle
-    margin-right: 0
-    padding-right: 12px
+    .d-submenu__toggle
+      margin-right: 0
+      padding-right: 12px
 
 #submenu a,
 #submenu button

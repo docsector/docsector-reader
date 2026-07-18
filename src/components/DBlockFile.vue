@@ -4,6 +4,7 @@ import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 
 import { resolveFileIconUrl } from '../composables/useFileIcon'
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
 
 const BASE_URL = import.meta.env.BASE_URL || '/'
 
@@ -31,6 +32,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const darkActive = useSsrSafeDark()
 const { t } = useI18n()
 const resolvedSize = ref(String(props.size || '').trim())
 
@@ -99,7 +101,7 @@ const displayHeading = computed(() => {
 })
 const iconUrl = computed(() => {
   return resolveFileIconUrl(fileName.value || displayTitle.value || props.src, {
-    preferLight: !$q.dark.isActive
+    preferLight: !darkActive.value
   })
 })
 

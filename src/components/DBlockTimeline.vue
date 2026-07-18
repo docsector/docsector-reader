@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
+import { useSsrSafeDark } from '../composables/useSsrSafeDark'
+import { useSsrSafeScreenWidth } from '../composables/useSsrSafeScreen'
 
 defineOptions({
   name: 'DBlockTimeline'
@@ -15,10 +17,12 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const darkActive = useSsrSafeDark()
+const screenWidth = useSsrSafeScreenWidth()
 const { locale } = useI18n()
 
 const timelineLayout = computed(() => {
-  return $q.screen.lt.sm ? 'dense' : 'comfortable'
+  return screenWidth.value < 600 ? 'dense' : 'comfortable'
 })
 
 const formatDate = (rawDate = '') => {
@@ -97,7 +101,7 @@ const entries = computed(() => {
     color="secondary"
     :layout="timelineLayout"
     side="right"
-    :dark="$q.dark.isActive"
+    :dark="darkActive"
     class="d-timeline__shell"
   >
     <q-timeline-entry

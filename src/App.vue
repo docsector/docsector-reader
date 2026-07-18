@@ -121,7 +121,7 @@ import './theme-init.js'
 </script>
 
 <script setup>
-import { reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Dark, useQuasar } from 'quasar'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
@@ -225,6 +225,21 @@ function setTheme (value) {
   // : live mutation — unlike setLanguage, no reload is needed
   Dark.set(toDarkValue(applied))
 }
+
+// ? Hand the pre-hydration drawer-column reservation (see app.sass) over to
+//   QLayout: once Quasar's Screen has measured, the layout owns the real
+//   inline paddings — the CSS fallback can go without any visual change.
+let hydratedMarked = false
+watch(() => $q.screen.width, (width) => {
+  if (hydratedMarked || width === 0 || typeof document === 'undefined') {
+    return
+  }
+
+  hydratedMarked = true
+  nextTick(() => {
+    document.body.classList.add('docsector-hydrated')
+  })
+}, { immediate: true })
 
 onMounted(() => {
   // ? Persisted assistant drawer state applies only after mount: the store
