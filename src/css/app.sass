@@ -609,3 +609,11 @@ body.body--dark
 // layout shift on desktop. Reserving the gutter up-front removes it.
 html
   scrollbar-gutter: stable
+
+// * Dark drawers without hydration
+// QDrawer only gets its dark class from JS — the sidebar menu's serialized
+// (light) aside keeps a white background for dark visitors until the menu
+// hydrates on interaction. Theme the drawer surface itself from CSS.
+body.body--dark
+  aside.q-drawer
+    background: var(--q-dark)
