@@ -26,7 +26,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔐 **Web Bot Auth Directory** — Optional signed JWKS directory at `/.well-known/http-message-signatures-directory` for bot identity verification
 - 🤖 **Open in ChatGPT / Claude** — One-click links to open the current page directly in ChatGPT or Claude for Q&A
 - 🤖 **LLM Bot Detection** — Automatically serves raw Markdown to known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, and others)
-- 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with root-relative URLs by default and absolute URLs when `siteUrl` is configured
+- 🗺️ **Sitemap Generation** — Automatic `sitemap.xml` generation at build time with root-relative URLs by default and absolute URLs when `siteUrl` is configured; page routes are listed in their canonical trailing-slash form so the URLs never redirect
+- 🔗 **Canonical URLs** — Every prerendered page emits a `<link rel="canonical">` (and matching `og:url`) in its trailing-slash form, so the slash-less and trailing-slash variants of a route consolidate into a single indexable page
 - 🤖 **AI-Friendly robots.txt** — Scaffold includes a `robots.txt` explicitly allowing 24 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Cloudflare-AI-Search, GrokBot, etc.), and the build appends `Sitemap: /sitemap.xml` at the end for crawler discovery
 - 🧭 **Content Signals** — Optional `Content-Signal` directive for declaring AI usage policy (`ai-train`, `search`, `ai-input`) in `robots.txt`
 - 🧩 **Agent Skills Discovery Index** — Optional `/.well-known/agent-skills/index.json` with RFC v0.2.0 schema and SHA-256 digests

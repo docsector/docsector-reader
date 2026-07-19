@@ -12,8 +12,11 @@ describe('sitemap generation', () => {
       ]
     })
 
+    // The root stays `/`; page routes get the trailing slash the router and
+    // prerender treat as canonical, so the URL does not redirect.
     expect(sitemap).toContain('<loc>/</loc>')
-    expect(sitemap).toContain('<loc>/manual/basic/ai-assistant/overview</loc>')
+    expect(sitemap).toContain('<loc>/manual/basic/ai-assistant/overview/</loc>')
+    expect(sitemap).not.toContain('<loc>/manual/basic/ai-assistant/overview</loc>')
     expect(sitemap).toContain('<lastmod>2026-05-30</lastmod>')
   })
 
@@ -26,7 +29,25 @@ describe('sitemap generation', () => {
       ]
     })
 
-    expect(sitemap).toContain('<loc>https://docs.example.com/manual/basic/ai-assistant/overview</loc>')
+    expect(sitemap).toContain('<loc>https://docs.example.com/manual/basic/ai-assistant/overview/</loc>')
+  })
+
+  it('leaves an already-slashed route untouched and never doubles the slash', () => {
+    const sitemap = createSitemap({
+      entries: [{ path: '/guide/getting-started/overview/' }]
+    })
+
+    expect(sitemap).toContain('<loc>/guide/getting-started/overview/</loc>')
+    expect(sitemap).not.toContain('<loc>/guide/getting-started/overview//</loc>')
+  })
+
+  it('does not add a trailing slash to file-like paths', () => {
+    const sitemap = createSitemap({
+      entries: [{ path: '/llms.txt' }]
+    })
+
+    expect(sitemap).toContain('<loc>/llms.txt</loc>')
+    expect(sitemap).not.toContain('<loc>/llms.txt/</loc>')
   })
 })
 
