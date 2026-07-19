@@ -436,12 +436,13 @@ store.commit('page/resetAnchors')
 
 // @ Sidebar position on load: DMenu only hydrates on interaction, so its own
 //   mounted scroll never runs for a fresh visit — center the active item on
-//   the server-rendered markup from here (pure DOM, keeps the menu asleep).
+//   the server-rendered markup from here (pure DOM, keeps the menu asleep),
+//   with the same smooth glide route changes use.
 //   Double rAF: let the pre-hydration layout CSS settle the drawer first.
 onMounted(() => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      scrollMenuToActive(0)
+      scrollMenuToActive()
     })
   })
 })
