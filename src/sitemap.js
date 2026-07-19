@@ -26,6 +26,22 @@ function resolveSitemapUrl (path, siteUrl) {
   return baseUrl ? `${baseUrl}${localUrl}` : localUrl
 }
 
+// The router and prerender treat `<route>/` as the canonical URL (the bare path
+// redirects to `<route>/overview/`), so the sitemap must list that same form —
+// a no-slash entry points at a URL the host redirects, which Search Console
+// reports as "Page with redirect" and refuses to index. The root, query/hash
+// URLs and file-like paths (a dot in the last segment, e.g. `sitemap.xml`) are
+// left untouched.
+function ensureTrailingSlash (path) {
+  const raw = String(path || '').trim()
+  if (!raw || raw === '/' || /[?#]/.test(raw) || raw.endsWith('/')) return raw
+
+  const lastSegment = raw.split('/').pop() || ''
+  if (lastSegment.includes('.')) return raw
+
+  return `${raw}/`
+}
+
 function normalizeSitemapIdentity (value) {
   const normalized = normalizeLocalUrl(String(value || '').trim())
   if (!/^https?:\/\//i.test(normalized)) return normalized.toLowerCase()
@@ -51,7 +67,7 @@ export function createSitemap ({ entries = [], siteUrl = '', generatedAt = new D
     .map(entry => {
       const lines = [
         '  <url>',
-        `    <loc>${escapeXml(resolveSitemapUrl(entry.path, siteUrl))}</loc>`,
+        `    <loc>${escapeXml(resolveSitemapUrl(ensureTrailingSlash(entry.path), siteUrl))}</loc>`,
         `    <lastmod>${escapeXml(entry.lastmod || lastmod)}</lastmod>`
       ]
 

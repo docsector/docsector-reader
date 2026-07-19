@@ -326,13 +326,28 @@ useMeta(() => {
   const description = pageDescription.value
   const image = branding.logo || ''
 
+  // @ Canonical URL — the trailing-slash form the sitemap and router agree on.
+  //   Each page is reachable at both `<route>` and `<route>/`, so declaring one
+  //   canonical stops Search Engines from treating them as duplicates (and stops
+  //   the "Page with redirect" report on the slash-less variant).
+  const siteBaseUrl = String(docsectorConfig.siteUrl || '').replace(/\/+$/g, '')
+  const routePath = route.path || '/'
+  const canonicalPath = routePath !== '/' && !routePath.endsWith('/')
+    ? `${routePath}/`
+    : routePath
+  const canonical = `${siteBaseUrl}${canonicalPath}`
+
   return {
     title,
+    link: {
+      canonical: { rel: 'canonical', href: canonical }
+    },
     meta: {
       description: { name: 'description', content: description },
       ogTitle: { property: 'og:title', content: title },
       ogDescription: { property: 'og:description', content: description },
       ogType: { property: 'og:type', content: 'article' },
+      ogUrl: { property: 'og:url', content: canonical },
       ogImage: { property: 'og:image', content: image },
       twitterCard: { name: 'twitter:card', content: 'summary_large_image' },
       twitterTitle: { name: 'twitter:title', content: title },

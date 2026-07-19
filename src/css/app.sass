@@ -3,27 +3,33 @@
 /* --- Docsector Reader --- */
 // Roboto — self-hosted variable woff2 (all weights in one file), replacing the
 // @quasar/extras roboto-font extra's six ~25 KB .woff statics. font-display:
-// optional paints the fallback immediately; latin-ext only downloads when
-// extended-Latin glyphs appear. Vite hashes these into dist/assets.
+// fallback paints the metric-matched fallback immediately and swaps Roboto in
+// only if it lands within the ~3 s window — without a font preload Chrome's
+// `optional` would NEVER use Roboto on a cold cache (it only consults the disk
+// cache at style resolution), while a preload gets chained into the text-LCP
+// graph by Lighthouse's simulator. `fallback` gives cold visitors Roboto after
+// a brief beat, with zero layout shift thanks to the size-adjusted fallback.
+// latin-ext only downloads when extended-Latin glyphs appear. Vite hashes
+// these into dist/assets.
 @font-face
   font-family: "Roboto"
   font-style: normal
   font-weight: 100 900
-  font-display: optional
+  font-display: fallback
   src: url("./fonts/roboto-latin.woff2") format("woff2")
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD
 @font-face
   font-family: "Roboto"
   font-style: normal
   font-weight: 100 900
-  font-display: optional
+  font-display: fallback
   src: url("./fonts/roboto-latin-ext.woff2") format("woff2")
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF
 // Metric-matched fallback: a local sans-serif (Arial / Liberation Sans /
 // Helvetica) re-scaled to Roboto's exact line box via the override descriptors.
-// With font-display: optional a throttled first paint usually shows the
-// fallback (Roboto rarely wins the ~100 ms block), so matching its metrics
-// keeps the layout — and Speed Index — identical whether Roboto lands or not.
+// The first paint shows this fallback (font-display: fallback blocks ~100 ms
+// at most), so matching Roboto's metrics keeps the layout — and CLS — at zero
+// when Roboto swaps in, and identical when it never does.
 @font-face
   font-family: "Roboto Fallback"
   src: local("Arial"), local("Liberation Sans"), local("Helvetica Neue"), local("Roboto")
