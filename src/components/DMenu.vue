@@ -1,11 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useQuasar, scroll, openURL } from 'quasar'
+import { useQuasar, openURL } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/extras/fontawesome-v5'
 
 import DMenuItem from './DMenuItem.vue'
+import { scrollMenuToActive } from '../composables/menu-scroll'
 import docsectorConfig from 'docsector.config.js'
 import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
 import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
@@ -350,35 +351,7 @@ const getMenuItemHeaderLabel = (meta) => {
 }
 
 const executeScrollToActiveMenuItem = () => {
-  const menu = document.getElementById('menu')
-  if (!menu) {
-    return
-  }
-
-  const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
-  if (!menuItemActive || typeof menuItemActive !== 'object') {
-    return
-  }
-
-  const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
-  const offsetTop2 = menuItemActive.offsetTop
-
-  const innerHeightBy2 = window.innerHeight / 2
-
-  const searchBarHeight = 50
-  let expansionHeaderHeight = 0
-  if (offsetTop1 > 0) {
-    expansionHeaderHeight = 45
-  }
-  const fixedHeight = searchBarHeight + expansionHeaderHeight
-
-  const target = scroll.getScrollTarget(menuItemActive)
-  const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
-  const duration = 300
-
-  if (offset > 0) {
-    scroll.setVerticalScrollPosition(target, offset, duration)
-  }
+  scrollMenuToActive()
 }
 
 const flushPendingMenuScroll = () => {

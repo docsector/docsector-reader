@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent, hydrateOnInteraction, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, hydrateOnInteraction, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
@@ -118,6 +118,7 @@ const DMenu = defineAsyncComponent({
 })
 import DFooterHost from '../components/DFooterHost.vue'
 import docsectorConfig from 'docsector.config.js'
+import { scrollMenuToActive } from '../composables/menu-scroll'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { resolveRoutePageLayout } from '../page-layout'
@@ -432,6 +433,18 @@ router.afterEach((to, from) => {
 })
 
 store.commit('page/resetAnchors')
+
+// @ Sidebar position on load: DMenu only hydrates on interaction, so its own
+//   mounted scroll never runs for a fresh visit — center the active item on
+//   the server-rendered markup from here (pure DOM, keeps the menu asleep).
+//   Double rAF: let the pre-hydration layout CSS settle the drawer first.
+onMounted(() => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      scrollMenuToActive(0)
+    })
+  })
+})
 </script>
 
 <style lang="sass">
