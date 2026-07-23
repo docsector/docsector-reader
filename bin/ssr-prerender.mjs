@@ -44,6 +44,28 @@ function prioritizePaint (html) {
     .replace(/(<script type="?module"?)(?=[^>]*\bsrc=)/, '$1 fetchpriority=low')
 }
 
+// : Quiet the History API during startup. vue-router's install performs two
+//   same-document replaceState calls (state seeding + initial-navigation
+//   finalization) — headless agent checkers built on puppeteer abort their
+//   in-flight evaluates when those navigations fire ("Execution context was
+//   destroyed"), and our low-priority entry pushes them right into that
+//   window. Seeding the exact state vue-router would write makes it skip the
+//   first call natively, and the wrapper drops the second (a value-identical
+//   self-write). Different urls or states — scroll saves, hash changes, real
+//   navigations — always pass through.
+const HISTORY_SEED_SCRIPT = '<script>(function(){try{' +
+  'if(history.state)return;' +
+  'var loc=location;' +
+  'var seed={back:null,current:loc.pathname+loc.search+loc.hash,forward:null,position:history.length-1,replaced:true,scroll:null};' +
+  'history.replaceState(seed,"");' +
+  'var orig=history.replaceState.bind(history);' +
+  'var KEYS=["back","current","forward","position","replaced","scroll"];' +
+  'function same(a,b){if(!a||!b)return false;for(var i=0;i<KEYS.length;i++){if(JSON.stringify(a[KEYS[i]])!==JSON.stringify(b[KEYS[i]]))return false}return true}' +
+  'history.replaceState=function(state,title,url){' +
+  'try{if(url!=null&&new URL(url,loc.href).href===loc.href&&same(state,history.state))return}catch(e){}' +
+  'return orig(state,title,url)};' +
+  '}catch(e){}})()</' + 'script>'
+
 // : useMeta renders the per-route <title> + description/OG/Twitter tags, but
 //   the template's static defaults stay behind them — duplicated tags in
 //   every head. Keep the rendered (data-qmeta) tag and drop its static twin;
@@ -108,10 +130,8 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
   //   agent checkers time out waiting for a runtime-only registration. The
   //   app connects the real implementations once it boots (empty when the
   //   webMcp feature is disabled).
-  const webMcpInline = buildWebMcpInlineScript(config)
-  const injectWebMcp = (html) => (
-    webMcpInline === '' ? html : html.replace('<head>', `<head>${webMcpInline}`)
-  )
+  const headInline = HISTORY_SEED_SCRIPT + buildWebMcpInlineScript(config)
+  const injectHeadScripts = (html) => html.replace('<head>', `<head>${headInline}`)
 
   // @ Preload tags for the modules a render actually used (webserver parity)
   const renderPreloads = (modules) => {
@@ -172,7 +192,7 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
     ssrContext._meta.runtimePageContent = runtimePageContent
     ssrContext._meta.endingHeadTags += renderPreloads(ssrContext.modules)
 
-    return injectWebMcp(dedupeMeta(prioritizePaint(renderTemplate(ssrContext))))
+    return injectHeadScripts(dedupeMeta(prioritizePaint(renderTemplate(ssrContext))))
   }
 
   // ! Route worklist — same predicate the meta prerenderer used; internal-link
