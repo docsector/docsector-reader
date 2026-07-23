@@ -192,13 +192,38 @@ export function isChunkLoadError (error) {
 /**
  * Full-page reload to the route the user intended, replacing the stale SPA.
  *
+ * The failed chunk must first be confirmed as a real stale deploy: transient
+ * network failures (and headless agent sandboxes that block a request) raise
+ * the same chunk errors, and a reload there fixes nothing — it only destroys
+ * scanners' evaluation contexts mid-check. Only a deployed build that differs
+ * from the running one justifies navigating; when version.json is unreachable
+ * the state is unverifiable and the reload is skipped.
+ *
  * A sessionStorage guard blocks a second reload of the same target within a
  * short window: a genuinely broken deploy would loop forever, so the fallback
- * is the update banner instead. Returns true when a reload was issued.
+ * is the update banner instead. Resolves true when a reload was issued.
  */
-export function forceReload (path, options = {}) {
+export async function forceReload (path, options = {}) {
   const win = options.win || (typeof window !== 'undefined' ? window : null)
   if (!win) return false
+
+  // ? verify against the deployed build — skipped when no build id is baked
+  //   (dev/tests), where the old immediate-reload behavior remains
+  const build = options.build !== undefined ? options.build : runningBuild()
+  const fetcher = options.fetcher || (typeof fetch !== 'undefined' ? fetch : null)
+  if (build && fetcher) {
+    const base = options.base !== undefined ? options.base : (import.meta.env?.BASE_URL || '/')
+    try {
+      const response = await fetcher(`${base}version.json`, { cache: 'no-store' })
+      if (!response?.ok) return false
+
+      const payload = await response.json()
+      const deployed = typeof payload?.build === 'string' ? payload.build : null
+      if (!deployed || deployed === build) return false
+    } catch {
+      return false
+    }
+  }
 
   const storage = options.storage || safeSessionStorage(win)
   const target = path || `${win.location?.pathname || '/'}${win.location?.search || ''}${win.location?.hash || ''}`

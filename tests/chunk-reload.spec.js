@@ -63,11 +63,11 @@ describe('chunk load error detection', () => {
 })
 
 describe('forced reload', () => {
-  it('reloads to the intended route and records the guard', () => {
+  it('reloads to the intended route and records the guard', async () => {
     const win = createWindow()
     const storage = createStorage()
 
-    expect(forceReload('/guide/target', { win, storage })).toBe(true)
+    await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(true)
     expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
 
     const guard = JSON.parse(storage.getItem(CHUNK_RELOAD_STORAGE_KEY))
@@ -75,26 +75,26 @@ describe('forced reload', () => {
     expect(typeof guard.at).toBe('number')
   })
 
-  it('falls back to the current location when no path is given', () => {
+  it('falls back to the current location when no path is given', async () => {
     const win = createWindow()
     const storage = createStorage()
 
-    forceReload(null, { win, storage })
+    await forceReload(null, { win, storage })
 
     expect(win.location.assign).toHaveBeenCalledWith('/guide/current?q=1#top')
   })
 
-  it('breaks reload loops by falling back to the banner', () => {
+  it('breaks reload loops by falling back to the banner', async () => {
     const win = createWindow()
     const storage = createStorage()
     storage.setItem(CHUNK_RELOAD_STORAGE_KEY, JSON.stringify({ path: '/guide/target', at: Date.now() }))
 
-    expect(forceReload('/guide/target', { win, storage })).toBe(false)
+    await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(false)
     expect(win.location.assign).not.toHaveBeenCalled()
     expect(updateAvailable.value).toBe(true)
   })
 
-  it('reloads again once the loop window has passed', () => {
+  it('reloads again once the loop window has passed', async () => {
     const win = createWindow()
     const storage = createStorage()
     storage.setItem(CHUNK_RELOAD_STORAGE_KEY, JSON.stringify({
@@ -102,18 +102,47 @@ describe('forced reload', () => {
       at: Date.now() - RELOAD_LOOP_WINDOW - 1000
     }))
 
-    expect(forceReload('/guide/target', { win, storage })).toBe(true)
+    await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(true)
     expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
   })
 
-  it('reloads a different target even inside the loop window', () => {
+  it('reloads a different target even inside the loop window', async () => {
     const win = createWindow()
     const storage = createStorage()
     storage.setItem(CHUNK_RELOAD_STORAGE_KEY, JSON.stringify({ path: '/guide/other', at: Date.now() }))
 
-    expect(forceReload('/guide/target', { win, storage })).toBe(true)
+    await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(true)
+  })
+
+  it('verifies the deployed build before reloading — same build never navigates', async () => {
+    const win = createWindow()
+    const storage = createStorage()
+    const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({ build: 'abc' }) }))
+
+    await expect(forceReload('/guide/target', { win, storage, build: 'abc', base: '/', fetcher })).resolves.toBe(false)
+    expect(win.location.assign).not.toHaveBeenCalled()
+    expect(fetcher).toHaveBeenCalledWith('/version.json', { cache: 'no-store' })
+  })
+
+  it('reloads when the deployed build differs from the running one', async () => {
+    const win = createWindow()
+    const storage = createStorage()
+    const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({ build: 'newer' }) }))
+
+    await expect(forceReload('/guide/target', { win, storage, build: 'abc', base: '/', fetcher })).resolves.toBe(true)
+    expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
+  })
+
+  it('skips the reload when version.json is unreachable (unverifiable state)', async () => {
+    const win = createWindow()
+    const storage = createStorage()
+    const fetcher = vi.fn(async () => { throw new Error('blocked') })
+
+    await expect(forceReload('/guide/target', { win, storage, build: 'abc', base: '/', fetcher })).resolves.toBe(false)
+    expect(win.location.assign).not.toHaveBeenCalled()
   })
 })
+
 
 describe('chunk reload wiring', () => {
   it('reloads on failed lazy route imports via router.onError', () => {
