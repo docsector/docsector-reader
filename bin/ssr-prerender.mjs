@@ -11,6 +11,8 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { buildWebMcpInlineScript } from '../src/webmcp-tools.js'
+
 // ? A neutral desktop UA: Quasar Platform only uses it for body classes, which
 //   live outside the Vue app and are re-synced by the client on boot
 const PRERENDER_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 DocsectorPrerender'
@@ -101,6 +103,16 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
   const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
   const { default: config } = await import(configUrl)
 
+  // ! WebMCP tools register at HTML-parse time via this inline script — the
+  //   low-priority entry bundle arrives seconds later on slow links, and
+  //   agent checkers time out waiting for a runtime-only registration. The
+  //   app connects the real implementations once it boots (empty when the
+  //   webMcp feature is disabled).
+  const webMcpInline = buildWebMcpInlineScript(config)
+  const injectWebMcp = (html) => (
+    webMcpInline === '' ? html : html.replace('<head>', `<head>${webMcpInline}`)
+  )
+
   // @ Preload tags for the modules a render actually used (webserver parity)
   const renderPreloads = (modules) => {
     let output = ''
@@ -160,7 +172,7 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
     ssrContext._meta.runtimePageContent = runtimePageContent
     ssrContext._meta.endingHeadTags += renderPreloads(ssrContext.modules)
 
-    return dedupeMeta(prioritizePaint(renderTemplate(ssrContext)))
+    return injectWebMcp(dedupeMeta(prioritizePaint(renderTemplate(ssrContext))))
   }
 
   // ! Route worklist — same predicate the meta prerenderer used; internal-link
@@ -273,19 +285,47 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
       const link = targets.join(', ')
       const bookRoots = [...new Set(routes.map((route) => route.routePath.split('/')[0]))].sort()
       const paths = bookRoots.map((root) => `/${root}/*`).concat(['/', '/index.html'])
+
+      // ? Cloudflare Pages lets the LAST rule matching a path own a header
+      //   name — appending a second "/" block here would clobber the
+      //   homepage's agent-discovery Link headers (api-catalog, service-doc,
+      //   ...). Merge into the existing path block instead.
+      const headersPath = resolve(clientDir, '_headers')
+      const blocks = []
+      const byPath = new Map()
+      if (existsSync(headersPath)) {
+        for (const chunk of readFileSync(headersPath, 'utf-8').split(/\n{2,}/)) {
+          const trimmed = chunk.trimEnd()
+          if (trimmed === '') continue
+
+          const [pathLine, ...headerLines] = trimmed.split('\n')
+          const block = { path: pathLine.trim(), lines: headerLines }
+          blocks.push(block)
+          byPath.set(block.path, block)
+        }
+      }
+
+      const push = (path, lines) => {
+        const existing = byPath.get(path)
+        if (existing !== undefined) {
+          existing.lines.push(...lines)
+          return
+        }
+
+        const block = { path, lines: [...lines] }
+        blocks.push(block)
+        byPath.set(path, block)
+      }
+
       // ! must-revalidate on the documents: after a redeploy a cached HTML
       //   would reference hashed chunks that no longer exist (dead first
       //   paint); the hashed assets themselves are immutable forever
-      const rules = paths
-        .map((path) => `${path}\n  Link: ${link}\n  Cache-Control: public, max-age=0, must-revalidate`)
-        .join('\n\n') + '\n\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n'
+      for (const path of paths) {
+        push(path, [`  Link: ${link}`, '  Cache-Control: public, max-age=0, must-revalidate'])
+      }
+      push('/assets/*', ['  Cache-Control: public, max-age=31536000, immutable'])
 
-      const headersPath = resolve(clientDir, '_headers')
-      const currentHeaders = existsSync(headersPath)
-        ? readFileSync(headersPath, 'utf-8').trimEnd() + '\n\n'
-        : ''
-
-      writeFileSync(headersPath, currentHeaders + rules)
+      writeFileSync(headersPath, blocks.map((block) => `${block.path}\n${block.lines.join('\n')}`).join('\n\n') + '\n')
       console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link + cache rules for ${paths.length} path patterns`)
     }
   }
