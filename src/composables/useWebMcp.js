@@ -1,19 +1,8 @@
 import docsectorConfig from 'docsector.config.js'
 import { pageValueI18nPath } from '../i18n/path'
+import { buildWebMcpTools } from '../webmcp-tools'
 
 let activeCleanup = null
-
-function toSafeToolPrefix (prefix) {
-  const value = String(prefix || 'docs')
-    .trim()
-    .replace(/[^A-Za-z0-9_.-]/g, '_')
-
-  if (!value) {
-    return 'docs'
-  }
-
-  return value.slice(0, 48)
-}
 
 function decodeMarkdownSource (source) {
   return String(source || '')
@@ -92,12 +81,13 @@ function normalizePath (inputPath) {
   return `/${value}`
 }
 
-function createToolDefinitions ({
+// : Execute implementations, keyed by full tool name — the metadata lives in
+//   ../webmcp-tools.js (one canonical definition for prerender and runtime)
+function createToolExecutes ({
   prefix,
   mcpToolSuffix,
   bridgeEndpoint,
   bridgeToMcp,
-  tools,
   router,
   getCurrentPath,
   getCurrentHash,
@@ -115,24 +105,9 @@ function createToolDefinitions ({
     return callMcpTool({ endpoint, toolName, args })
   }
 
-  const definitions = []
+  const executes = {}
 
-  if (tools.searchDocs) {
-    definitions.push({
-      name: `${prefix}.search_docs`,
-      description: 'Search documentation pages by keyword and return top matches.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'Search term or phrase.'
-          }
-        },
-        required: ['query']
-      },
-      annotations: { readOnlyHint: true },
-      execute: async (input) => {
+  executes[`${prefix}.search_docs`] = async (input) => {
         const query = String(input?.query || '').trim()
         if (!query) {
           return {
@@ -152,25 +127,8 @@ function createToolDefinitions ({
           result
         }
       }
-    })
-  }
 
-  if (tools.getPage) {
-    definitions.push({
-      name: `${prefix}.get_page`,
-      description: 'Fetch a documentation page in markdown format by its path.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Documentation page path without trailing .md.'
-          }
-        },
-        required: ['path']
-      },
-      annotations: { readOnlyHint: true },
-      execute: async (input) => {
+  executes[`${prefix}.get_page`] = async (input) => {
         const path = String(input?.path || '').trim()
         if (!path) {
           return {
@@ -190,28 +148,8 @@ function createToolDefinitions ({
           result
         }
       }
-    })
-  }
 
-  if (tools.navigateTo) {
-    definitions.push({
-      name: `${prefix}.navigate_to`,
-      description: 'Navigate to a docs route and optional anchor hash in the current session.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Target path (absolute or relative).'
-          },
-          hash: {
-            type: 'string',
-            description: 'Optional hash fragment, with or without leading #.'
-          }
-        }
-      },
-      annotations: { readOnlyHint: false },
-      execute: async (input) => {
+  executes[`${prefix}.navigate_to`] = async (input) => {
         const path = normalizePath(input?.path || getCurrentPath())
         const hashInput = String(input?.hash || '').trim()
         const hash = hashInput ? (hashInput.startsWith('#') ? hashInput : `#${hashInput}`) : ''
@@ -226,24 +164,8 @@ function createToolDefinitions ({
           currentHash: getCurrentHash()
         }
       }
-    })
-  }
 
-  if (tools.copyCurrentPage) {
-    definitions.push({
-      name: `${prefix}.copy_current_page`,
-      description: 'Return markdown URL and markdown source for the current page context.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          includeContent: {
-            type: 'boolean',
-            description: 'When false, return metadata and URL only.'
-          }
-        }
-      },
-      annotations: { readOnlyHint: true },
-      execute: async (input) => {
+  executes[`${prefix}.copy_current_page`] = async (input) => {
         const locale = getLocale() || 'en-US'
         const currentPath = getCurrentPath()
         const path = currentPath === '/' ? '/Homepage' : currentPath.replace(/\/+$/, '')
@@ -290,10 +212,8 @@ function createToolDefinitions ({
           content
         }
       }
-    })
-  }
 
-  return definitions
+  return executes
 }
 
 function registerWithProvideContext (modelContext, toolDefinitions) {
@@ -339,23 +259,17 @@ export function setupWebMcp ({ router, route, store, translate, locale }) {
     activeCleanup = null
   }
 
-  const prefix = toSafeToolPrefix(webMcp.toolPrefix || 'docs')
+  const manifest = buildWebMcpTools(docsectorConfig)
+  if (!manifest.enabled) return () => {}
+
   const mcpToolSuffix = String(docsectorConfig.mcp?.toolSuffix || 'docs')
     .replace(/[^A-Za-z0-9_]/g, '_')
 
-  const tools = {
-    searchDocs: webMcp.tools?.searchDocs !== false,
-    getPage: webMcp.tools?.getPage !== false,
-    navigateTo: webMcp.tools?.navigateTo !== false,
-    copyCurrentPage: webMcp.tools?.copyCurrentPage !== false
-  }
-
-  const definitions = createToolDefinitions({
-    prefix,
+  const executes = createToolExecutes({
+    prefix: manifest.prefix,
     mcpToolSuffix,
     bridgeEndpoint: webMcp.bridgeEndpoint || '/mcp',
     bridgeToMcp: webMcp.bridgeToMcp !== false,
-    tools,
     router,
     getCurrentPath: () => route.path,
     getCurrentHash: () => route.hash,
@@ -364,11 +278,33 @@ export function setupWebMcp ({ router, route, store, translate, locale }) {
     translate
   })
 
+  const definitions = manifest.tools
+    .map((tool) => ({ ...tool, execute: executes[tool.name] }))
+    .filter((tool) => typeof tool.execute === 'function')
+
   if (definitions.length === 0) return () => {}
+
+  // ? SSR pages ship an inline head script that already registered these
+  //   tools at parse time (agents see them before any bundle downloads) —
+  //   here we only connect the real implementations to that bridge
+  if (typeof window.__DOCSECTOR_WEBMCP_CONNECT === 'function' && window.__DOCSECTOR_WEBMCP_EARLY === true) {
+    const byName = new Map(definitions.map((tool) => [tool.name, tool.execute]))
+    window.__DOCSECTOR_WEBMCP_CONNECT((name, input) => {
+      const execute = byName.get(name)
+      if (typeof execute !== 'function') {
+        throw new Error(`Unknown WebMCP tool: ${name}`)
+      }
+      return execute(input)
+    })
+
+    const cleanup = () => {}
+    activeCleanup = cleanup
+    return cleanup
+  }
 
   const supportsRegisterTool = typeof modelContext.registerTool === 'function'
   const supportsProvideContext = typeof modelContext.provideContext === 'function'
-  const mode = webMcp.apiMode === 'registerTool' ? 'registerTool' : 'dual'
+  const mode = manifest.mode
 
   const abortController = new AbortController()
   const cleanups = [() => abortController.abort()]
