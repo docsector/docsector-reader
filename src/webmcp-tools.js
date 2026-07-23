@@ -30,7 +30,12 @@ export function buildWebMcpTools (config) {
   }
 
   const prefix = toSafeToolPrefix(webMcp.toolPrefix || 'docs')
-  const mode = webMcp.apiMode === 'registerTool' ? 'registerTool' : 'dual'
+  // ? 'registerTool' forces the imperative API (no fallback); 'auto' uses
+  //   registerTool when available and falls back to provideContext otherwise.
+  //   Never both: double registration confuses agent checkers' declarative
+  //   verification (the reference implementation on bootgly.com passes with
+  //   exactly this either/or shape).
+  const mode = webMcp.apiMode === 'registerTool' ? 'registerTool' : 'auto'
   const enabled = {
     searchDocs: webMcp.tools?.searchDocs !== false,
     getPage: webMcp.tools?.getPage !== false,
@@ -140,10 +145,9 @@ export function buildWebMcpInlineScript (config) {
     'function entry(t){return{name:t.name,description:t.description,inputSchema:t.inputSchema,annotations:t.annotations,' +
     'execute:function(input){return call(t.name,input)}}}' +
     'try{' +
-    'var reg=typeof mc.registerTool==="function";' +
-    'if(reg)m.tools.forEach(function(t){mc.registerTool(entry(t))});' +
-    'if((!reg||m.mode==="dual")&&typeof mc.provideContext==="function")' +
-    'mc.provideContext({tools:m.tools.map(entry)});' +
+    'if(typeof mc.registerTool==="function"){m.tools.forEach(function(t){mc.registerTool(entry(t))})}' +
+    'else if(m.mode!=="registerTool"&&typeof mc.provideContext==="function"){' +
+    'mc.provideContext({tools:m.tools.map(entry)})}else{return}' +
     'window.__DOCSECTOR_WEBMCP_EARLY=true' +
     '}catch(e){}' +
     '})()</' + 'script>'

@@ -8,7 +8,7 @@ describe('webmcp tool manifest', () => {
 
     expect(manifest.enabled).toBe(true)
     expect(manifest.prefix).toBe('bootgly.docs')
-    expect(manifest.mode).toBe('dual')
+    expect(manifest.mode).toBe('auto')
     expect(manifest.tools.map((tool) => tool.name)).toEqual([
       'bootgly.docs.search_docs',
       'bootgly.docs.get_page',
@@ -51,6 +51,18 @@ describe('webmcp tool manifest', () => {
 })
 
 describe('webmcp inline registration script', () => {
+  it('falls back to provideContext when registerTool is absent', () => {
+    const script = buildWebMcpInlineScript({ webMcp: { enabled: true } })
+    const provided = []
+    const win = {}
+    const body = script.replace(/^<script>/, '').replace(/<\/script>$/, '')
+    // eslint-disable-next-line no-new-func
+    new Function('navigator', 'window', body)({ modelContext: { provideContext: (payload) => provided.push(payload) } }, win)
+
+    expect(provided[0].tools).toHaveLength(4)
+    expect(win.__DOCSECTOR_WEBMCP_EARLY).toBe(true)
+  })
+
   it('registers the metadata immediately and queues execute calls until the app connects', async () => {
     const script = buildWebMcpInlineScript({ webMcp: { enabled: true, toolPrefix: 'bootgly.docs' } })
     expect(script.startsWith('<script>')).toBe(true)
@@ -72,7 +84,10 @@ describe('webmcp inline registration script', () => {
     new Function('navigator', 'window', body)(sandbox.navigator, sandbox.window)
 
     expect(registered.map((tool) => tool.name)).toContain('bootgly.docs.navigate_to')
-    expect(provided[0].tools).toHaveLength(4)
+    // ? imperative-first, declarative fallback — never both (double
+    //   registration confuses agent checkers' declarative verification)
+    expect(registered).toHaveLength(4)
+    expect(provided).toHaveLength(0)
     expect(sandbox.window.__DOCSECTOR_WEBMCP_EARLY).toBe(true)
 
     // @ execute before the app boots — queued, then resolved on connect

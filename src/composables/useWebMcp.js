@@ -304,11 +304,11 @@ export function setupWebMcp ({ router, route, store, translate, locale }) {
 
   const supportsRegisterTool = typeof modelContext.registerTool === 'function'
   const supportsProvideContext = typeof modelContext.provideContext === 'function'
-  const mode = manifest.mode
 
   const abortController = new AbortController()
   const cleanups = [() => abortController.abort()]
 
+  // ? imperative-first, declarative fallback — never both (see webmcp-tools.js)
   try {
     if (supportsRegisterTool) {
       for (const tool of definitions) {
@@ -320,15 +320,13 @@ export function setupWebMcp ({ router, route, store, translate, locale }) {
           execute: tool.execute
         }, { signal: abortController.signal })
       }
-    } else if (mode === 'registerTool') {
-      return () => {}
-    }
-
-    if ((!supportsRegisterTool || mode === 'dual') && supportsProvideContext) {
+    } else if (manifest.mode !== 'registerTool' && supportsProvideContext) {
       const provideCleanup = registerWithProvideContext(modelContext, definitions)
       if (provideCleanup) {
         cleanups.push(provideCleanup)
       }
+    } else {
+      return () => {}
     }
   } catch (error) {
     if (import.meta.env?.DEV) {
