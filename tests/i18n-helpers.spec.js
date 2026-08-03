@@ -254,3 +254,34 @@ describe('i18n message builder', () => {
     expect(messages['en-US'].system.update.refresh).toBe('Refresh')
   })
 })
+
+describe('homepage frontmatter', () => {
+  it('extracts the heading from below the frontmatter block', () => {
+    const messages = buildMessages({
+      langModules,
+      mdModules: {
+        '../pages/Homepage.en-US.md': '---\ntitle: Meta Title\n---\n\n# Real Home\n\nBody'
+      },
+      books: {},
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(messages['en-US']._.home._).toBe('Real Home')
+  })
+
+  it('extracts the heading from a frontmattered remote README override', () => {
+    const messages = buildMessages({
+      langModules,
+      mdModules,
+      homePageOverride: {
+        'en-US': '---\ntitle: Repo Meta\n---\n\n# Remote Title\n\nBody'
+      },
+      books: {},
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(messages['en-US']._.home._).toBe('Remote Title')
+  })
+})

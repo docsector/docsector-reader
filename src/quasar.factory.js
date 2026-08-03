@@ -33,6 +33,7 @@ import HJSON from 'hjson'
 
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
+import { applyFrontmatterOverlayToRoutes, compileFrontmatterPatch, parseFrontmatter, resolveSubpageMeta, stripFrontmatter } from './frontmatter.js'
 import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
 import { appendSitemapsToRobots, createSitemap } from './sitemap.js'
 import { THEME_INLINE_SCRIPT } from './theme.inline.js'
@@ -232,7 +233,9 @@ export function buildSearchContentIndex (pagesDir, pageEntries, lang) {
       const srcFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, lang)
       if (!existsSync(srcFile)) continue
 
-      parts.push(readFileSync(srcFile, 'utf-8').toLowerCase())
+      // ? frontmatter is metadata, not content — indexing it would surface
+      //   pages for terms the reader never sees (its keys land in tags instead)
+      parts.push(stripFrontmatter(readFileSync(srcFile, 'utf-8')).toLowerCase())
     }
 
     if (parts.length === 0) continue
@@ -303,6 +306,86 @@ function getBookRegistryEntries (projectRoot) {
   }
 
   return entries
+}
+
+const FRONTMATTER_FILE_PATTERN = /^(.+)\.(overview|showcase|vs)\.([A-Za-z0-9-]+)\.md$/
+
+/**
+ * Collect the frontmatter overlay for every version root.
+ *
+ * The registry is NOT needed here: the markdown filename convention
+ * (`<book><pagePath>.<subpage>.<locale>.md`, see resolveMarkdownSourceFile)
+ * reverse-maps each file to its page, so the overlay can be built by walking
+ * the filesystem alone — which is what lets the generated
+ * `virtual:docsector-books` module receive it without ever evaluating the
+ * index modules. Only files that actually open with `---` are parsed.
+ *
+ * Returns:
+ *   overlay          — { versionId: { '/<book><pagePath>': { subpage: { locale: data } } } }
+ *   rawBlocksByFile  — { absolutePath: rawFrontmatterBlock } (dev cache + pages hash)
+ */
+export function collectFrontmatterOverlay (projectRoot) {
+  const overlay = {}
+  const rawBlocksByFile = {}
+
+  // ? manual walk instead of readdirSync({recursive}) — that option (and
+  //   Dirent.parentPath) only exists from Node 18.17/20.12, which the engines
+  //   range still allows below
+  const walk = (dir, relativeDir, skipOldRoot, visit) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        // ? the current root owns everything except `.old/` — archived
+        //   versions are walked as their own roots
+        if (skipOldRoot && relativeDir === '' && entry.name === '.old') continue
+        const childRelative = relativeDir === '' ? entry.name : `${relativeDir}/${entry.name}`
+        walk(resolve(dir, entry.name), childRelative, skipOldRoot, visit)
+      } else if (entry.isFile()) {
+        visit(relativeDir, entry.name)
+      }
+    }
+  }
+
+  for (const root of getVersionRoots(projectRoot)) {
+    const found = []
+    walk(root.rootDir, '', root.current, (relativeDir, name) => found.push({ relativeDir, name }))
+
+    for (const entry of found) {
+      if (!entry.name.endsWith('.md')) continue
+
+      const relativeDir = entry.relativeDir
+
+      // ? Homepage has no registry entry
+      if (relativeDir === '' && /^Homepage\./.test(entry.name)) continue
+
+      const match = entry.name.match(FRONTMATTER_FILE_PATTERN)
+      if (match === null) continue
+
+      const absolutePath = resolve(root.rootDir, relativeDir, entry.name)
+      const source = readFileSync(absolutePath, 'utf-8')
+      if (!/^\uFEFF?---/.test(source)) continue
+
+      const [, base, subpage, locale] = match
+      const pageKey = `/${relativeDir ? `${relativeDir}/` : ''}${base}`
+      const onWarning = message => console.warn(`\x1b[33m[docsector]\x1b[0m frontmatter ${absolutePath}: ${message}`)
+      const { data, raw } = parseFrontmatter(source, { onWarning })
+
+      // ! seed the raw-block cache even for empty/comment-only blocks — the dev
+      //   watcher compares against this map, and an unseeded file would restart
+      //   the server on every body edit forever
+      if (raw !== '') {
+        rawBlocksByFile[absolutePath] = raw
+      }
+
+      if (data === null || Object.keys(data).length === 0) continue
+
+      const version = overlay[root.versionId] || (overlay[root.versionId] = {})
+      const page = version[pageKey] || (version[pageKey] = {})
+      const bySubpage = page[subpage] || (page[subpage] = {})
+      bySubpage[locale] = data
+    }
+  }
+
+  return { overlay, rawBlocksByFile }
 }
 
 /**
@@ -398,8 +481,108 @@ function normalizeBookColorConfig (rawColor) {
 /**
  * Build source code for the virtual module `virtual:docsector-books`.
  */
-function buildVirtualBooksModule (projectRoot) {
+/**
+ * Compile the frontmatter overlay into per-page patches for the generated
+ * `virtual:docsector-books` module. Compiling (and warning) happens HERE, in
+ * Node — the client only receives finished patches plus the small apply
+ * helper below.
+ */
+function compileFrontmatterPatches (projectRoot, defaultLang) {
+  const { overlay } = collectFrontmatterOverlay(projectRoot)
+  const patches = {}
+
+  for (const [versionId, byPage] of Object.entries(overlay)) {
+    for (const [pageKey, fmBySubpage] of Object.entries(byPage)) {
+      const patch = compileFrontmatterPatch(fmBySubpage, {
+        defaultLang,
+        onWarning: message => frontmatterRegistryWarning(`${pageKey}: ${message}`)
+      })
+
+      if (patch === null) continue
+      const version = patches[versionId] || (patches[versionId] = {})
+      version[pageKey] = patch
+    }
+  }
+
+  return patches
+}
+
+// Mirrors applyFrontmatterPatch/mergeTagTerms in src/frontmatter.js — keep in
+// sync (same duplication contract as extractTagsFromRoutes below).
+const FRONTMATTER_APPLY_HELPERS_SOURCE = `const mergeFrontmatterTagTerms = (existing = '', added = '') => {
+  const seen = new Set()
+  const terms = []
+  for (const source of [existing, added]) {
+    for (const term of String(source ?? '').split(/[\\s,]+/)) {
+      if (term === '' || seen.has(term)) continue
+      seen.add(term)
+      terms.push(term)
+    }
+  }
+  return terms.join(' ')
+}
+
+const liftFrontmatterLocaleMap = (value) => {
+  if (value && typeof value === 'object') return { ...value }
+  if (typeof value === 'string' && value !== '') return { '*': value }
+  return {}
+}
+
+const applyFrontmatterPatch = (page, patch) => {
+  if (!page || page.config === null || !patch) return page
+
+  const config = { ...page.config, ...(patch.configPatch || {}) }
+  const data = { ...page.data }
+  const metadata = { ...page.metadata }
+
+  for (const [locale, title] of Object.entries(patch.titleByLocale || {})) {
+    data[locale] = { ...(data[locale] || {}), title }
+  }
+
+  if (patch.descByLocale) {
+    const meta = { ...(config.meta || {}) }
+    meta.description = { ...liftFrontmatterLocaleMap(meta.description), ...patch.descByLocale }
+    config.meta = meta
+  }
+
+  if (patch.tagsByLocale) {
+    const tags = { ...(metadata.tags || {}) }
+    for (const [locale, terms] of Object.entries(patch.tagsByLocale)) {
+      tags[locale] = mergeFrontmatterTagTerms(tags[locale], terms)
+    }
+    metadata.tags = tags
+  }
+
+  const merged = { ...page, config, data, metadata }
+  if (patch.subpageMeta) {
+    const subpageMeta = { ...(page.subpageMeta || {}) }
+    for (const [subpage, byLocale] of Object.entries(patch.subpageMeta)) {
+      const locales = { ...(subpageMeta[subpage] || {}) }
+      for (const [locale, slot] of Object.entries(byLocale)) {
+        locales[locale] = { ...(locales[locale] || {}), ...slot }
+      }
+      subpageMeta[subpage] = locales
+    }
+    merged.subpageMeta = subpageMeta
+  }
+  return merged
+}
+
+const applyFrontmatterPatches = (routes = {}, patches = {}, fallbackBook = 'manual') => {
+  if (Object.keys(patches).length === 0) return routes
+
+  const next = {}
+  for (const [pagePath, page] of Object.entries(routes)) {
+    const book = page?.config?.book ?? page?.config?.type ?? fallbackBook
+    const patch = patches['/' + book + pagePath]
+    next[pagePath] = patch ? applyFrontmatterPatch(page, patch) : page
+  }
+  return next
+}`
+
+function buildVirtualBooksModule (projectRoot, { defaultLang = 'en-US' } = {}) {
   const bookEntries = getBookRegistryEntries(projectRoot)
+  const frontmatterPatches = compileFrontmatterPatches(projectRoot, defaultLang)
 
   // Legacy fallback: support projects that still define src/pages/index.js only.
   if (bookEntries.length === 0) {
@@ -407,6 +590,10 @@ function buildVirtualBooksModule (projectRoot) {
 import legacyPages from 'pages'
 
 const CURRENT_VERSION_KEY = ${JSON.stringify(CURRENT_VERSION_KEY)}
+
+const frontmatterPatches = ${JSON.stringify(frontmatterPatches)}
+
+${FRONTMATTER_APPLY_HELPERS_SOURCE}
 
 const normalizeVersionBadge = (rawBadge, { released, releaseStatus }) => {
   const normalizedStatus = String(releaseStatus || '').toLowerCase()
@@ -502,7 +689,7 @@ const defaultBook = {
   }
 }
 
-const normalizedPages = legacyPages || {}
+const normalizedPages = applyFrontmatterPatches(legacyPages || {}, frontmatterPatches[CURRENT_VERSION_KEY] || {}, 'manual')
 
 export const booksByVersion = {
   [currentVersion.id]: {
@@ -572,6 +759,10 @@ const discoveredVersions = ${JSON.stringify(discoveredVersions, null, 2)}
 const entries = [
 ${rows.join(',\n')}
 ]
+
+const frontmatterPatches = ${JSON.stringify(frontmatterPatches)}
+
+${FRONTMATTER_APPLY_HELPERS_SOURCE}
 
 const DEFAULT_BOOK_COLORS = Object.freeze({
   active: 'white',
@@ -782,7 +973,10 @@ export const booksByVersion = entries.reduce((accumulator, entry, index) => {
   const version = resolveEntryVersion(entry)
   const config = entry.config || {}
   const resolvedId = config.id || entry.fallbackId || ('book-' + (index + 1))
-  const metadataTags = extractTagsFromRoutes(entry.routes || {}, resolvedId)
+  // ? in-page frontmatter patches apply BEFORE tags extraction, so "keys"
+  //   lands in the book search with no extra plumbing
+  const routes = applyFrontmatterPatches(entry.routes || {}, frontmatterPatches[entry.versionId] || {}, resolvedId)
+  const metadataTags = extractTagsFromRoutes(routes, resolvedId)
   const tags = mergeBookTags(entry.legacyTags || {}, metadataTags)
   const label = config.label || (resolvedId.charAt(0).toUpperCase() + resolvedId.slice(1))
   const normalizedConfig = {
@@ -807,7 +1001,7 @@ export const booksByVersion = entries.reduce((accumulator, entry, index) => {
 
   accumulator[version.id].books[resolvedId] = {
     config: normalizedConfig,
-    routes: entry.routes || {},
+    routes,
     tags
   }
   accumulator[version.id].allBooks = Object.values(accumulator[version.id].books).map(book => book.config)
@@ -869,8 +1063,13 @@ export default books
 /**
  * Load books and merged pages for build-time plugins (Node context).
  */
+function frontmatterRegistryWarning (message) {
+  console.warn(`\x1b[33m[docsector]\x1b[0m frontmatter ${message}`)
+}
+
 export async function loadBooksRegistry (projectRoot) {
   const entries = getBookRegistryEntries(projectRoot)
+  const { overlay: frontmatterOverlay } = collectFrontmatterOverlay(projectRoot)
 
   // Legacy fallback
   if (entries.length === 0) {
@@ -886,9 +1085,17 @@ export async function loadBooksRegistry (projectRoot) {
       sourceRoot: ''
     }
     const legacyPath = resolve(projectRoot, 'src', 'pages', 'index.js')
-    const pages = existsSync(legacyPath)
+    const legacyPages = existsSync(legacyPath)
       ? ((await import(pathToFileURL(legacyPath).href)).default || {})
       : {}
+    const legacyDefaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+    const pages = applyFrontmatterOverlayToRoutes(
+      legacyPages,
+      frontmatterOverlay[CURRENT_VERSION_KEY] || {},
+      'manual',
+      legacyDefaultLang,
+      frontmatterRegistryWarning
+    )
 
     const defaultBook = {
       id: 'manual',
@@ -945,6 +1152,7 @@ export async function loadBooksRegistry (projectRoot) {
   const { default: config = {} } = existsSync(configPath)
     ? await import(pathToFileURL(configPath).href)
     : { default: {} }
+  const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
 
   const discoveredVersions = Array.from(new Map(entries.map(entry => [entry.versionId, {
     id: entry.versionId,
@@ -1062,13 +1270,22 @@ export async function loadBooksRegistry (projectRoot) {
       ? currentVersion
       : (versionById[entry.versionId] || normalizeVersionDescriptor(null, entry))
     const { default: rawConfig = {} } = await import(pathToFileURL(entry.bookPath).href)
-    const { default: routes = {}, tags: legacyTags = {} } = await import(pathToFileURL(entry.indexPath).href)
+    const { default: rawRoutes = {}, tags: legacyTags = {} } = await import(pathToFileURL(entry.indexPath).href)
 
     const config = {
       ...normalizeBookConfig(rawConfig, entry.id, index),
       version: rawVersion.id,
       versionPrefix: rawVersion.routePrefix
     }
+    // ? in-page frontmatter merges into the registry entries BEFORE tags are
+    //   extracted, so `keys` flows into the book search with no extra plumbing
+    const routes = applyFrontmatterOverlayToRoutes(
+      rawRoutes,
+      frontmatterOverlay[entry.versionId] || {},
+      config.id,
+      defaultLang,
+      frontmatterRegistryWarning
+    )
     const tags = mergeBookTags(legacyTags, extractTagsFromRoutes(routes, config.id))
 
     if (!booksByVersion[rawVersion.id]) {
@@ -1204,36 +1421,89 @@ function createBooksPlugin (projectRoot) {
     resolveId (id) {
       if (id === virtualId) return resolvedId
     },
-    load (id) {
+    async load (id) {
       if (id !== resolvedId) return null
-      return buildVirtualBooksModule(projectRoot)
+
+      // ? the frontmatter patch compiler needs the default language for its
+      //   "default-language file wins" rule — same dynamic import the Node
+      //   registry loader uses
+      const configPath = resolve(projectRoot, 'docsector.config.js')
+      const { default: config = {} } = existsSync(configPath)
+        ? await import(pathToFileURL(configPath).href)
+        : { default: {} }
+      const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
+
+      return buildVirtualBooksModule(projectRoot, { defaultLang })
     },
     configureServer (server) {
-      const onPagesRegistryChange = (changedPath) => {
-        if (isPagesRegistryFile(projectRoot, changedPath)) {
-          server.config.logger.info(
-            `\\x1b[36m[docsector]\\x1b[0m pages registry changed (${changedPath}) — clearing dep cache and restarting...`,
-            { timestamp: true }
-          )
+      const restartForRegistryChange = (changedPath, reason) => {
+        server.config.logger.info(
+          `\\x1b[36m[docsector]\\x1b[0m ${reason} (${changedPath}) — clearing dep cache and restarting...`,
+          { timestamp: true }
+        )
 
-          // Invalidate virtual module before restart
-          const module = server.moduleGraph.getModuleById(resolvedId)
-          if (module) {
-            server.moduleGraph.invalidateModule(module)
-          }
+        // Invalidate virtual module before restart
+        const module = server.moduleGraph.getModuleById(resolvedId)
+        if (module) {
+          server.moduleGraph.invalidateModule(module)
+        }
 
-          // Signal the restarted config to force a new optimizer hash
-          process.env.__DOCSECTOR_FORCE_OPTIMIZE = '1'
-          // Delete the stale optimizer cache
-          const cacheDir = resolve(projectRoot, 'node_modules', '.q-cache')
-          rmSync(cacheDir, { recursive: true, force: true })
-          server.restart()
+        // Signal the restarted config to force a new optimizer hash
+        process.env.__DOCSECTOR_FORCE_OPTIMIZE = '1'
+        // Delete the stale optimizer cache
+        const cacheDir = resolve(projectRoot, 'node_modules', '.q-cache')
+        rmSync(cacheDir, { recursive: true, force: true })
+        server.restart()
+      }
+
+      // ? frontmatter lives inside the page markdown but feeds the registry —
+      //   compare only the raw block per file so body edits (the 99% case)
+      //   keep instant HMR and never touch the registry
+      const frontmatterBlocks = new Map(
+        Object.entries(collectFrontmatterOverlay(projectRoot).rawBlocksByFile)
+      )
+      const pagesDir = resolve(projectRoot, 'src', 'pages')
+
+      const readFrontmatterBlock = (path) => {
+        try {
+          const source = readFileSync(path, 'utf-8')
+          if (!/^\uFEFF?---/.test(source)) return null
+          return parseFrontmatter(source).raw || null
+        } catch {
+          return null
         }
       }
 
-      server.watcher.on('add', onPagesRegistryChange)
-      server.watcher.on('change', onPagesRegistryChange)
-      server.watcher.on('unlink', onPagesRegistryChange)
+      const onPageChange = (changedPath) => {
+        const normalizedPath = resolve(changedPath)
+
+        if (isPagesRegistryFile(projectRoot, normalizedPath)) {
+          restartForRegistryChange(changedPath, 'pages registry changed')
+          return
+        }
+
+        // ? track EXACTLY what the collector collects — an asymmetric filter
+        //   here would make some file restart the server on every save
+        if (!normalizedPath.startsWith(pagesDir + '/') && !normalizedPath.startsWith(pagesDir + '\\')) return
+        const fileName = normalizedPath.split(/[\\/]/).pop() || ''
+        if (!FRONTMATTER_FILE_PATTERN.test(fileName)) return
+        if (/^Homepage\./.test(fileName)) return
+
+        const previous = frontmatterBlocks.get(normalizedPath) ?? null
+        const next = existsSync(normalizedPath) ? readFrontmatterBlock(normalizedPath) : null
+        if (previous === next) return
+
+        if (next === null) {
+          frontmatterBlocks.delete(normalizedPath)
+        } else {
+          frontmatterBlocks.set(normalizedPath, next)
+        }
+        restartForRegistryChange(changedPath, 'page frontmatter changed')
+      }
+
+      server.watcher.on('add', onPageChange)
+      server.watcher.on('change', onPageChange)
+      server.watcher.on('unlink', onPageChange)
     }
   }
 }
@@ -1487,6 +1757,14 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       const baseHtml = readFileSync(baseHtmlPath, 'utf-8')
 
+      // @ 404.html — its PRESENCE switches Cloudflare Pages out of
+      //   SPA-fallback mode: a missing /assets/*.js then answers a real 404
+      //   (a clean network error the stale-entry recovery script catches)
+      //   instead of 200 HTML that fails MIME checking and gets cached under
+      //   an immutable rule. Unknown page routes serve this shell with status
+      //   404 — the app boots and the router shows its own not-found view.
+      writeFileSync(resolve(distDir, '404.html'), baseHtml)
+
       // Dynamic import books registry and docsector config
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
@@ -1567,12 +1845,7 @@ function createPrerenderMetaPlugin (projectRoot) {
 
         const titleData = page.data?.[defaultLang] || page.data?.['*'] || page.data?.['en-US'] || Object.values(page.data || {})[0]
         const title = titleData?.title || ''
-        const fullTitle = title
-          ? `${title} — ${brandingName}`
-          : brandingName
         const pageDescription = resolveLocalizedValue(page.config?.meta?.description)
-        const fullDescription = pageDescription
-          || (title && brandingName ? `${title} — Documentation of ${brandingName}` : `Documentation of ${brandingName}`)
 
         // Each page can have sub-routes: overview, showcase, vs
         const subpages = ['overview']
@@ -1582,6 +1855,17 @@ function createPrerenderMetaPlugin (projectRoot) {
         for (const subpage of subpages) {
           const routePath = buildPageRoutePath(entry, subpage)
           bookRoots.add(routePath.split('/')[0])
+
+          // ? a showcase/vs file's frontmatter may override its own subpage's
+          //   title/description (page.subpageMeta) — per-subpage SEO
+          const subpageOverride = resolveSubpageMeta(page.subpageMeta, subpage, defaultLang)
+          const subpageTitle = subpageOverride?.title || title
+          const fullTitle = subpageTitle
+            ? `${subpageTitle} — ${brandingName}`
+            : brandingName
+          const fullDescription = subpageOverride?.description
+            || pageDescription
+            || (subpageTitle && brandingName ? `${subpageTitle} — Documentation of ${brandingName}` : `Documentation of ${brandingName}`)
 
           const html = baseHtml
             .replace(/<title>[^<]*<\/title>/, () => `<title>${fullTitle}</title>`)
@@ -1654,26 +1938,37 @@ function createPrerenderMetaPlugin (projectRoot) {
       // @ Early Hints: expose the critical wave as Link headers so Cloudflare
       //   can 103-hint it before the HTML body arrives. One wildcard rule per
       //   book (+ the homepage) — the shared wave is identical for every route.
-      if (config.linkHeaders?.earlyHints !== false) {
-        const link = buildEarlyHintsLink({
-          baseCss: [...baseCss],
-          entryScripts: [...alreadyLoaded],
-          sharedFiles,
-          sharedCss: [...sharedCss]
-        })
+      // ! the cache rules are NOT gated on Early Hints: stale cached documents
+      //   referencing dead hashed chunks are exactly the F5 failure mode, so
+      //   must-revalidate documents (+ immutable /assets/*) always ship.
+      {
+        const link = config.linkHeaders?.earlyHints !== false
+          ? buildEarlyHintsLink({
+            baseCss: [...baseCss],
+            entryScripts: [...alreadyLoaded],
+            sharedFiles,
+            sharedCss: [...sharedCss]
+          })
+          : ''
 
-        if (link.length > 0) {
-          const paths = [...bookRoots].sort().map(root => `/${root}/*`).concat(['/', '/index.html'])
-          const rules = paths.map(path => `${path}\n  Link: ${link}`).join('\n\n') + '\n'
+        const paths = [...bookRoots].sort().map(root => `/${root}/*`).concat(['/', '/index.html'])
+        const rules = paths
+          .map(path => {
+            const lines = []
+            if (link.length > 0) lines.push(`  Link: ${link}`)
+            lines.push('  Cache-Control: public, max-age=0, must-revalidate')
+            return `${path}\n${lines.join('\n')}`
+          })
+          .concat(['/assets/*\n  Cache-Control: public, max-age=31536000, immutable'])
+          .join('\n\n') + '\n'
 
-          const headersPath = resolve(distDir, '_headers')
-          const currentHeaders = existsSync(headersPath)
-            ? readFileSync(headersPath, 'utf-8').trimEnd() + '\n\n'
-            : ''
+        const headersPath = resolve(distDir, '_headers')
+        const currentHeaders = existsSync(headersPath)
+          ? readFileSync(headersPath, 'utf-8').trimEnd() + '\n\n'
+          : ''
 
-          writeFileSync(headersPath, currentHeaders + rules)
-          console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link rules for ${paths.length} path patterns`)
-        }
+        writeFileSync(headersPath, currentHeaders + rules)
+        console.log(`\x1b[36m[docsector]\x1b[0m Added ${link.length > 0 ? 'Early Hints Link + ' : ''}cache rules for ${paths.length} path patterns`)
       }
 
       console.log(`\x1b[36m[docsector]\x1b[0m Pre-rendered meta + route preloads for ${count} routes`)
@@ -2499,7 +2794,7 @@ function collectAiSearchIndexEntries ({ pagesDir, pageEntries = [], defaultLang 
 
       const routePath = buildPageRoutePath(entry, subpage)
       entries.push({
-        title,
+        title: resolveSubpageMeta(page?.subpageMeta, subpage, defaultLang)?.title || title,
         path: routePath,
         markdownPath: `${routePath}.md`,
         locale: defaultLang,
@@ -2694,18 +2989,21 @@ function createMarkdownBuildPlugin (projectRoot) {
             const mdUrl = `${siteUrl}/${routePath}.md`
             const pageUrl = `${siteUrl}/${routePath}`
 
+            const subpageOverride = resolveSubpageMeta(page.subpageMeta, subpage, defaultLang)
+            const subpageTitle = subpageOverride?.title || title
             const desc = page.config.meta?.description
-            const descText = typeof desc === 'object' ? (desc[defaultLang] || desc['en-US'] || '') : (desc || '')
+            const descText = subpageOverride?.description
+              || (typeof desc === 'object' ? (desc[defaultLang] || desc['*'] || desc['en-US'] || '') : (desc || ''))
 
             if (!llmsSections[book]) llmsSections[book] = []
             llmsSections[book].push(
               descText
-                ? `- [${title}](${mdUrl}): ${descText}`
-                : `- [${title}](${mdUrl})`
+                ? `- [${subpageTitle}](${mdUrl}): ${descText}`
+                : `- [${subpageTitle}](${mdUrl})`
             )
 
             const content = readFileSync(srcFile, 'utf-8')
-            llmsFull += `## ${title}\n\nSource: ${pageUrl}\n\n${content}\n\n---\n\n`
+            llmsFull += `## ${subpageTitle}\n\nSource: ${pageUrl}\n\n${content}\n\n---\n\n`
           }
         }
 
@@ -3383,7 +3681,7 @@ export async function onRequest (context) {
 
             mcpPages.push({
               path: buildPageRoutePath(entry, subpage),
-              title: defaultTitle,
+              title: resolveSubpageMeta(page.subpageMeta, subpage, defaultLang)?.title || defaultTitle,
               book,
               version: entry.version,
               type: book,
@@ -3721,27 +4019,67 @@ function buildMcpServerCardPayload ({
 /**
  * Recover from a stale deploy on the FIRST paint: after a redeploy, cached
  * HTML can reference hashed chunks that no longer exist — the module entry
- * then fails MIME-type checking (the host answers 404 HTML) before ANY app
- * code runs, leaving a dead black page. This inline head script catches those
- * resource-level failures and reloads once (session-guarded); boot/hydration
- * clears the guard when the app actually boots. Dynamic-import failures after
- * boot are already covered by setupChunkReload.
+ * then fails MIME-type checking before ANY app code runs, leaving a dead
+ * black page. Worse, a `Cache-Control: immutable` rule matching the asset URL
+ * can poison the browser cache with the fallback response for a year, which
+ * is why the recovery must navigate with a cache-busting query instead of a
+ * plain reload.
+ *
+ * This inline head script (NOT processed by Vite define — the build ID is
+ * interpolated at generation) catches same-origin /assets/ script/stylesheet
+ * failures and:
+ *   1. skips entirely when offline (a reload loop would burn the attempts);
+ *   2. asks version.json (no-cache) whether a newer deploy is live — a
+ *      mismatch always warrants recovery; equal/unreachable gets ONE blind
+ *      attempt (hosts without version.json, edge races);
+ *   3. navigates via location.replace with a `docsector-stale` cache-bust
+ *      param, preserving path/query/hash;
+ *   4. records `{n, at}` in sessionStorage — max 2 attempts, so a genuinely
+ *      broken deploy dead-ends instead of looping.
+ * boot/hydration clears the guard (and strips the param) when the app boots.
+ * Dynamic-import failures after boot are covered by setupChunkReload.
  */
-const STALE_ENTRY_RELOAD_SCRIPT = [
-  '(function(){try{var k="docsector.entry.reload";',
-  'addEventListener("error",function(e){var t=e.target;',
-  'if(t&&t.tagName==="SCRIPT"&&t.type==="module"&&sessionStorage.getItem(k)===null){',
-  'sessionStorage.setItem(k,"1");location.reload();}},true);}catch(err){}})()'
-].join('')
+export function buildStaleEntryReloadScript (buildId) {
+  return [
+    '(function(){try{var k="docsector.entry.reload";var fired=false;var b=', JSON.stringify(String(buildId || '')), ';',
+    'addEventListener("error",function(e){var t=e.target;if(!t||!t.tagName)return;',
+    // ? once the app boots, post-boot chunk failures belong to setupChunkReload
+    //   (which refuses same-build reloads) — reacting here would loop on a
+    //   bootable deploy with one dead stylesheet, because boot cleared the guard
+    'if(fired||window.__DOCSECTOR_BOOTED__)return;',
+    'var u="";if(t.tagName==="SCRIPT"&&t.type==="module")u=t.src||"";',
+    'else if(t.tagName==="LINK"&&t.rel==="stylesheet")u=t.href||"";else return;',
+    'if(u.indexOf("/assets/")===-1||u.indexOf(location.origin)!==0)return;',
+    'if(navigator.onLine===false)return;',
+    'var s=null;try{s=JSON.parse(sessionStorage.getItem(k)||"null")}catch(err){s=null}',
+    'if(s&&s.n>=2)return;',
+    'var a={n:((s&&s.n)||0)+1,at:Date.now()};',
+    // ? `fired` bounds this LOAD to one navigation; the sessionStorage record
+    //   bounds the session to two. If the record cannot be written we cannot
+    //   bound the loop — better a dead page (the update banner still shows)
+    'var go=function(){if(fired)return;fired=true;',
+    'try{sessionStorage.setItem(k,JSON.stringify(a))}catch(err){return}',
+    'var q=location.search?location.search+"&":"?";',
+    'location.replace(location.pathname+q+"docsector-stale="+a.at+location.hash)};',
+    // : a CONFIRMED newer deploy always warrants recovery; version.json
+    //   unreachable gets one blind attempt (hosts without it, edge races);
+    //   an EQUAL build never navigates — reloading the same build cannot fix
+    //   the asset and looping on it is how a broken deploy melts a session
+    'fetch("/version.json",{cache:"no-store"}).then(function(r){return r.json()})',
+    '.then(function(d){if(d&&d.build&&d.build!==b)go()})',
+    '.catch(function(){if(!s)go()});',
+    '},true);}catch(err){}})()'
+  ].join('')
+}
 
-function createStaleEntryReloadPlugin () {
+function createStaleEntryReloadPlugin (buildId) {
   return {
     name: 'docsector-stale-entry-reload',
     transformIndexHtml () {
       return [{
         tag: 'script',
         injectTo: 'head',
-        children: STALE_ENTRY_RELOAD_SCRIPT
+        children: buildStaleEntryReloadScript(buildId)
       }]
     }
   }
@@ -3903,7 +4241,7 @@ export function createQuasarConfig (options = {}) {
         createPrerenderMetaPlugin(projectRoot),
         createVersionFilePlugin(projectRoot, buildId),
         createThemeBootPlugin(),
-        createStaleEntryReloadPlugin(),
+        createStaleEntryReloadPlugin(buildId),
         ...vitePlugins
       ],
 
@@ -3956,6 +4294,9 @@ export function createQuasarConfig (options = {}) {
               .update(file)
               .update(readFileSync(file))
           }
+          // ? in-page frontmatter feeds the registry too — the hash must move
+          //   when a frontmatter block changes across restarts
+          pagesHashBuilder.update(JSON.stringify(collectFrontmatterOverlay(projectRoot).overlay))
 
           const pagesHash = createHash('sha256')
             .update(pagesHashBuilder.digest('hex'))

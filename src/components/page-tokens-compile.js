@@ -14,6 +14,7 @@
  * Runs under plain Node ESM (Vite build) and in the client bundle only inside
  * the lazy dev fallback / assistant chunks — never in the critical path.
  */
+import { stripFrontmatter } from '../frontmatter.js'
 import { loadMathEngine, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens.js'
 
 export const PAGE_TOKENS_VERSION = 1
@@ -26,7 +27,7 @@ const HEADER_PATTERN = /^#{2,6}\s+.+/gm
  * style) or the first ATX `# ` line. Mirrors the former helpers.js extraction.
  */
 export const extractPageHeading = (source) => {
-  const text = String(source ?? '')
+  const text = stripFrontmatter(String(source ?? ''))
 
   const htmlHeadingMatch = text.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
   if (htmlHeadingMatch) {
@@ -44,7 +45,9 @@ export const extractPageHeading = (source) => {
 }
 
 export async function compilePageTokens (source, options = {}) {
-  const text = String(source ?? '')
+  // ? metadata never reaches the compiled artifact — heading, header count and
+  //   the serialized tokens all read the stripped text
+  const text = stripFrontmatter(String(source ?? ''))
 
   // ? Math pages pre-render KaTeX at build — load the engine first so the
   //   tokenizer emits final HTML instead of raw dollar delimiters

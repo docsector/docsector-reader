@@ -30,7 +30,7 @@ Use it for:
 ## Authoring Workflow
 
 1. Identify the page purpose: concept, tutorial, API reference, release note, navigation hub, example showcase, or troubleshooting guide.
-2. Use headings to shape the reading path. In normal page content, start with `##` because the page title is supplied by metadata.
+2. Use headings to shape the reading path. In normal page content, start with `##` because the page title is supplied by metadata — the registry entry, or an optional `title:` in the page's own frontmatter block.
 3. Pick the simplest block that communicates the content. Prefer Markdown first, then Docsector custom elements when the layout or interaction needs it.
 4. Keep custom element attributes short and explicit. Use `to` for internal navigation and `href` for external URLs.
 5. Put reusable assets in stable public paths such as `/images/...`, `/files/...`, `/api/...`, or `/quasar-api/...`.

@@ -22,6 +22,7 @@
  * ./sources.js and the router merges each page's markdown on navigation.
  */
 
+import { stripFrontmatter } from '../frontmatter.js'
 import { registerSourceLoaders } from './sources'
 
 /**
@@ -382,7 +383,9 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
       return override.heading || ''
     }
     if (typeof override === 'string' && override.length > 0) {
-      const htmlHeadingMatch = override.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
+      // ? remote READMEs often open with frontmatter — never a heading source
+      const overrideText = stripFrontmatter(override)
+      const htmlHeadingMatch = overrideText.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
       if (htmlHeadingMatch) {
         const htmlHeading = htmlHeadingMatch[1]
           .replace(/<[^>]+>/g, ' ')
@@ -393,7 +396,7 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
         }
       }
 
-      const overrideMatch = override.match(/^#\s+(.+)$/m)
+      const overrideMatch = overrideText.match(/^#\s+(.+)$/m)
       return overrideMatch ? overrideMatch[1].trim() : ''
     }
 
@@ -409,7 +412,7 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
       return content.heading || ''
     }
 
-    const raw = typeof content === 'string' ? content : String(content)
+    const raw = stripFrontmatter(typeof content === 'string' ? content : String(content))
     const match = raw.match(/^#\s+(.+)$/m)
     if (!match) {
       return ''

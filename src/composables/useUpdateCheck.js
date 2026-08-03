@@ -226,7 +226,17 @@ export async function forceReload (path, options = {}) {
   }
 
   const storage = options.storage || safeSessionStorage(win)
-  const target = path || `${win.location?.pathname || '/'}${win.location?.search || ''}${win.location?.hash || ''}`
+  const rawTarget = path || `${win.location?.pathname || '/'}${win.location?.search || ''}${win.location?.hash || ''}`
+  // ? normalize away any cache-bust param a previous recovery appended — the
+  //   loop guard compares targets, and a fresh timestamp on every pass would
+  //   make it never match (unbounded reload loop); it must not accumulate either
+  const [beforeHash, hashPart = ''] = rawTarget.split('#')
+  const [pathPart, queryPart = ''] = beforeHash.split('?')
+  const cleanQuery = queryPart
+    .split('&')
+    .filter(pair => pair !== '' && !pair.startsWith('docsector-stale='))
+    .join('&')
+  const target = `${pathPart}${cleanQuery ? `?${cleanQuery}` : ''}${hashPart ? `#${hashPart}` : ''}`
 
   // ? this target already forced a reload moments ago — fall back to the banner
   const rawGuard = readStorage(storage, CHUNK_RELOAD_STORAGE_KEY)
@@ -243,7 +253,14 @@ export async function forceReload (path, options = {}) {
   }
 
   writeStorage(storage, CHUNK_RELOAD_STORAGE_KEY, JSON.stringify({ path: target, at: Date.now() }))
-  win.location.assign(target)
+
+  // ? cache-busting param: a plain navigation can re-serve a stale (or
+  //   fallback-poisoned) document from the browser/CDN cache — the query
+  //   punches through; boot/hydration strips it once the new build boots
+  const separator = cleanQuery ? '&' : '?'
+  const bustedTarget = `${pathPart}${cleanQuery ? `?${cleanQuery}` : ''}${separator}docsector-stale=${Date.now()}${hashPart ? `#${hashPart}` : ''}`
+
+  win.location.assign(bustedTarget)
   return true
 }
 

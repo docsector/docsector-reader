@@ -1,3 +1,8 @@
+---
+desc: Defina páginas nos registros divididos, ou direto no Markdown com frontmatter no estilo Quasar.
+keys: frontmatter metadados yaml registro index
+---
+
 ## Registro de Páginas
 
 As páginas de documentação são definidas em registros separados, como `src/pages/guide.index.js` e `src/pages/manual.index.js`. Cada entrada mapeia um caminho URL para sua configuração, dados traduzíveis e metadata opcional.
@@ -86,6 +91,39 @@ Por exemplo, uma página em `/content/blocks/headings` com book `manual`:
 - `src/pages/manual/content/blocks/headings.overview.en-US.md`
 - `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
 - `src/pages/manual/content/blocks/headings.showcase.en-US.md` (se showcase habilitado)
+
+## Frontmatter no Markdown
+
+O arquivo Markdown de uma página pode abrir com um bloco de frontmatter — o mesmo estilo da documentação do Quasar, então páginas migradas de um projeto de docs Quasar mantêm seus metadados:
+
+```markdown
+---
+title: Ajax Bar
+desc: The QAjaxBar component displays a loading bar when a request is in progress.
+keys: QAjaxBar loading progress
+related:
+  - /quasar-plugins/loading
+---
+
+## Overview
+```
+
+O bloco é metadado, nunca conteúdo: ele é removido da página renderizada, do sumário (ToC) e do índice de busca. O `.md` raw servido para agentes (e o `llms-full.txt`) o mantém intacto.
+
+Os metadados in-page mergeiam na entrada do registro da página. Uma chave presente nos dois lugares é **sobrescrita pela página**; uma chave presente só na página é **mergeada**. Chaves localizadas valem por arquivo — frontmatter em `headings.overview.pt-BR.md` só afeta os valores `pt-BR`.
+
+| Chave | Efeito |
+| ----- | ------ |
+| `title` | Sobrescreve o título da página naquele locale (`data.<locale>.title`) |
+| `desc` | Sobrescreve a descrição da página naquele locale (`config.meta.description.<locale>`) |
+| `keys` | **Acrescenta** às tags de busca da sidebar naquele locale (`metadata.tags`) — as tags do registro são mantidas |
+| `icon`, `status`, `version`, … | Chaves escalares de config do registro, sobrescritas apenas a partir do arquivo `overview`. Chaves de valor-objeto (`menu`, `subpages`, `link`, `layouts`) e blocos estruturais (`meta`, `data`, `metadata`) não podem ser definidos via frontmatter e geram warning no build |
+| `examples`, `related`, qualquer outra | Guardada no config da página sem alteração, disponível para features futuras |
+| `book` / `type` | Nunca honradas — o caminho do próprio arquivo decide o book |
+
+Arquivos de subpágina (`showcase` / `vs`) só podem sobrescrever o `title` e o `desc` **da própria subpágina** (usados no `<title>`/descrição prerenderizados daquela rota) e acrescentar `keys`; outras chaves ali geram warning no build e são ignoradas.
+
+A sintaxe suportada é um subconjunto de YAML: escalares `key: value` (strings com aspas, booleanos, números, `null`) e listas de um nível. Mapas aninhados, block scalars, coleções inline e anchors não são suportados — linhas não suportadas geram warning no build e são puladas. O bloco só existe quando `---` é a primeira linha do arquivo e é fechado por uma linha `---` (ou `...`); um `---` mais adiante no documento continua sendo um separador temático comum.
 
 ## Geração de Rotas
 

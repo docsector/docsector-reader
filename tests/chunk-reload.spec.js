@@ -68,7 +68,7 @@ describe('forced reload', () => {
     const storage = createStorage()
 
     await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(true)
-    expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/target\?docsector-stale=\d+$/))
 
     const guard = JSON.parse(storage.getItem(CHUNK_RELOAD_STORAGE_KEY))
     expect(guard.path).toBe('/guide/target')
@@ -81,7 +81,27 @@ describe('forced reload', () => {
 
     await forceReload(null, { win, storage })
 
-    expect(win.location.assign).toHaveBeenCalledWith('/guide/current?q=1#top')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/current\?q=1&docsector-stale=\d+#top$/))
+  })
+
+  it('normalizes away a previous cache-bust param — the guard must match and the param must not accumulate', async () => {
+    const win = createWindow()
+    win.location.search = '?docsector-stale=111'
+    const storage = createStorage()
+
+    await forceReload(null, { win, storage })
+
+    // : exactly one fresh param, the stale one dropped
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/current\?docsector-stale=\d+#top$/))
+    expect(win.location.assign.mock.calls[0][0]).not.toContain('docsector-stale=111')
+
+    // ? and the loop guard keys on the CLEAN path, so a second pass within the
+    //   window falls back to the banner instead of looping
+    expect(JSON.parse(storage.getItem(CHUNK_RELOAD_STORAGE_KEY)).path).toBe('/guide/current#top')
+
+    win.location.assign.mockClear()
+    await forceReload(null, { win, storage })
+    expect(win.location.assign).not.toHaveBeenCalled()
   })
 
   it('breaks reload loops by falling back to the banner', async () => {
@@ -103,7 +123,7 @@ describe('forced reload', () => {
     }))
 
     await expect(forceReload('/guide/target', { win, storage })).resolves.toBe(true)
-    expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/target\?docsector-stale=\d+$/))
   })
 
   it('reloads a different target even inside the loop window', async () => {
@@ -130,7 +150,7 @@ describe('forced reload', () => {
     const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({ build: 'newer' }) }))
 
     await expect(forceReload('/guide/target', { win, storage, build: 'abc', base: '/', fetcher })).resolves.toBe(true)
-    expect(win.location.assign).toHaveBeenCalledWith('/guide/target')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/target\?docsector-stale=\d+$/))
   })
 
   it('skips the reload when version.json is unreachable (unverifiable state)', async () => {
@@ -161,7 +181,7 @@ describe('chunk reload wiring', () => {
     const cleanup = setupChunkReload({ router, win, storage })
 
     handler(new TypeError('Failed to fetch dynamically imported module: /assets/a.js'), { fullPath: '/manual/next' })
-    expect(win.location.assign).toHaveBeenCalledWith('/manual/next')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/manual\/next\?docsector-stale=\d+$/))
 
     win.location.assign.mockClear()
     handler(new Error('boom'), { fullPath: '/manual/next' })
@@ -181,7 +201,7 @@ describe('chunk reload wiring', () => {
     win.listeners.get('vite:preloadError')(event)
 
     expect(event.preventDefault).toHaveBeenCalled()
-    expect(win.location.assign).toHaveBeenCalledWith('/guide/current?q=1#top')
+    expect(win.location.assign).toHaveBeenCalledWith(expect.stringMatching(/^\/guide\/current\?q=1&docsector-stale=\d+#top$/))
 
     cleanup()
     expect(win.listeners.size).toBe(0)

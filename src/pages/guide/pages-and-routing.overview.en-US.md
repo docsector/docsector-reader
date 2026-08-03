@@ -1,3 +1,8 @@
+---
+desc: Define pages in split registries, or right inside the Markdown with Quasar-style frontmatter.
+keys: frontmatter metadata yaml registry index
+---
+
 ## Page Registry
 
 Documentation pages are defined in split registries such as `src/pages/guide.index.js` and `src/pages/manual.index.js`. Each entry maps a URL path to its configuration, translatable data, and optional metadata.
@@ -86,6 +91,39 @@ For example, a page at `/content/blocks/headings` with book `manual`:
 - `src/pages/manual/content/blocks/headings.overview.en-US.md`
 - `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
 - `src/pages/manual/content/blocks/headings.showcase.en-US.md` (if showcase enabled)
+
+## Markdown Frontmatter
+
+A page's Markdown file may open with a frontmatter block — the same style the Quasar docs use, so pages migrated from a Quasar docs project keep their metadata:
+
+```markdown
+---
+title: Ajax Bar
+desc: The QAjaxBar component displays a loading bar when a request is in progress.
+keys: QAjaxBar loading progress
+related:
+  - /quasar-plugins/loading
+---
+
+## Overview
+```
+
+The block is metadata, never content: it is removed from the rendered page, the Table of Contents, and the search content index. The raw `.md` served to agents (and `llms-full.txt`) keeps it verbatim.
+
+In-page metadata merges into the page's registry entry. A key present in both places is **overridden by the page**; a key present only in the page is **merged in**. Localized keys apply per file — frontmatter in `headings.overview.pt-BR.md` only touches the `pt-BR` values.
+
+| Key | Effect |
+| --- | ------ |
+| `title` | Overrides the page title for that locale (`data.<locale>.title`) |
+| `desc` | Overrides the page description for that locale (`config.meta.description.<locale>`) |
+| `keys` | **Appends** to the sidebar search tags for that locale (`metadata.tags`) — registry tags are kept |
+| `icon`, `status`, `version`, … | Scalar registry config keys, overridden from the `overview` file only. Object-valued keys (`menu`, `subpages`, `link`, `layouts`) and structural blocks (`meta`, `data`, `metadata`) cannot be set from frontmatter and warn at build time |
+| `examples`, `related`, anything else | Stored on the page config untouched, available for future features |
+| `book` / `type` | Never honored — the file's own path decides the book |
+
+Subpage files (`showcase` / `vs`) may only override the `title` and `desc` of **their own subpage** (used by the prerendered `<title>`/description of that route) and append `keys`; other keys there warn at build time and are ignored.
+
+The supported syntax is a YAML subset: `key: value` scalars (quoted strings, booleans, numbers, `null`) and one-level lists. Nested maps, block scalars, inline collections and anchors are not supported — unsupported lines warn at build time and are skipped. The block only exists when `---` is the very first line of the file and it is closed by a `---` (or `...`) line; a `---` later in the document stays a plain thematic break.
 
 ## Route Generation
 

@@ -267,13 +267,22 @@ export function defineBook (config = {}) {
  * @param {Object} [options.config.link] - Optional internal navigation link (menu shortcut)
  * @param {string} options.config.link.to - Internal destination path (e.g. '/guide/getting-started/overview/')
  * @param {Object} options.data - Per-language titles { 'en-US': { title: '...' } }
+ * @param {Object} [options.metadata] - Per-language search tags { tags: { 'en-US': 'terms' } }
  * @returns {Object} Page definition
  */
 export function definePage (options) {
-  return {
+  const page = {
     config: options.config || null,
     data: options.data || {}
   }
+
+  // ? optional blocks pass through untouched — dropping them silently made
+  //   definePage() lose search tags relative to a plain object entry
+  if (options.metadata !== undefined) page.metadata = options.metadata
+  if (options.meta !== undefined) page.meta = options.meta
+  if (options.subpageMeta !== undefined) page.subpageMeta = options.subpageMeta
+
+  return page
 }
 
 export default { createDocsector, defineBook, definePage }

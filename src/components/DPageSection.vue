@@ -99,7 +99,7 @@ watch(source, (value) => {
       return
     }
 
-    tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null })
+    tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null, stripFrontmatter: true })
 
     // ? Math (katex) loads on demand: the page renders right away and
     //   re-tokenizes once the engine arrives (unchanged dev behavior)
@@ -108,7 +108,7 @@ watch(source, (value) => {
         if (generation !== tokenizeGeneration || !tokenizer.hasMathSupport()) {
           return
         }
-        tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null })
+        tokenized.value = tokenizer.tokenizePageSectionSource(text, { codeToolbarDefault: null, stripFrontmatter: true })
       })
     }
   })

@@ -70,6 +70,36 @@ const HISTORY_SEED_SCRIPT = '<script>(function(){try{' +
 //   the template's static defaults stay behind them — duplicated tags in
 //   every head. Keep the rendered (data-qmeta) tag and drop its static twin;
 //   statics without a rendered counterpart survive as fallbacks.
+/**
+ * Turn a rendered page into the 404 shell: same head/assets, but an EMPTY
+ * `#q-app` container so hydration never mismatches (boot/hydration only flags
+ * hydration when the container has children — empty means clean client
+ * render), and no canonical tag (a not-found page has no canonical URL).
+ */
+function buildNotFoundShell (html) {
+  const withoutCanonical = html.replace(/<link rel="?canonical"?[^>]*>/i, '')
+  // ? the bundler minifies attributes (id=q-app, quote-less) while dev output
+  //   keeps quotes — match both
+  const openTag = withoutCanonical.match(/<div id=(?:"q-app"|'q-app'|q-app)>/)
+  if (openTag === null) return withoutCanonical
+  const start = openTag.index
+  const marker = openTag[0]
+
+  // ? balanced-div scan — the container nests arbitrarily deep, a regex can't
+  const divTag = /<\/?div\b/g
+  divTag.lastIndex = start + marker.length
+  let depth = 1
+  let match
+  while ((match = divTag.exec(withoutCanonical)) !== null) {
+    depth += withoutCanonical[match.index + 1] === '/' ? -1 : 1
+    if (depth === 0) {
+      return withoutCanonical.slice(0, start + marker.length) + withoutCanonical.slice(match.index)
+    }
+  }
+
+  return withoutCanonical
+}
+
 function dedupeMeta (html) {
   const headEnd = html.indexOf('</head>')
   if (headEnd === -1) {
@@ -266,6 +296,14 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
     const html = await render('/')
     writeFileSync(resolve(clientDir, 'index.html'), html)
     rendered++
+
+    // @ 404.html — its PRESENCE switches Cloudflare Pages out of SPA-fallback
+    //   mode: a missing /assets/*.js then answers a real 404 (a clean network
+    //   error the stale-entry recovery script catches) instead of 200 HTML
+    //   that fails MIME checking and gets cached under an immutable rule.
+    //   Unknown page routes serve this shell with status 404 — the app boots
+    //   client-side and the router shows its own not-found view.
+    writeFileSync(resolve(clientDir, '404.html'), buildNotFoundShell(html))
   } catch (error) {
     failed++
     console.warn(`\x1b[33m[docsector]\x1b[0m SSR prerender failed for /: ${error?.message || error}`)
@@ -289,65 +327,81 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
   //   from the first rendered head and expose it as per-book Link rules.
   //   Stylesheets only: hinting JS/fonts would refill the pipe the
   //   modulepreload strip just cleared for the render-blocking CSS
-  if (config.linkHeaders?.earlyHints !== false && firstHtml !== null) {
-    const head = firstHtml.slice(0, firstHtml.indexOf('</head>'))
-    const targets = []
-    // ? the bundler emits minified (quote-less) attributes, the SSR preloads
-    //   emit quoted ones — match both
-    const linkPattern = /<link rel="?stylesheet"?[^>]*href="?([^">\s]+)"?[^>]*>/g
+  // ! the cache rules are NOT gated on Early Hints: after a redeploy a cached
+  //   HTML would reference hashed chunks that no longer exist (dead first
+  //   paint) — must-revalidate documents are load-bearing even when no Link
+  //   header is emitted. Only the Link line itself is conditional.
+  {
+    let link = null
+    if (config.linkHeaders?.earlyHints !== false && firstHtml !== null) {
+      const head = firstHtml.slice(0, firstHtml.indexOf('</head>'))
+      const targets = []
+      // ? the bundler emits minified (quote-less) attributes, the SSR preloads
+      //   emit quoted ones — match both
+      const linkPattern = /<link rel="?stylesheet"?[^>]*href="?([^">\s]+)"?[^>]*>/g
 
-    let match
-    while ((match = linkPattern.exec(head)) !== null) {
-      targets.push(`<${match[1]}>; rel=preload; as=style`)
-    }
-
-    if (targets.length > 0) {
-      const link = targets.join(', ')
-      const bookRoots = [...new Set(routes.map((route) => route.routePath.split('/')[0]))].sort()
-      const paths = bookRoots.map((root) => `/${root}/*`).concat(['/', '/index.html'])
-
-      // ? Cloudflare Pages lets the LAST rule matching a path own a header
-      //   name — appending a second "/" block here would clobber the
-      //   homepage's agent-discovery Link headers (api-catalog, service-doc,
-      //   ...). Merge into the existing path block instead.
-      const headersPath = resolve(clientDir, '_headers')
-      const blocks = []
-      const byPath = new Map()
-      if (existsSync(headersPath)) {
-        for (const chunk of readFileSync(headersPath, 'utf-8').split(/\n{2,}/)) {
-          const trimmed = chunk.trimEnd()
-          if (trimmed === '') continue
-
-          const [pathLine, ...headerLines] = trimmed.split('\n')
-          const block = { path: pathLine.trim(), lines: headerLines }
-          blocks.push(block)
-          byPath.set(block.path, block)
-        }
+      let match
+      while ((match = linkPattern.exec(head)) !== null) {
+        targets.push(`<${match[1]}>; rel=preload; as=style`)
       }
 
-      const push = (path, lines) => {
-        const existing = byPath.get(path)
-        if (existing !== undefined) {
-          existing.lines.push(...lines)
-          return
-        }
+      if (targets.length > 0) {
+        link = targets.join(', ')
+      }
+    }
 
-        const block = { path, lines: [...lines] }
+    const bookRoots = [...new Set(routes.map((route) => route.routePath.split('/')[0]))].sort()
+    const paths = bookRoots.map((root) => `/${root}/*`).concat(['/', '/index.html'])
+
+    // ? Cloudflare Pages lets the LAST rule matching a path own a header
+    //   name — appending a second "/" block here would clobber the
+    //   homepage's agent-discovery Link headers (api-catalog, service-doc,
+    //   ...). Merge into the existing path block instead.
+    const headersPath = resolve(clientDir, '_headers')
+    const blocks = []
+    const byPath = new Map()
+    if (existsSync(headersPath)) {
+      for (const chunk of readFileSync(headersPath, 'utf-8').split(/\n{2,}/)) {
+        const trimmed = chunk.trimEnd()
+        if (trimmed === '') continue
+
+        const [pathLine, ...headerLines] = trimmed.split('\n')
+        const block = { path: pathLine.trim(), lines: headerLines }
         blocks.push(block)
-        byPath.set(path, block)
+        byPath.set(block.path, block)
       }
-
-      // ! must-revalidate on the documents: after a redeploy a cached HTML
-      //   would reference hashed chunks that no longer exist (dead first
-      //   paint); the hashed assets themselves are immutable forever
-      for (const path of paths) {
-        push(path, [`  Link: ${link}`, '  Cache-Control: public, max-age=0, must-revalidate'])
-      }
-      push('/assets/*', ['  Cache-Control: public, max-age=31536000, immutable'])
-
-      writeFileSync(headersPath, blocks.map((block) => `${block.path}\n${block.lines.join('\n')}`).join('\n\n') + '\n')
-      console.log(`\x1b[36m[docsector]\x1b[0m Added Early Hints Link + cache rules for ${paths.length} path patterns`)
     }
+
+    const push = (path, lines) => {
+      const existing = byPath.get(path)
+      if (existing !== undefined) {
+        // ? stacking is right for Link (multiple values are valid — the
+        //   homepage's agent-discovery links live in the same block), but a
+        //   second Cache-Control line gets comma-joined by Cloudflare Pages
+        //   into conflicting directives — ours replaces the existing one
+        const addsCacheControl = lines.some((line) => /^\s*cache-control:/i.test(line))
+        if (addsCacheControl) {
+          existing.lines = existing.lines.filter((line) => !/^\s*cache-control:/i.test(line))
+        }
+        existing.lines.push(...lines)
+        return
+      }
+
+      const block = { path, lines: [...lines] }
+      blocks.push(block)
+      byPath.set(path, block)
+    }
+
+    for (const path of paths) {
+      const lines = []
+      if (link !== null) lines.push(`  Link: ${link}`)
+      lines.push('  Cache-Control: public, max-age=0, must-revalidate')
+      push(path, lines)
+    }
+    push('/assets/*', ['  Cache-Control: public, max-age=31536000, immutable'])
+
+    writeFileSync(headersPath, blocks.map((block) => `${block.path}\n${block.lines.join('\n')}`).join('\n\n') + '\n')
+    console.log(`\x1b[36m[docsector]\x1b[0m Added ${link !== null ? 'Early Hints Link + ' : ''}cache rules for ${paths.length} path patterns`)
   }
 
   // : Deployable output goes back to dist/spa — static hosts keep their

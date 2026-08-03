@@ -80,3 +80,17 @@ describe('parseCompiledPageTokens', () => {
     expect(parseCompiledPageTokens({ v: 1, tokens: '"not-an-array"' })).toEqual([])
   })
 })
+
+describe('frontmatter in compiled pages', () => {
+  it('keeps heading, header count and tokens frontmatter-free', async () => {
+    const compiled = await compilePageTokens('---\ntitle: Meta Title\n---\n\n# Real\n\n## One\n\n## Two\n')
+
+    expect(compiled.heading).toBe('Real')
+    expect(compiled.headers).toBe(2)
+    expect(compiled.tokens).not.toContain('Meta Title')
+  })
+
+  it('extractPageHeading skips the block', () => {
+    expect(extractPageHeading('---\ntitle: Meta\n---\n\n# Actual\n')).toBe('Actual')
+  })
+})

@@ -1449,3 +1449,50 @@ Use \`<kbd>⌘</kbd> + <kbd>B</kbd>\` in docs.
     expect(tokens[1].content).toContain('<kbd>⌘</kbd> + <kbd>B</kbd>')
   })
 })
+describe('frontmatter stripping', () => {
+  it('never renders a leading frontmatter block on page sources', () => {
+    const tokens = tokenizePageSectionSource(`---
+title: My Page
+desc: Something
+keys: QAjaxBar
+---
+
+# Real Heading
+
+Body.
+`, { stripFrontmatter: true })
+
+    expect(tokens.some(token => token.tag === 'h2')).toBe(false)
+    expect(tokens[0]).toMatchObject({ tag: 'h1', content: 'Real Heading' })
+    expect(JSON.stringify(tokens)).not.toContain('title: My Page')
+  })
+
+  it('keeps a mid-document --- as a plain thematic break', () => {
+    const tokens = tokenizePageSectionSource(`## Section
+
+Before.
+
+---
+
+After.
+`)
+
+    expect(tokens.map(token => token.content).join('\n')).toContain('After.')
+  })
+
+  it('keeps a leading --- block by default — assistant answers may quote frontmatter', () => {
+    const tokens = tokenizePageSectionSource('---\nHere is the frontmatter you asked for:\ntitle: Ajax Bar\n---\n\nPut that at the top.\n')
+
+    // : content between the --- lines must NOT be silently deleted
+    expect(JSON.stringify(tokens)).toContain('title: Ajax Bar')
+  })
+
+  it('strips frontmatter from i18n-escaped sources too', () => {
+    // ? dev sources pass through filter() before tokenizing — braces arrive
+    //   as entities but the --- boundaries are untouched
+    const tokens = tokenizePageSectionSource('---\ntitle: X\n---\n\nUses &#123;placeholders&#125;.\n', { stripFrontmatter: true })
+
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]).toMatchObject({ tag: 'p', content: 'Uses {placeholders}.' })
+  })
+})

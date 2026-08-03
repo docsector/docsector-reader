@@ -46,6 +46,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 ## ✨ Features
 
 - 📝 **Markdown Rendering** — Write docs in Markdown, rendered with syntax highlighting (Prism.js)
+- 🧾 **Markdown Frontmatter** — Quasar-docs-compatible `---` metadata blocks (`title`, `desc`, `keys`, `related`, …) that override the page's registry entry (localized keys per locale, scalar config keys from the default-language file) and merge new keys in; `keys` feeds the sidebar search, showcase/vs files can retitle their own subpage, and the block never renders
 - 🖥️ **Static SSR (SSG)** — Opt-in `ssr.enabled` renders every route to hydration-ready static HTML at build time (real `renderToString` markup, per-route meta, manifest-driven preloads, static link redirects) — deployed as plain files, no Node server
 - 📱 **Content-First Mobile Delivery** — SSR builds drop every JS modulepreload, demote the entry fetch and trim font preloads so the render-blocking CSS owns slow links; below-the-fold code blocks and tables lazy-render via `content-visibility` (≈1s faster FCP/LCP on slow 4G)
 - 💧 **Lazy Hydration** — Server-rendered pages hydrate the visible blocks first; below-the-fold content hydrates on scroll and the sidebar menu on interaction, keeping Total Blocking Time low
@@ -1171,6 +1172,24 @@ Notes:
 src/pages/manual/my-section/my-page.overview.en-US.md
 src/pages/manual/my-section/my-page.overview.pt-BR.md
 ```
+
+### Markdown Frontmatter
+
+A page's Markdown may open with a Quasar-docs-style frontmatter block. In-page metadata **overrides** what also exists in the registry entry and **merges in** what doesn't. Localized keys (`title`, `desc`, `keys`) apply per locale — each file is one locale — while page-level scalar keys are taken from the default-language `overview` file; `keys` appends to the sidebar search tags instead of replacing them:
+
+```markdown
+---
+title: Ajax Bar
+desc: The QAjaxBar component displays a loading bar.
+keys: QAjaxBar loading
+related:
+  - /quasar-plugins/loading
+---
+
+## Overview
+```
+
+The block never renders (page, ToC and search index are stripped), while the raw served `.md` keeps it verbatim. Subpage files (`showcase`/`vs`) may retitle their own subpage only. Syntax is a YAML subset — scalars and one-level lists; unsupported lines warn at build time. See the Pages and Routing guide for the full key table.
 
 ### Internal Links / Menu Shortcuts
 

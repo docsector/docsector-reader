@@ -121,6 +121,7 @@ import docsectorConfig from 'docsector.config.js'
 import { scrollMenuToActive } from '../composables/menu-scroll'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
+import { resolveSubpageMeta } from '../frontmatter.js'
 import { resolveRoutePageLayout } from '../page-layout'
 
 defineOptions({ name: 'LayoutDefault' })
@@ -298,13 +299,30 @@ const resolveLocalizedValue = (source) => {
 }
 
 // @ Dynamic page title & meta tags
+const currentSubpage = computed(() => {
+  const segment = route.path.replace(/\/+$/, '').split('/').pop()
+  return ['overview', 'showcase', 'vs'].includes(segment) ? segment : 'overview'
+})
+
+// ? a showcase/vs file's frontmatter may override the title/description of its
+//   own subpage (page.subpageMeta, produced by the frontmatter merge)
+const subpageOverride = computed(() => resolveSubpageMeta(
+  route.matched[0]?.meta?.subpageMeta,
+  currentSubpage.value,
+  locale.value
+))
+
 const pageTitle = computed(() => {
+  if (subpageOverride.value?.title) return subpageOverride.value.title
+
   const data = route.matched[0]?.meta?.data
   const langData = data?.[locale.value] || data?.['*'] || data?.['en-US'] || Object.values(data || {})[0]
   return langData?.title || ''
 })
 
 const pageDescription = computed(() => {
+  if (subpageOverride.value?.description) return subpageOverride.value.description
+
   const description = resolveLocalizedValue(route.matched[0]?.meta?.meta?.description)
   if (description) return description
 

@@ -167,6 +167,7 @@ for (const entry of pageEntries || []) {
       subpages,
       subpageTemplates,
       data: page.data,
+      subpageMeta: page.subpageMeta,
       book: topPage,
       // legacy compatibility
       type: topPage,

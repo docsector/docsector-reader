@@ -5,6 +5,7 @@ import taskLists from 'markdown-it-task-lists'
 
 // ? Explicit extensions: this module is also imported by the build-time page
 //   compiler under plain Node ESM resolution (no Vite resolver)
+import { stripFrontmatter } from '../frontmatter.js'
 import { installInlineCodeCopyRenderer } from './inline-code-copy.js'
 import { loadMathCss } from './page-tokens-support.js'
 
@@ -1214,11 +1215,17 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
   const {
     allowHeadingTokens = true,
     parserState = createParserState(),
-    codeToolbarDefault = null
+    codeToolbarDefault = null,
+    // ? opt-in: PAGE sources strip their leading frontmatter block (metadata,
+    //   never content — it would render as a setext <h2> polluting the ToC);
+    //   non-page sources (assistant answers!) may legitimately START with ---
+    //   and must never lose content to the strip
+    stripFrontmatter: stripLeadingFrontmatter = false
   } = options
   // ? Convert native <details>/<summary> to the expandable syntax BEFORE shielding
   //   so any dedented body code is shielded/restored flush-left (not nested)
-  const normalizedSource = normalizeNativeDetails(normalizePageSectionSource(source))
+  const preparedSource = stripLeadingFrontmatter ? stripFrontmatter(String(source)) : source
+  const normalizedSource = normalizeNativeDetails(normalizePageSectionSource(preparedSource))
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
   const { source: sourceWithTimelines, timelineMap } = extractTimelineBlocks(sourceWithShieldedCode)
 

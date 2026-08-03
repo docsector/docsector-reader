@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import docsectorConfig from 'docsector.config.js'
+import { stripFrontmatter } from '../frontmatter.js'
 import { pageValueI18nPath, routeTitleI18nPath } from '../i18n/path'
 
 const store = useStore()
@@ -36,7 +37,8 @@ const countHeaders = (value) => {
     return value.headers
   }
   if (typeof value === 'string' && value.trim().length > 0) {
-    return (value.match(/^#{2,6}\s+.+/gm) || []).length
+    // ? frontmatter comments may open with # — same strip the build count gets
+    return (stripFrontmatter(value).match(/^#{2,6}\s+.+/gm) || []).length
   }
 
   return null
