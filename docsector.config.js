@@ -48,10 +48,13 @@ export default {
   // Opt-in: leave `legalLinks` empty (or omit `footer`) to hide the row entirely.
   // Each item: { href: string, label?: string | { 'en-US': string, 'pt-BR': string } }
   // Absolute http(s) URLs open in a new tab automatically (or force it with `external: true`).
+  // `copyright` renders on its own line below the "Powered by" credit — a plain
+  // string or a per-locale map, shown exactly as written; omit it to hide the line.
   footer: {
     legalLinks: [
       { href: 'https://github.com/docsector/docsector-reader/blob/main/LICENSE.md', label: { 'en-US': 'License', 'pt-BR': 'Licença' } }
     ]
+    // copyright: 'Copyright (c) 2024-present Example Corp. and contributors'
   },
 
   // @ GitHub

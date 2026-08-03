@@ -28,13 +28,17 @@
       >
         <img class="d-footer__logo" :src="logoUrl" alt="" width="18" height="18" />
         <span>Docsector</span>
+        <q-tooltip v-if="versionLabel" class="d-footer__version">{{ versionLabel }}</q-tooltip>
       </q-btn>
       <span class="d-footer__suffix">— the documentation platform</span>
     </div>
+
+    <div v-if="copyright" class="d-footer__copyright">{{ copyright }}</div>
   </footer>
 </template>
 
 <script setup>
+/* global __DOCSECTOR_BUILD__, __DOCSECTOR_VERSION__ */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -68,6 +72,24 @@ const legalLinks = computed(() => {
       href: item.href,
       external: item.external === true || /^https?:\/\//i.test(item.href)
     }))
+})
+
+// : Opt-in copyright notice from `docsector.config.js` (footer.copyright), shown
+//   below the "Powered by" line; a plain string or a locale map; empty ⇒ hidden
+const copyright = computed(() => resolveLabel(docsectorConfig?.footer?.copyright))
+
+// : Deploy-tracing tooltip on the brand button — engine version + build ID
+//   (compile-time constants baked in by quasar.factory.js). A 40-hex build is a
+//   commit SHA and shows git-style short; local builds keep the ISO timestamp.
+const versionLabel = computed(() => {
+  const version = typeof __DOCSECTOR_VERSION__ !== 'undefined' ? __DOCSECTOR_VERSION__ : ''
+  const build = typeof __DOCSECTOR_BUILD__ !== 'undefined' ? String(__DOCSECTOR_BUILD__ || '') : ''
+  const shortBuild = /^[0-9a-f]{40}$/i.test(build) ? build.slice(0, 7) : build
+
+  const parts = []
+  if (version) parts.push(`Docsector Reader v${version}`)
+  if (shortBuild) parts.push(`build ${shortBuild}`)
+  return parts.join(' — ')
 })
 </script>
 
@@ -121,6 +143,17 @@ const legalLinks = computed(() => {
     font-size: 0.95rem
     line-height: 1.4
 
+  // ? sits under the "Powered by" row, whose 14px bottom padding doubles as
+  //   the gap between the two lines
+  .d-footer__copyright
+    max-width: 1200px
+    margin: 0 auto
+    padding: 0 24px 14px
+    text-align: center
+    font-size: 0.8rem
+    line-height: 1.5
+    opacity: 0.7
+
   .d-footer__label,
   .d-footer__suffix
     opacity: 0.84
@@ -146,4 +179,7 @@ const legalLinks = computed(() => {
     .d-footer__content
       padding: 12px 16px
       font-size: 0.9rem
+    .d-footer__copyright
+      padding: 0 16px 12px
+      font-size: 0.75rem
 </style>

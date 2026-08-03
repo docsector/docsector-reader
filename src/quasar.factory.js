@@ -3844,6 +3844,16 @@ export function createQuasarConfig (options = {}) {
     || process.env.DOCSECTOR_BUILD_ID
     || new Date().toISOString()
 
+  // Engine version for the footer's deploy-tracing tooltip (see DFooter.vue) —
+  // read from the installed package so it always matches what actually built
+  // the site, not what the consumer's lockfile claims.
+  let engineVersion = ''
+  try {
+    engineVersion = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8')).version || ''
+  } catch {
+    // Missing/unreadable package.json — the tooltip degrades to build ID only.
+  }
+
   return {
     // Boot files — Quasar resolves these via 'boot/<name>' imports.
     // Since the 'boot' alias points to packageRoot/src/boot/ in consumer mode,
@@ -3906,7 +3916,8 @@ export function createQuasarConfig (options = {}) {
         // a newer build is live (see src/composables/useUpdateCheck.js).
         viteConf.define = {
           ...(viteConf.define || {}),
-          __DOCSECTOR_BUILD__: JSON.stringify(buildId)
+          __DOCSECTOR_BUILD__: JSON.stringify(buildId),
+          __DOCSECTOR_VERSION__: JSON.stringify(engineVersion)
         }
 
         // Diagnostic-only: surface exact hydration mismatch nodes in prod builds
