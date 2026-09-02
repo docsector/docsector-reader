@@ -512,7 +512,7 @@ one line
 <summary>Install</summary>
 
 \`\`\`bash
-php bootgly project create
+php bootgly projects create
 \`\`\`
 
 </details>
