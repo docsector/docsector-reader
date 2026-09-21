@@ -298,8 +298,9 @@ function printToLetter(number) {
         </q-breadcrumbs-el>
       </q-breadcrumbs>
 
+      <div class="filename" v-else-if="activeFilename" :title="activeFilename">{{ activeFilename }}</div>
+
       <div class="info">
-        <div class="filename" v-if="activeFilename">{{ activeFilename }}</div>
         <div class="language">{{ activeLanguage }}</div>
         <div class="copy">
           <q-btn
@@ -350,7 +351,6 @@ function printToLetter(number) {
       background-color: white
 
       .source-code-meta-row,
-      .info .filename,
       .info .language,
       .info .copy
         background-color: #fff
@@ -380,7 +380,6 @@ function printToLetter(number) {
       background-color: #000
 
       .source-code-meta-row,
-      .info .filename,
       .info .language,
       .info .copy
         background-color: #000
@@ -421,6 +420,20 @@ function printToLetter(number) {
     top: 0
     width: 100%
     z-index: 2
+
+    // ! The file name reads like a tab label: left-aligned, before the language and
+    //   the copy button (when the fence carries breadcrumbs, they take this slot)
+    .filename
+      color: gray
+      flex: 1 1 auto
+      font-size: 13px
+      line-height: 16px
+      min-width: 0
+      overflow: hidden
+      padding: 3px 10px 0
+      text-overflow: ellipsis
+      user-select: none
+      white-space: nowrap
 
   .source-code-tabs
     color: gray
@@ -553,16 +566,6 @@ function printToLetter(number) {
       button
         padding: 7px 8px 6px
         position: relative
-
-    .filename
-      font-size: 13px
-      color: gray
-      max-width: 220px
-      overflow: hidden
-      padding: 3px 6px 0
-      text-overflow: ellipsis
-      user-select: none
-      white-space: nowrap
 
     .language
       font-size: 13px

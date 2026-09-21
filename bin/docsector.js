@@ -13,8 +13,10 @@
  */
 
 import { spawn } from 'child_process'
+import { createServer } from 'http'
+import { createReadStream, statSync } from 'fs'
 import { existsSync, mkdirSync, writeFileSync, copyFileSync, cpSync } from 'fs'
-import { resolve, dirname } from 'path'
+import { resolve, dirname, extname, join, normalize, sep } from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -862,6 +864,131 @@ function findQuasarBin () {
   return 'npx quasar'
 }
 
+/**
+ * The `serve` command lives in `@quasar/cli`, not in `@quasar/app-vite` — the
+ * app bin that `findQuasarBin()` prefers answers `quasar serve` with
+ * `"serve" app extension is not installed`. Resolve the global CLI's bin
+ * (a dependency of every scaffolded project) or fall back to the built-in
+ * static server below.
+ */
+function findQuasarCliBin () {
+  const candidates = [
+    resolve(process.cwd(), 'node_modules', '@quasar', 'cli', 'bin', 'quasar.js'),
+    resolve(packageRoot, 'node_modules', '@quasar', 'cli', 'bin', 'quasar.js')
+  ]
+
+  return candidates.find((candidate) => existsSync(candidate)) || null
+}
+
+const SERVE_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.wasm': 'application/wasm',
+  '.zip': 'application/zip',
+  '.hjson': 'text/plain; charset=utf-8'
+}
+
+/**
+ * Serve a built `dist/spa` without any dependency: files as they are, a
+ * directory by its `index.html`, and — history mode — every unknown path by
+ * the root `index.html`, so client-side routes deep-link.
+ */
+function serveStatic (root, { port = 4000, host = '0.0.0.0' } = {}) {
+  const base = resolve(root)
+
+  if (!existsSync(join(base, 'index.html'))) {
+    console.error(`\x1b[31m✗\x1b[0m No index.html in ${base} — run \x1b[36mdocsector build\x1b[0m first.`)
+    process.exit(1)
+  }
+
+  const server = createServer((request, response) => {
+    const path = decodeURIComponent((request.url || '/').split('?')[0])
+    const target = normalize(join(base, path))
+
+    // ? Never leave the served folder
+    if (!target.startsWith(base + sep) && target !== base) {
+      response.writeHead(403).end()
+      return
+    }
+
+    const candidates = [target, join(target, 'index.html'), join(base, 'index.html')]
+    const file = candidates.find((candidate) => {
+      try { return statSync(candidate).isFile() } catch { return false }
+    })
+
+    if (!file) {
+      response.writeHead(404).end()
+      return
+    }
+
+    response.writeHead(200, { 'Content-Type': SERVE_TYPES[extname(file).toLowerCase()] || 'application/octet-stream' })
+    createReadStream(file).pipe(response)
+  })
+
+  server.listen(port, host, () => {
+    console.log(`\x1b[32m✓\x1b[0m Serving ${base}`)
+    console.log(`  Local:   \x1b[36mhttp://localhost:${port}/\x1b[0m`)
+  })
+}
+
+function serve (args) {
+  const portIndex = args.findIndex((arg) => arg === '--port' || arg === '-p')
+  const port = portIndex !== -1 && args[portIndex + 1] ? Number(args[portIndex + 1]) : 4000
+
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+  Description
+    Serve the production build (dist/spa) locally
+
+  Usage
+    $ docsector serve [--port <number>]
+
+  Options
+    --port, -p   Port to use (default: 4000)
+    --help, -h   Show this help
+`)
+    return
+  }
+
+  // ? Nothing to serve — say so before any server (Quasar's would listen on an empty folder)
+  const root = resolve(process.cwd(), 'dist', 'spa')
+  if (!existsSync(join(root, 'index.html'))) {
+    console.error(`\x1b[31m✗\x1b[0m No index.html in ${root} — run \x1b[36mdocsector build\x1b[0m first.`)
+    process.exit(1)
+  }
+
+  const quasarCli = findQuasarCliBin()
+
+  if (quasarCli) {
+    // ! Quasar's serve binds to $HOSTNAME when the variable is set (a LAN name that
+    //   may resolve to a single non-loopback address) — bind every interface, so
+    //   http://localhost:<port> always answers, and say so
+    console.log(`\x1b[32m✓\x1b[0m Serving dist/spa — \x1b[36mhttp://localhost:${port}/\x1b[0m`)
+    const child = spawn(process.execPath, [quasarCli, 'serve', 'dist/spa', '--history', '--hostname', '0.0.0.0', '--port', String(port)], {
+      cwd: process.cwd(),
+      stdio: 'inherit'
+    })
+    child.on('exit', (code) => process.exit(code ?? 0))
+    return
+  }
+
+  serveStatic(root, { port })
+}
+
 function run (cmd, cmdArgs = []) {
   const quasar = findQuasarBin()
   const isNpx = quasar.startsWith('npx')
@@ -1181,7 +1308,7 @@ switch (command) {
   }
 
   case 'serve':
-    run('serve', ['dist/spa', '--history', ...args.slice(1)])
+    serve(args.slice(1))
     break
 
   case 'install-skill':

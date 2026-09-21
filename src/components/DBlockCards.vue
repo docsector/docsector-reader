@@ -131,7 +131,8 @@ body.body--dark
   --d-cards-icon-surface: linear-gradient(180deg, rgba(193, 166, 103, 0.18), rgba(193, 166, 103, 0.05))
 
 .d-cards
-  margin: 0 auto
+  // ! Room below the grid — the next heading, paragraph or block must not sit on the cards
+  margin: 0 auto 24px
 
 .d-cards__title
   text-align: center

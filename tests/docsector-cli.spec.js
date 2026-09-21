@@ -32,6 +32,39 @@ describe('docsector CLI', () => {
     }
   })
 
+  it('answers `serve --help` itself instead of asking the app bin for a serve extension', () => {
+    const projectDir = mkdtempSync(join(tmpdir(), 'docsector-serve-help-'))
+
+    try {
+      const output = runCli(projectDir, ['serve', '--help'])
+
+      expect(output).toContain('Serve the production build (dist/spa) locally')
+      expect(output).toContain('--port, -p')
+      expect(output).not.toContain('app extension')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses to serve a project that has no build', () => {
+    const projectDir = mkdtempSync(join(tmpdir(), 'docsector-serve-nobuild-'))
+
+    try {
+      let failure = null
+      try {
+        runCli(projectDir, ['serve'])
+      } catch (error) {
+        failure = error
+      }
+
+      expect(failure).not.toBeNull()
+      expect(String(failure.stderr)).toContain('No index.html')
+      expect(String(failure.stderr)).toContain('docsector build')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
   it('installs the built-in authoring skill for older scaffolded projects', () => {
     const projectDir = mkdtempSync(join(tmpdir(), 'docsector-install-skill-'))
 

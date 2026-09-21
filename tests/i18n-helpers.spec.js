@@ -151,6 +151,29 @@ describe('i18n message builder', () => {
     expect(t('system.brand', { name: 'Bootgly' })).toBe('Documentação Bootgly')
   })
 
+  it('provides every engine UI string the package language files carry, for a consumer file that predates them', () => {
+    const messages = buildMessages({
+      langModules: {
+        './languages/en-US.hjson': { page: { copyPage: 'Copy page' } },
+        './languages/pt-BR.hjson': { page: { copyPage: 'Copiar página' } }
+      },
+      mdModules,
+      books: {},
+      boot,
+      langs: ['en-US', 'pt-BR']
+    })
+
+    // ? Keys the hand-written defaults never listed come from the package files
+    expect(messages['en-US'].page.stepper).toEqual({ continue: 'Continue', back: 'Back', finish: 'Finish' })
+    expect(messages['pt-BR'].page.stepper).toEqual({ continue: 'Continuar', back: 'Voltar', finish: 'Finalizar' })
+    expect(messages['en-US'].page.file.download).toBe('Download')
+    // ? The consumer's own value still wins, and the package page texts never leak
+    expect(messages['en-US'].page.copyPage).toBe('Copy page')
+    expect(messages['pt-BR'].page.copyPage).toBe('Copiar página')
+    expect(messages['en-US']._.home).toBeDefined()
+    expect(Object.keys(messages['en-US']._)).toEqual(['home'])
+  })
+
   it('provides the settings dialog strings to a consumer that defines none', () => {
     // ? consumers ship their own language files; without engine defaults these
     //   keys would render as raw key paths in every consumer project

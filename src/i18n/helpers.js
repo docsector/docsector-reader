@@ -23,6 +23,10 @@
  */
 
 import { stripFrontmatter } from '../frontmatter.js'
+import Hjson from 'hjson'
+
+import enUSLanguage from './languages/en-US.hjson?raw'
+import ptBRLanguage from './languages/pt-BR.hjson?raw'
 import { registerSourceLoaders } from './sources'
 
 /**
@@ -251,6 +255,18 @@ const engineDefaults = {
       }
     }
   }
+}
+
+// ! The package language files are the source of truth for the engine's own UI
+//   strings — the literal above only pins the keys older scaffolds are known to
+//   lack. Every key a consumer file leaves out (a newer block's labels, a new
+//   component) is filled from the package file, so a stale consumer copy never
+//   renders a raw key such as `page.stepper.continue`. The `_` namespace (the
+//   package's own page texts) is never a default.
+const packageLanguages = { 'en-US': enUSLanguage, 'pt-BR': ptBRLanguage }
+for (const [lang, source] of Object.entries(packageLanguages)) {
+  const { _, ...defaults } = Hjson.parse(source)
+  engineDefaults[lang] = deepMerge(engineDefaults[lang] || {}, defaults)
 }
 
 /**

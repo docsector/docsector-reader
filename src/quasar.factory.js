@@ -105,6 +105,16 @@ const DOCSECTOR_CONSUMER_OPTIMIZE_DEPS_EXCLUDE = Object.freeze([
   '@docsector/docsector-reader/src/router/routes',
   '@docsector/docsector-reader/src/router/routes.js',
   'node_modules/@docsector/docsector-reader/src/App.vue',
+  // ! `.quasar/dev-spa/app.js` imports the router as `app/node_modules/…` (the
+  //   `sourceFiles.router` path under Quasar's `app` alias) — the specifier Vite's
+  //   optimizer keys the dependency by. Pre-bundled, the router carries a private
+  //   copy of `i18n/sources.js`, so the lazy page sources registered on the live
+  //   instance are never loaded and every page renders empty in `dev`.
+  'app/node_modules/@docsector/docsector-reader/src/App.vue',
+  'app/node_modules/@docsector/docsector-reader/src/router/index',
+  'app/node_modules/@docsector/docsector-reader/src/router/index.js',
+  'app/node_modules/@docsector/docsector-reader/src/router/routes',
+  'app/node_modules/@docsector/docsector-reader/src/router/routes.js',
   'node_modules/@docsector/docsector-reader/src/router/index',
   'node_modules/@docsector/docsector-reader/src/router/index.js',
   'node_modules/@docsector/docsector-reader/src/router/routes',
