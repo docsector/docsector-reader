@@ -27,7 +27,6 @@ describe('compilePageTokens', () => {
     expect(compiled.v).toBe(PAGE_TOKENS_VERSION)
     expect(compiled.math).toBe(false)
     expect(compiled.heading).toBe('Getting started')
-    expect(compiled.headers).toBe(2)
     expect(typeof compiled.tokens).toBe('string')
     expect(isCompiledPageSource(compiled)).toBe(true)
   })
@@ -82,11 +81,10 @@ describe('parseCompiledPageTokens', () => {
 })
 
 describe('frontmatter in compiled pages', () => {
-  it('keeps heading, header count and tokens frontmatter-free', async () => {
+  it('keeps heading and tokens frontmatter-free', async () => {
     const compiled = await compilePageTokens('---\ntitle: Meta Title\n---\n\n# Real\n\n## One\n\n## Two\n')
 
     expect(compiled.heading).toBe('Real')
-    expect(compiled.headers).toBe(2)
     expect(compiled.tokens).not.toContain('Meta Title')
   })
 

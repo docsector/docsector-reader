@@ -94,8 +94,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
-- 📊 **Translation Progress** — Automatic translation percentage based on header coverage
-- 🌐 **Accurate Available Translations** — Locale availability counter now uses actual localized page source presence, avoiding false negatives when metadata is equal
+- 👍 **Page Feedback** — Opt-in "Was this helpful?" footer prompt; votes land in a Workers Analytics Engine dataset through a generated Cloudflare Pages Function
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback and automatic primary-title handoff when the remote README already provides the project heading
@@ -879,6 +878,11 @@ export default {
     editBaseUrl: 'https://github.com/org/repo/edit/main/src/pages'
   },
 
+  feedback: {
+    enabled: true,          // "Was this helpful?" footer prompt
+    binding: 'FEEDBACK'     // Analytics Engine binding of the Pages project
+  },
+
   linkHeaders: {
     enabled: true,
     apiCatalog: '/.well-known/api-catalog',
@@ -1071,7 +1075,7 @@ my-docs/
     └── files/                 # Downloadable attachments served as /files/...
 ```
 
-  A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Translation Progress, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
+  A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Page Feedback, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
 
   Blocks in `src/pages/manual/content/blocks/` should normally provide both `overview` and `showcase` markdown pages, while structural topics can stay overview-only when a visual demo adds little value.
 

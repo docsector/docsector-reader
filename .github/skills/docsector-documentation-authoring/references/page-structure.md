@@ -30,7 +30,7 @@ Most block docs should include both subpages. Structure docs such as page, subpa
 
 ## Localization
 
-Localized Markdown files use locale suffixes such as `.en-US.md` and `.pt-BR.md`. Keep route structure and headings aligned across locales when possible so translation progress and navigation remain useful.
+Localized Markdown files use locale suffixes such as `.en-US.md` and `.pt-BR.md`. Keep route structure and headings aligned across locales when possible so navigation and anchors stay consistent.
 
 New repository-facing documentation and AI customization files should be written in English unless the file is explicitly a locale-specific translation.
 

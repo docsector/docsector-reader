@@ -7,42 +7,14 @@ import { useI18n } from 'vue-i18n'
 import { fabGithub } from '@quasar/extras/fontawesome-v5'
 
 import docsectorConfig from 'docsector.config.js'
-import { stripFrontmatter } from '../frontmatter.js'
-import { pageValueI18nPath, routeTitleI18nPath } from '../i18n/path'
+import { isFeedbackVisible } from '../feedback/config.js'
+import { routeTitleI18nPath } from '../i18n/path'
+import DPageFeedback from './DPageFeedback.vue'
 
 const store = useStore()
 const route = useRoute()
 const router = useRouter()
-const { t, locale, availableLocales, getLocaleMessage } = useI18n()
-
-// ? Per-locale source read via getLocaleMessage — tm() ignores its locale
-//   argument on the composer, and sources may now be compiled token modules
-const readSource = (lang, path) => {
-  let node = getLocaleMessage(lang)
-
-  for (const segment of String(path).split('.')) {
-    node = node?.[segment]
-    if (node === undefined || node === null) {
-      return null
-    }
-  }
-
-  return node
-}
-
-// : Header count of a source — baked at build for compiled modules, counted
-//   live for raw strings (dev); null when the source is missing
-const countHeaders = (value) => {
-  if (typeof value === 'object' && value !== null && typeof value.headers === 'number') {
-    return value.headers
-  }
-  if (typeof value === 'string' && value.trim().length > 0) {
-    // ? frontmatter comments may open with # — same strip the build count gets
-    return (stripFrontmatter(value).match(/^#{2,6}\s+.+/gm) || []).length
-  }
-
-  return null
-}
+const { t, locale } = useI18n()
 
 function normalizeEditBaseUrl (url = '') {
   const normalized = String(url).trim().replace(/\/+$/, '')
@@ -80,6 +52,7 @@ function routePathToSourcePath (path = '') {
 }
 
 const status = computed(() => route.meta.status)
+const showFeedback = computed(() => isFeedbackVisible(docsectorConfig, status.value))
 const URL = computed(() => {
   const path = routePathToSourcePath(route.path)
   return `${base}${path}.${locale.value}.md`
@@ -101,70 +74,6 @@ const icon = computed(() => {
   } else {
     return 'note_add'
   }
-})
-
-const progress = computed(() => {
-  const i18nPathAbsolute = store.state.i18n.absolute
-
-  if (!i18nPathAbsolute) {
-    return '?%'
-  }
-
-  const defaultLang = docsectorConfig.defaultLanguage || 'en-US'
-  const currentLang = locale.value
-
-  // Count headers (## and ###) in the default language source
-  const defaultSourcePath = pageValueI18nPath(i18nPathAbsolute, 'source')
-  const defaultHeaders = countHeaders(readSource(defaultLang, defaultSourcePath))
-
-  if (defaultHeaders === null) {
-    return '?%'
-  }
-
-  if (defaultHeaders === 0) {
-    return '100%'
-  }
-
-  // If current lang is the default, progress is always 100%
-  if (currentLang === defaultLang) {
-    return '100%'
-  }
-
-  // Count headers in the current language source
-  const currentHeaders = countHeaders(readSource(currentLang, defaultSourcePath))
-
-  if (currentHeaders === null) {
-    return '0%'
-  }
-
-  const percent = Math.min(100, Math.floor((currentHeaders / defaultHeaders) * 100))
-
-  return `${percent}%`
-})
-
-const languages = computed(() => {
-  const i18nPathAbsolute = store.state.i18n.absolute
-  const i18nLocales = availableLocales
-  const sourcePath = pageValueI18nPath(i18nPathAbsolute, 'source')
-
-  if (!i18nPathAbsolute || i18nLocales.length === 0) {
-    return `0/${i18nLocales.length}`
-  }
-
-  let i18nLocalesAvailable = 0
-  for (let i = 0; i < i18nLocales.length; i++) {
-    const currentLocale = i18nLocales[i]
-    const source = readSource(currentLocale, sourcePath)
-
-    // ? Available when a raw string (dev) or a compiled token module exists
-    if (typeof source === 'string' && source.trim().length > 0) {
-      i18nLocalesAvailable++
-    } else if (typeof source === 'object' && source !== null && typeof source.tokens === 'string') {
-      i18nLocalesAvailable++
-    }
-  }
-
-  return `${i18nLocalesAvailable}/${i18nLocales.length}`
 })
 
 const normalizeRoutePath = (path) => {
@@ -217,7 +126,7 @@ const getRouteTitle = (path) => {
 
 <template>
 <div id="d-page-meta">
-  <div v-if="!hideRemoteHomeFooterMeta" class="row justify-between q-mt-lg">
+  <div v-if="!hideRemoteHomeFooterMeta" class="row justify-between items-center q-mt-lg">
     <div id="d-page-edit" class="col">
       <q-btn dense no-caps text-color="black" :color="color" @click="openURL(URL)">
         <q-icon class="q-mr-xs" :name="fabGithub" size="20px" />
@@ -226,18 +135,8 @@ const getRouteTitle = (path) => {
         <span class="hm" v-else-if="status === 'empty'">{{ $t('page.edit.github.start') }}</span>
       </q-btn>
     </div>
-    <div id="d-page-translation" class="col-auto">
-      <q-chip class="languages-progress q-mr-xs q-ml-none" dense square>
-        <q-icon class="q-mr-xs" name="translate" size="20px" />
-        <span>{{ $i18n.locale }}:<b>{{ ' ' + progress }}</b></span>
-        <q-tooltip anchor="top middle" self="bottom middle" :offset="[10, 10]">{{ $t('page.edit.progress') }}</q-tooltip>
-      </q-chip>
-
-      <q-chip class="languages-available q-ma-none" dense square>
-        <q-icon class="q-mr-xs" name="language" size="20px" />
-        <span>{{ '#' + languages }}</span>
-        <q-tooltip anchor="top end" self="bottom end" :offset="[10, 10]">{{ $t('page.edit.translations') }}</q-tooltip>
-      </q-chip>
+    <div v-if="showFeedback" id="d-page-feedback" class="col-auto">
+      <d-page-feedback />
     </div>
   </div>
 
@@ -264,12 +163,6 @@ const getRouteTitle = (path) => {
   min-height: 36px
   margin: 24px auto 40px auto
   border-top: 3px solid #e0e0e0
-
-  #d-page-translation
-    .q-chip
-      padding: 16px 0.4em
-      margin-top: 0
-      margin-bottom: 0
 
   #d-page-nav
     &:first-child

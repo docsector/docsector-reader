@@ -2,14 +2,14 @@
  * Build-time page compiler — turns a raw markdown page into the compiled
  * module shape shipped to the client:
  *
- *   { v, math, heading, headers, tokens }
+ *   { v, math, heading, tokens }
  *
  * - `tokens` is the DPageTokens block list, serialized as a JSON string (see
  *   page-tokens-support.js for why a string).
  * - `math` marks pages whose KaTeX HTML was pre-rendered here — the client
  *   then loads only the KaTeX stylesheet.
- * - `heading` / `headers` bake the values DPageMeta and the homepage breadcrumb
- *   used to derive from the raw source (which no longer ships).
+ * - `heading` bakes the value the homepage breadcrumb used to derive from the
+ *   raw source (which no longer ships).
  *
  * Runs under plain Node ESM (Vite build) and in the client bundle only inside
  * the lazy dev fallback / assistant chunks — never in the critical path.
@@ -18,9 +18,6 @@ import { stripFrontmatter } from '../frontmatter.js'
 import { loadMathEngine, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens.js'
 
 export const PAGE_TOKENS_VERSION = 1
-
-// ? Mirrors DPageMeta's translation-progress counting
-const HEADER_PATTERN = /^#{2,6}\s+.+/gm
 
 /**
  * First page heading, for breadcrumbs: an inline `<h1>` (remote README badges
@@ -45,8 +42,8 @@ export const extractPageHeading = (source) => {
 }
 
 export async function compilePageTokens (source, options = {}) {
-  // ? metadata never reaches the compiled artifact — heading, header count and
-  //   the serialized tokens all read the stripped text
+  // ? metadata never reaches the compiled artifact — the heading and the
+  //   serialized tokens both read the stripped text
   const text = stripFrontmatter(String(source ?? ''))
 
   // ? Math pages pre-render KaTeX at build — load the engine first so the
@@ -64,7 +61,6 @@ export async function compilePageTokens (source, options = {}) {
     v: PAGE_TOKENS_VERSION,
     math,
     heading: extractPageHeading(text),
-    headers: (text.match(HEADER_PATTERN) || []).length,
     tokens: JSON.stringify(tokens)
   }
 }

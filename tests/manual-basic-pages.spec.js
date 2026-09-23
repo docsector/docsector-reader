@@ -12,7 +12,7 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/d-page-anchor']).toBeDefined()
     expect(manualPages['/basic/d-page-meta']).toBeDefined()
     expect(manualPages['/basic/edit-on-github']).toBeDefined()
-    expect(manualPages['/basic/translation-progress']).toBeDefined()
+    expect(manualPages['/basic/page-feedback']).toBeDefined()
     expect(manualPages['/basic/previous-and-next']).toBeDefined()
     expect(manualPages['/basic/agent-skills']).toBeDefined()
 
@@ -25,10 +25,11 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/d-page-anchor'].data['en-US'].title).toBe('Table of Contents')
     expect(manualPages['/basic/d-page-meta'].data['en-US'].title).toBe('Page Footer')
     expect(manualPages['/basic/edit-on-github'].data['en-US'].title).toBe('Edit on GitHub')
-    expect(manualPages['/basic/translation-progress'].data['en-US'].title).toBe('Translation Progress')
+    expect(manualPages['/basic/page-feedback'].data['en-US'].title).toBe('Page Feedback')
     expect(manualPages['/basic/previous-and-next'].data['en-US'].title).toBe('Previous & Next')
     expect(manualPages['/basic/agent-skills'].data['en-US'].title).toBe('Agent Skills')
 
+    expect(manualPages['/basic/translation-progress']).toBeUndefined()
     expect(manualPages['/components/d-menu']).toBeUndefined()
     expect(manualPages['/components/d-page-anchor']).toBeUndefined()
     expect(manualPages['/components/d-page-meta']).toBeUndefined()

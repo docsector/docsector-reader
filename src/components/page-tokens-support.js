@@ -21,7 +21,7 @@ export const loadMathCss = () => {
 
 /**
  * Whether a page source value is a build-time compiled tokens module
- * (`{ v, math, headers, heading, tokens }`) instead of a raw markdown string.
+ * (`{ v, math, heading, tokens }`) instead of a raw markdown string.
  */
 export const isCompiledPageSource = (value) => {
   return typeof value === 'object' && value !== null &&

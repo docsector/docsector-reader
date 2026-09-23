@@ -32,6 +32,8 @@ import { pathToFileURL } from 'url'
 import HJSON from 'hjson'
 
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
+import { buildFeedbackServerConfig, renderFeedbackServer } from './feedback/build.js'
+import { normalizeFeedbackConfig } from './feedback/config.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
 import { applyFrontmatterOverlayToRoutes, compileFrontmatterPatch, parseFrontmatter, resolveSubpageMeta, stripFrontmatter } from './frontmatter.js'
 import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
@@ -2401,7 +2403,7 @@ function createIconsPlugin (projectRoot) {
 
 /**
  * Compile page markdown at build time — the client then receives each page as
- * a ready-to-render token list ({ v, math, heading, headers, tokens }) instead
+ * a ready-to-render token list ({ v, math, heading, tokens }) instead
  * of a raw string, so the markdown-it tokenizer graph (markdown-it + attrs +
  * task-lists + texmath + katex engine) drops out of the critical path and the
  * per-page parse cost moves from every visitor's main thread to the build.
@@ -2877,8 +2879,9 @@ function createMarkdownBuildPlugin (projectRoot) {
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
       const { default: config } = await import(configUrl)
-      const { pageEntries } = await loadBooksRegistry(projectRoot)
+      const { pageEntries, versions: registryVersions } = await loadBooksRegistry(projectRoot)
       const assistantConfig = normalizeAiAssistantConfig(config)
+      const feedbackConfig = normalizeFeedbackConfig(config)
 
       const defaultLang = config.defaultLanguage || config.languages?.[0]?.value || 'en-US'
       const staticLangs = (config.languages || []).map(language => language?.value).filter(Boolean)
@@ -3060,6 +3063,7 @@ function createMarkdownBuildPlugin (projectRoot) {
       const mcpServerCardConfig = config.mcpServerCard || {}
       const mcpServerCardEnabled = mcpServerCardConfig.enabled === true
       const aiAssistantEnabled = assistantConfig.enabled === true
+      const feedbackEnabled = feedbackConfig.enabled === true
       let aiSearchSitemapGenerated = false
 
       const toUrl = (href) => {
@@ -3121,6 +3125,21 @@ function createMarkdownBuildPlugin (projectRoot) {
 
           writeFileSync(resolve(functionsDir, 'assistant.js'), serverCode)
           console.log(`\x1b[36m[docsector]\x1b[0m Generated AI Assistant endpoint at functions/assistant.js`)
+        }
+      }
+
+      if (feedbackEnabled) {
+        const functionsDir = resolve(projectRoot, 'functions')
+        const packageRoot = getPackageRoot(projectRoot)
+        const templatePath = resolve(packageRoot, 'src', 'feedback', 'server.js')
+        mkdirSync(functionsDir, { recursive: true })
+
+        if (existsSync(templatePath)) {
+          const serverConfig = buildFeedbackServerConfig(config, { versions: registryVersions })
+          const serverCode = renderFeedbackServer(readFileSync(templatePath, 'utf-8'), serverConfig)
+
+          writeFileSync(resolve(functionsDir, 'feedback.js'), serverCode)
+          console.log(`\x1b[36m[docsector]\x1b[0m Generated page feedback endpoint at functions/feedback.js`)
         }
       }
 
@@ -3291,6 +3310,7 @@ function estimateTokens (markdown = '') {
 function shouldBypass (pathname) {
   if (pathname === '/mcp' || pathname.startsWith('/mcp/')) return true
   if (pathname === '/assistant' || pathname.startsWith('/assistant/')) return true
+  if (pathname === '/feedback') return true
   if (pathname.startsWith('/.well-known/')) return true
   return /\\.(js|css|map|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|xml|json|txt)$/i.test(pathname)
 }
@@ -3737,7 +3757,7 @@ export async function onRequest (context) {
       }
 
       // Generate or merge _routes.json for Cloudflare Pages functions
-      if (config.mcp || aiAssistantEnabled || markdownNegotiationEnabled || webBotAuthEnabled) {
+      if (config.mcp || aiAssistantEnabled || feedbackEnabled || markdownNegotiationEnabled || webBotAuthEnabled) {
         const routesPath = resolve(distDir, '_routes.json')
         let routes = { version: 1, include: [], exclude: [] }
         if (existsSync(routesPath)) {
@@ -3748,56 +3768,72 @@ export async function onRequest (context) {
           }
         }
 
-        if (markdownNegotiationEnabled && !routes.include.includes('/*')) {
-          routes.include.push('/*')
-        }
-
-        if (config.mcp && !markdownNegotiationEnabled && !routes.include.includes('/mcp')) {
-          routes.include.push('/mcp')
-        }
-
-        if (aiAssistantEnabled && !markdownNegotiationEnabled && !routes.include.includes('/assistant')) {
-          routes.include.push('/assistant')
-        }
-
-        if (webBotAuthEnabled && !markdownNegotiationEnabled && !routes.include.includes(webBotAuthDirectoryPath)) {
-          routes.include.push(webBotAuthDirectoryPath)
-        }
-
-        // Cloudflare Pages rejects overlapping include rules (e.g. "/mcp" with "/*").
-        // Keep only the catch-all when markdown negotiation is enabled.
-        if (routes.include.includes('/*')) {
-          routes.include = ['/*']
-        }
-
-        const markdownExcludes = [
-          '/assets/*',
-          '/*.js',
-          '/*.css',
-          '/*.png',
-          '/*.jpg',
-          '/*.jpeg',
-          '/*.gif',
-          '/*.webp',
-          '/*.svg',
-          '/*.ico',
-          '/*.woff',
-          '/*.woff2',
-          '/*.ttf',
-          '/*.map'
-        ]
-
-        for (const excludePath of markdownExcludes) {
-          if (!routes.exclude.includes(excludePath)) {
-            routes.exclude.push(excludePath)
-          }
-        }
+        routes = mergePagesFunctionRoutes(routes, {
+          markdownNegotiation: markdownNegotiationEnabled,
+          mcp: Boolean(config.mcp),
+          assistant: aiAssistantEnabled,
+          feedback: feedbackEnabled,
+          webBotAuthPath: webBotAuthEnabled ? webBotAuthDirectoryPath : null
+        })
 
         writeFileSync(routesPath, JSON.stringify(routes, null, 2))
         console.log(`\x1b[36m[docsector]\x1b[0m Updated _routes.json for functions runtime`)
       }
     }
   }
+}
+
+const PAGES_ROUTES_EXCLUDES = Object.freeze([
+  '/assets/*',
+  '/*.js',
+  '/*.css',
+  '/*.png',
+  '/*.jpg',
+  '/*.jpeg',
+  '/*.gif',
+  '/*.webp',
+  '/*.svg',
+  '/*.ico',
+  '/*.woff',
+  '/*.woff2',
+  '/*.ttf',
+  '/*.map'
+])
+
+/**
+ * Cloudflare Pages `_routes.json` rules for the generated Functions, merged
+ * into `routes` (an existing file's content, or the empty default). Markdown
+ * negotiation claims every path, so it collapses the include list to the
+ * catch-all — Pages rejects overlapping include rules (e.g. "/mcp" with "/*").
+ */
+export function mergePagesFunctionRoutes (routes, { markdownNegotiation = false, mcp = false, assistant = false, feedback = false, webBotAuthPath = null } = {}) {
+  const merged = {
+    ...routes,
+    version: routes?.version ?? 1,
+    include: Array.isArray(routes?.include) ? [...routes.include] : [],
+    exclude: Array.isArray(routes?.exclude) ? [...routes.exclude] : []
+  }
+
+  const paths = markdownNegotiation
+    ? ['/*']
+    : [mcp && '/mcp', assistant && '/assistant', feedback && '/feedback', webBotAuthPath].filter(Boolean)
+  for (const path of paths) {
+    if (!merged.include.includes(path)) {
+      merged.include.push(path)
+    }
+  }
+
+  if (merged.include.includes('/*')) {
+    merged.include = ['/*']
+  }
+
+  for (const excludePath of PAGES_ROUTES_EXCLUDES) {
+    if (!merged.exclude.includes(excludePath)) {
+      merged.exclude.push(excludePath)
+    }
+  }
+
+  return merged
 }
 
 function normalizeContentSignalValue (value, fallback = 'yes') {

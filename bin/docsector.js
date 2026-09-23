@@ -154,6 +154,11 @@ export default {
     editBaseUrl: 'https://github.com/your-org/your-repo/edit/main/src/pages'
   },
 
+  // @ Page feedback (optional)
+  // "Was this helpful?" prompt in the page footer. Votes go to the Workers
+  // Analytics Engine binding FEEDBACK of your Cloudflare Pages project.
+  // feedback: { enabled: true },
+
   // @ Site URL (optional)
   // Set this for absolute URLs in sitemap.xml, llms.txt, and AI metadata.
   // sitemap.xml is still generated with root-relative URLs when omitted.
@@ -383,10 +388,16 @@ const TEMPLATE_I18N_HJSON = `\
         complete: 'Complete this page'
         edit: 'Edit this page'
       }
-      progress: 'Translation Progress'
-      translations: 'Available translations'
       anchor: 'Anchor navigation'
       of: 'of'
+    }
+    feedback: {
+      question: 'Was this helpful?'
+      thanks: 'Thanks for your feedback!'
+      positive: 'Helpful'
+      neutral: 'Somewhat helpful'
+      negative: 'Not helpful'
+      undo: 'Click again to undo'
     }
     nav: {
       prev: 'Previous page'

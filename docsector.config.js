@@ -57,6 +57,15 @@ export default {
     // copyright: 'Copyright (c) 2024-present Example Corp. and contributors'
   },
 
+  // @ Page feedback
+  // Opt-in "Was this helpful?" prompt in the page footer. Votes are written to
+  // the Workers Analytics Engine binding `binding` by the generated
+  // functions/feedback.js — add that binding to the Cloudflare Pages project.
+  feedback: {
+    enabled: true
+    // binding: 'FEEDBACK'
+  },
+
   // @ GitHub
   github: {
     // Base URL for "Edit on GitHub" links

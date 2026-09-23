@@ -22,10 +22,16 @@
         complete: 'Complete this page',
         edit: 'Edit this page'
       },
-      progress: 'Translation Progress',
-      translations: 'Available translations',
       anchor: 'Anchor navigation',
       of: 'of'
+    },
+    feedback: {
+      question: 'Was this helpful?',
+      thanks: 'Thanks for your feedback!',
+      positive: 'Helpful',
+      neutral: 'Somewhat helpful',
+      negative: 'Not helpful',
+      undo: 'Click again to undo'
     },
     nav: {
       prev: 'Previous page',

@@ -1,13 +1,13 @@
 ## Visão Geral
 
-Rodapé da Página é a **área inferior de informação** que exibe ações de GitHub, progresso de tradução e links de navegação anterior/próximo.
+Rodapé da Página é a **área inferior de informação** que exibe ações de GitHub, feedback da página e links de navegação anterior/próximo.
 
 Na implementação, esta página descreve o `DPageMeta`.
 
 ## Páginas Focadas no Basic
 
 - [Editar no GitHub](/manual/basic/edit-on-github/overview/)
-- [Progresso de Tradução](/manual/basic/translation-progress/overview/)
+- [Feedback da Página](/manual/basic/page-feedback/overview/)
 - [Anterior e Próximo](/manual/basic/previous-and-next/overview/)
 
 ## Seções
@@ -29,12 +29,9 @@ O label do botão muda baseado no status da página:
 | `draft` | "Complete esta página" | Warning (laranja) |
 | `empty` | "Comece esta página" | Vermelho |
 
-### Progresso de Tradução
+### Feedback da Página
 
-Dois chips são exibidos:
-
-- **Progresso do idioma** — Mostra a porcentagem de conclusão da tradução para o locale atual baseado no metadata `_sections.done / _sections.count`
-- **Traduções disponíveis** — Mostra quantos locales têm traduções comparado ao total de locales disponíveis
+Quando `feedback.enabled` é `true`, a pergunta **"Esta página foi útil?"** com três carinhas fica à direita do botão do GitHub. Cada voto é gravado por uma Cloudflare Pages Function gerada no build. Veja [Feedback da Página](/manual/basic/page-feedback/overview/) para a configuração.
 
 ### Navegação Anterior/Próximo
 
@@ -43,7 +40,7 @@ Links para as páginas anterior e próxima na sequência de rotas. O título da 
 ## Integração com Store
 
 - `page/base` — Página atual para encontrar rotas prev/next
-- `i18n/absolute` — Caminho para carregar metadata de tradução
+- `page/relative` — Subpágina atual, usada para montar a URL de "Editar no GitHub"
 
 ## Configuração
 

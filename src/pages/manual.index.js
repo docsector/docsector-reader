@@ -260,8 +260,8 @@ export default {
     },
     metadata: {
       tags: {
-        'en-US': 'meta footer edit github translation progress prev next navigation',
-        'pt-BR': 'meta rodapé editar github tradução progresso anterior próximo navegação'
+        'en-US': 'meta footer edit github feedback helpful prev next navigation',
+        'pt-BR': 'meta rodapé editar github feedback útil anterior próximo navegação'
       }
     }
   },
@@ -294,14 +294,14 @@ export default {
     }
   },
 
-  '/basic/translation-progress': {
+  '/basic/page-feedback': {
     config: {
-      icon: 'translate',
-      status: 'done',
+      icon: 'thumbs_up_down',
+      status: 'new',
       meta: {
         description: {
-          'en-US': 'Translation Progress — Documentation of Docsector Reader',
-          'pt-BR': 'Progresso de Tradução — Documentacao do Docsector Reader'
+          'en-US': 'Page Feedback — Documentation of Docsector Reader',
+          'pt-BR': 'Feedback da Página — Documentacao do Docsector Reader'
         }
       },
       book: 'manual',
@@ -311,13 +311,13 @@ export default {
       }
     },
     data: {
-      'en-US': { title: 'Translation Progress' },
-      'pt-BR': { title: 'Progresso de Tradução' }
+      'en-US': { title: 'Page Feedback' },
+      'pt-BR': { title: 'Feedback da Página' }
     },
     metadata: {
       tags: {
-        'en-US': 'translation progress locales sections i18n footer chips',
-        'pt-BR': 'tradução progresso locales seções i18n rodapé chips'
+        'en-US': 'feedback helpful vote rating footer analytics engine cloudflare pages function',
+        'pt-BR': 'feedback útil voto avaliação rodapé analytics engine cloudflare pages function'
       }
     }
   },

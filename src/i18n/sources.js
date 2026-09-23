@@ -8,9 +8,9 @@
  * available locale — is merged into vue-i18n right before the page renders.
  *
  * Merging every locale per page keeps the whole runtime contract intact:
- * DPageSection (render), DPageBar (copy page), DPageMeta (translation
- * progress across locales) and useWebMcp all keep reading the same
- * `_.<segments>.<subpage>.source` message paths they read in eager mode.
+ * DPageSection (render), DPageBar (copy page) and useWebMcp all keep
+ * reading the same `_.<segments>.<subpage>.source` message paths they read
+ * in eager mode.
  */
 
 // ! Registry state — populated by buildMessages() (lazy mode) and boot/i18n

@@ -1,13 +1,13 @@
 ## Overview
 
-Page Footer is the **bottom information area** that shows GitHub actions, translation progress, and previous/next navigation.
+Page Footer is the **bottom information area** that shows GitHub actions, page feedback, and previous/next navigation.
 
 Under the hood, this page describes `DPageMeta`.
 
 ## Focused Pages in Basic
 
 - [Edit on GitHub](/manual/basic/edit-on-github/overview/)
-- [Translation Progress](/manual/basic/translation-progress/overview/)
+- [Page Feedback](/manual/basic/page-feedback/overview/)
 - [Previous & Next](/manual/basic/previous-and-next/overview/)
 
 ## Sections
@@ -29,12 +29,9 @@ The button label changes based on page status:
 | `draft` | "Complete this page" | Warning (orange) |
 | `empty` | "Start this page" | Red |
 
-### Translation Progress
+### Page Feedback
 
-Two chips are displayed:
-
-- **Language progress** — Shows the translation completion percentage for the current locale based on `_sections.done / _sections.count` metadata
-- **Available translations** — Shows how many locales have translations compared to total available locales
+When `feedback.enabled` is `true`, a **"Was this helpful?"** prompt with three faces sits on the right of the GitHub button. Each vote is recorded by a generated Cloudflare Pages Function. See [Page Feedback](/manual/basic/page-feedback/overview/) for the setup.
 
 ### Previous/Next Navigation
 
@@ -43,7 +40,7 @@ Links to the previous and next pages in the route sequence. The page title is lo
 ## Store Integration
 
 - `page/base` — Current page for finding prev/next routes
-- `i18n/absolute` — Path for loading translation metadata
+- `page/relative` — Current subpage, used to build the "Edit on GitHub" URL
 
 ## Configuration
 

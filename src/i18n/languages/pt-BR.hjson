@@ -21,10 +21,16 @@
         complete: 'Complete esta página',
         edit: 'Edite esta página'
       },
-      progress: 'Progresso da tradução',
-      translations: 'Traduções disponíveis',
       anchor: 'Navegação por âncoras',
       of: 'de'
+    },
+    feedback: {
+      question: 'Esta página foi útil?',
+      thanks: 'Obrigado pelo seu feedback!',
+      positive: 'Útil',
+      neutral: 'Mais ou menos útil',
+      negative: 'Não foi útil',
+      undo: 'Clique de novo para desfazer'
     },
     nav: {
       prev: 'Página anterior',
