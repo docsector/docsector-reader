@@ -18,8 +18,17 @@
  *
  * Supported YAML subset (anything else warns and is skipped per line):
  *   key: scalar        — quoted strings, true/false, null/~, numbers,
- *                        anything else is a trimmed string
- *   key:               — followed by a one-level list of `- item` lines
+ *                        anything else is a trimmed string; deeper-indented
+ *                        lines below continue it (joined by a space, a
+ *                        blank line keeps a line break)
+ *   key: | or >        — a literal (|) or folded (>) block scalar: the
+ *                        more-indented lines below, dedented (`-` strips the
+ *                        final newline, `+` keeps every trailing one)
+ *   key:               — followed by a one-level list of `- item` lines; an
+ *                        item written `- name: value` (YAML: the colon is
+ *                        followed by a space) is a map, continued by lines
+ *                        indented to its first key, whose values may be
+ *                        scalars or block scalars — the `faq:` form
  *   # comment / blank  — ignored
  *
  * Merge semantics against the `*.index.js` registry entry (per locale — each
@@ -33,7 +42,11 @@
 
 const CLOSE_LINE = /^(---|\.\.\.)\s*$/
 const KEY_LINE = /^([A-Za-z0-9_-]+):(.*)$/
-const LIST_ITEM_LINE = /^\s*-\s+(.*)$/
+const LIST_ITEM_LINE = /^(\s*-\s+)(.*)$/
+// ? YAML map entry: the colon must be followed by a space or end the line —
+//   `- http://x` stays a scalar
+const MAP_ENTRY = /^([A-Za-z0-9_-]+):(?:[ \t]+(.*))?$/
+const BLOCK_INDICATOR = /^([|>])([+-]?)$/
 const NUMBER_VALUE = /^-?\d+(\.\d+)?$/
 
 // Keys the page may never override. `book`/`type`: the file's own path decides
@@ -48,6 +61,11 @@ const OBJECT_ONLY_KEYS = new Set(['menu', 'subpages', 'link', 'layouts'])
 
 // Localized keys — each locale file writes its own locale slot.
 const LOCALIZED_KEYS = new Set(['title', 'desc', 'keys'])
+
+// Content keys — rendered with the page (compiled into its tokens), never
+// merged into the registry: they would ship every page's content in the boot
+// bundle.
+const CONTENT_KEYS = new Set(['faq'])
 
 const SUBPAGES = ['overview', 'showcase', 'vs']
 
@@ -104,65 +122,234 @@ function parseScalar (value) {
   return trimmed
 }
 
+const isBlank = (line) => line.trim() === '' || line.trim().startsWith('#')
+const indentOf = (line) => line.length - line.trimStart().length
+
+// : a block scalar starting at `start` — every following line that is blank or
+//   indented deeper than `parentIndent`, dedented by its first line's indent
+function readBlockScalar (lines, start, parentIndent, style, chomp) {
+  const collected = []
+  let index = start
+
+  // @@ Collect the block
+  while (index < lines.length) {
+    const line = lines[index]
+    if (line.trim() !== '' && indentOf(line) <= parentIndent) break
+    collected.push(line)
+    index++
+  }
+
+  // ? trailing blank lines are chomping material, not content
+  let trailing = 0
+  while (collected.length > 0 && collected[collected.length - 1].trim() === '') {
+    collected.pop()
+    trailing++
+  }
+
+  const first = collected.find(line => line.trim() !== '')
+  const blockIndent = first === undefined ? 0 : indentOf(first)
+  const body = collected.map(line => (line.trim() === '' ? '' : line.slice(Math.min(blockIndent, indentOf(line)))))
+
+  let value
+  if (style === '|') {
+    value = body.join('\n')
+  } else {
+    // ? folded: lines of a paragraph join with a space, blank lines break paragraphs
+    value = body.reduce((text, line, position) => {
+      if (position === 0) return line
+      if (line === '') return `${text}\n`
+      return text.endsWith('\n') || text === '' ? `${text}${line}` : `${text} ${line}`
+    }, '')
+  }
+
+  if (value !== '') {
+    if (chomp === '+') value += '\n'.repeat(trailing + 1)
+    else if (chomp !== '-') value += '\n'
+  }
+
+  return { value, next: index }
+}
+
+// : a scalar or block-scalar value after `key:` — `next` is the first line
+//   after it
+function readValue (rest, lines, index, parentIndent) {
+  const trimmed = rest.trim()
+  const block = trimmed.match(BLOCK_INDICATOR)
+  if (block !== null) {
+    return readBlockScalar(lines, index + 1, parentIndent, block[1], block[2])
+  }
+
+  // ? Multi-line plain (or quoted) scalar: deeper-indented lines continue the
+  //   value — joined by a space, blank lines between them kept as breaks. A
+  //   comment line or one at the parent indent ends it.
+  let text = trimmed
+  let next = index + 1
+  let breaks = 0
+
+  // @@ Continuation lines
+  for (let cursor = index + 1; cursor < lines.length; cursor++) {
+    const line = lines[cursor]
+
+    if (line.trim() === '') {
+      breaks++
+      continue
+    }
+    if (indentOf(line) <= parentIndent || line.trimStart().startsWith('#')) break
+
+    const separator = text === '' ? '' : (breaks > 0 ? '\n'.repeat(breaks) : ' ')
+    text = `${text}${separator}${line.trim()}`
+    breaks = 0
+    next = cursor + 1
+  }
+
+  return { value: parseScalar(text), next }
+}
+
+// : one `- name: value` list item and its continuation lines, as a map
+function readMapItem (lines, index, onWarning) {
+  const [, marker, content] = lines[index].match(LIST_ITEM_LINE)
+  const keyIndent = marker.length
+  const item = {}
+  let entry = content.match(MAP_ENTRY)
+  let cursor = index
+
+  // @@ Entries of this item: the first one, then lines at the key indent
+  while (entry !== null) {
+    const { value, next } = readValue(entry[2] ?? '', lines, cursor, keyIndent)
+    item[entry[1]] = value
+    cursor = next
+    entry = null
+
+    let peek = cursor
+    while (peek < lines.length && isBlank(lines[peek])) peek++
+    const line = lines[peek]
+    if (line === undefined || indentOf(line) !== keyIndent || LIST_ITEM_LINE.test(line)) break
+
+    entry = line.trimStart().match(MAP_ENTRY)
+    if (entry === null) {
+      warn(onWarning, `unsupported frontmatter line "${line.trim()}" — ignored`)
+      cursor = peek + 1
+      break
+    }
+    cursor = peek
+  }
+
+  return { item, next: cursor }
+}
+
 export function parseFrontmatter (source, { onWarning } = {}) {
   const block = extractFrontmatterBlock(source)
 
   if (block === null) {
-    return { data: null, content: String(source ?? ''), raw: '' }
+    return { data: null, content: String(source ?? ''), raw: '', spans: {}, ranges: [] }
   }
 
+  const lines = block.bodyLines
   const data = {}
-  let pendingKey = null
-  let pendingItems = null
+  // ! [first, last] body-line index of every top-level key (last non-blank
+  //   line of its region) — `spans` holds the occurrence that won, `ranges`
+  //   every occurrence in order (a duplicated key leaves more than one)
+  const spans = {}
+  const ranges = []
+  let index = 0
 
-  const settle = () => {
-    if (pendingKey === null) return
-
-    if (pendingItems !== null && pendingItems.length > 0) {
-      data[pendingKey] = pendingItems
-    } else {
-      warn(onWarning, `key "${pendingKey}" has no supported value (nested maps are not supported) — ignored`)
+  const record = (key, start, last) => {
+    if (key in spans) {
+      warn(onWarning, `duplicate key "${key}" — the last one wins`)
     }
-
-    pendingKey = null
-    pendingItems = null
+    spans[key] = [start, last]
+    ranges.push({ key, start, end: last })
   }
 
-  for (const line of block.bodyLines) {
-    if (line.trim() === '' || line.trim().startsWith('#')) {
+  // @@ Top-level keys
+  while (index < lines.length) {
+    const line = lines[index]
+
+    if (isBlank(line)) {
+      index++
       continue
     }
 
-    const listItem = line.match(LIST_ITEM_LINE)
-    if (listItem !== null && pendingKey !== null) {
-      pendingItems = pendingItems || []
-      pendingItems.push(parseScalar(listItem[1]))
+    const keyed = /^\s/.test(line) ? null : line.match(KEY_LINE)
+    if (keyed === null) {
+      warn(onWarning, `unsupported frontmatter line "${line.trim()}" — ignored`)
+      index++
       continue
     }
 
-    const keyed = line.match(KEY_LINE)
-    if (keyed !== null && !/^\s/.test(line)) {
-      settle()
+    const key = keyed[1]
+    const rest = keyed[2]
+    const start = index
+    let last = index
 
-      const key = keyed[1]
-      const rest = keyed[2]
-
-      if (rest.trim() === '') {
-        // ! bare `key:` — a list may follow; anything else is unsupported
-        pendingKey = key
-        pendingItems = null
-      } else {
-        data[key] = parseScalar(rest)
+    if (rest.trim() !== '') {
+      const { value, next } = readValue(rest, lines, index, 0)
+      data[key] = value
+      for (let cursor = index; cursor < next; cursor++) {
+        if (lines[cursor].trim() !== '') last = cursor
       }
+      index = next
+      record(key, start, last)
       continue
     }
 
-    warn(onWarning, `unsupported frontmatter line "${line.trim()}" — ignored`)
+    // ! bare `key:` — a list may follow; anything else is unsupported
+    const items = []
+    index++
+
+    // @@ List items (blank and comment lines allowed between them)
+    while (index < lines.length) {
+      const item = lines[index]
+
+      if (isBlank(item)) {
+        index++
+        continue
+      }
+      if (!/^\s/.test(item) && !LIST_ITEM_LINE.test(item)) break
+
+      const listed = item.match(LIST_ITEM_LINE)
+      if (listed === null) {
+        // ? still this key's region — a rewrite that drops the key drops it too
+        warn(onWarning, `unsupported frontmatter line "${item.trim()}" — ignored`)
+        last = index
+        index++
+        continue
+      }
+
+      if (MAP_ENTRY.test(listed[2])) {
+        const { item: map, next } = readMapItem(lines, index, onWarning)
+        items.push(map)
+        for (let cursor = index; cursor < next; cursor++) {
+          if (lines[cursor].trim() !== '') last = cursor
+        }
+        index = next
+      } else {
+        items.push(parseScalar(listed[2]))
+        last = index
+        index++
+      }
+    }
+
+    if (items.length > 0) {
+      data[key] = items
+      record(key, start, last)
+    } else {
+      warn(onWarning, `key "${key}" has no supported value (nested maps are not supported) — ignored`)
+    }
   }
 
-  settle()
+  return { data, content: block.content, raw: block.raw, spans, ranges }
+}
 
-  return { data, content: block.content, raw: block.raw }
+// : what of a file's frontmatter the page registry depends on, as a string —
+//   content keys (`faq`) excluded, so editing them never restarts the dev
+//   server; null when the file has no block
+export function fingerprintFrontmatter (data) {
+  if (data === null || data === undefined) return null
+
+  const registryData = Object.fromEntries(Object.entries(data).filter(([key]) => !CONTENT_KEYS.has(key)))
+
+  return JSON.stringify(registryData)
 }
 
 export function mergeTagTerms (existing = '', added = '') {
@@ -187,9 +374,37 @@ function joinTermList (value) {
 // ? title/desc accept what an author plausibly writes unquoted — strings and
 //   numbers (`title: 42`); anything else is not text and is dropped with a warn
 function toText (value) {
-  if (typeof value === 'string') return value
+  // ? block scalars (`title: |`) end with a line break a <title> must not keep
+  if (typeof value === 'string') return value.trim()
   if (typeof value === 'number') return String(value)
   return ''
+}
+
+// : the page FAQ as `[{ question, answer }]` — only items whose `q` and `a` are
+//   text (strings, or numbers an author wrote unquoted); the rest warn
+export function normalizePageFaq (value, { onWarning } = {}) {
+  if (value === undefined || value === null) return []
+
+  if (!Array.isArray(value)) {
+    warn(onWarning, 'key "faq" must be a list of `- q: … a: …` items — ignored')
+    return []
+  }
+
+  const items = []
+  value.forEach((entry, position) => {
+    const isMap = entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+    const question = isMap ? toText(entry.q).trim() : ''
+    const answer = isMap ? toText(entry.a).trim() : ''
+
+    if (question === '' || answer === '') {
+      warn(onWarning, `faq item ${position + 1} needs a text "q" and "a" — ignored`)
+      return
+    }
+
+    items.push({ question, answer })
+  })
+
+  return items
 }
 
 // ? Public read of a subpage title/description override, shared by the layout,
@@ -275,6 +490,12 @@ export function compileFrontmatterPatch (fmBySubpage, { defaultLang = 'en-US', o
     for (const [key, value] of Object.entries(fm)) {
       if (LOCALIZED_KEYS.has(key)) continue
 
+      if (CONTENT_KEYS.has(key)) {
+        // ? validated here only for the build warnings — the page compile renders it
+        normalizePageFaq(value, { onWarning: message => warn(onWarning, `${message} (${locale})`) })
+        continue
+      }
+
       if (FORBIDDEN_KEYS.has(key)) {
         warn(onWarning, `key "${key}" cannot be set from frontmatter — ignored`)
         continue
@@ -302,7 +523,9 @@ export function compileFrontmatterPatch (fmBySubpage, { defaultLang = 'en-US', o
       if (!fm) continue
 
       for (const [key, value] of Object.entries(fm)) {
-        if (key === 'keys') {
+        if (CONTENT_KEYS.has(key)) {
+          normalizePageFaq(value, { onWarning: message => warn(onWarning, `${message} (${subpage}, ${locale})`) })
+        } else if (key === 'keys') {
           appendTags(locale, value)
         } else if (key === 'title' || key === 'desc') {
           const text = toText(value)

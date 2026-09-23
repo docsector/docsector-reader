@@ -24,6 +24,9 @@
       anchor: 'Navegação por âncoras',
       of: 'de'
     },
+    faq: {
+      title: 'Perguntas frequentes'
+    },
     feedback: {
       question: 'Esta página foi útil?',
       thanks: 'Obrigado pelo seu feedback!',

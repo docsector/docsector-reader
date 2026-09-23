@@ -1,3 +1,11 @@
+---
+faq:
+  - q: Does the widget use cookies or track readers?
+    a: No. The vote is remembered in the reader's own `localStorage`, and the function stores only the page path, locale, docs version and rating — no IP address or identifier.
+  - q: Why do votes answer 503 after a deploy?
+    a: The `FEEDBACK` Analytics Engine binding is missing for that environment. Add it to both **Production** and **Preview** in the Pages project settings.
+---
+
 ## Overview
 
 Page Feedback adds a **"Was this helpful?"** prompt to the page footer, with three faces: green for helpful, yellow for somewhat helpful and red for not helpful. A reader picks one and the footer thanks them. Picking another face changes the vote, and picking the same face again cancels it.

@@ -82,7 +82,7 @@ The JSON can follow Quasar's API schema. Useful sections include `props`, `metho
 
 Page registry entries in `src/pages/*.index.js` define titles, status, icons, books, menu placement, subpage availability, descriptions, and search tags.
 
-A page's Markdown file may also open with a Quasar-style frontmatter block (`title`, `desc`, `keys`, and any registry config key). In-page frontmatter takes precedence over the registry entry for the same key, per locale; keys only present in-page are merged in, and `keys` appends to the search tags. Subpage files (`showcase`/`vs`) may only retitle their own subpage.
+A page's Markdown file may also open with a Quasar-style frontmatter block (`title`, `desc`, `keys`, and any registry config key). In-page frontmatter takes precedence over the registry entry for the same key, per locale; keys only present in-page are merged in, and `keys` appends to the search tags. Subpage files (`showcase`/`vs`) may only retitle their own subpage. A `faq:` list of `- q:` / `a:` items (answers in Markdown, `a: |` for several lines) renders the page's closing FAQ — do not write an FAQ section by hand in the body.
 
 When adding new content, check the nearest existing entry and keep metadata consistent with that section.
 

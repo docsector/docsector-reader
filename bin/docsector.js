@@ -391,6 +391,9 @@ const TEMPLATE_I18N_HJSON = `\
       anchor: 'Anchor navigation'
       of: 'of'
     }
+    faq: {
+      title: 'FAQ'
+    }
     feedback: {
       question: 'Was this helpful?'
       thanks: 'Thanks for your feedback!'

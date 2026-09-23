@@ -13,13 +13,23 @@ const createTreeNode = (token) => ({
   children: []
 })
 
-export const buildPageAnchorTree = (tokens = []) => {
+export const buildPageAnchorTree = (tokens = [], { faqLabel = 'FAQ' } = {}) => {
   const anchors = []
   const rootNode = createRootNode()
   const seenAnchors = new Set()
   let currentParentNode = null
 
   for (const token of Array.isArray(tokens) ? tokens : []) {
+    // ? The closing FAQ is one top-level entry — its questions are deep links,
+    //   not ToC nodes
+    if (token?.tag === 'faq' && hasAnchorId(token.anchorId) && !seenAnchors.has(token.anchorId)) {
+      seenAnchors.add(token.anchorId)
+      anchors.push(token.anchorId)
+      rootNode.children.push({ id: token.anchorId, label: faqLabel, children: [] })
+      currentParentNode = null
+      continue
+    }
+
     if (!isTreeHeadingToken(token) || !hasAnchorId(token.anchorId) || seenAnchors.has(token.anchorId)) {
       continue
     }

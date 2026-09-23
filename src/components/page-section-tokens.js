@@ -5,7 +5,7 @@ import taskLists from 'markdown-it-task-lists'
 
 // ? Explicit extensions: this module is also imported by the build-time page
 //   compiler under plain Node ESM resolution (no Vite resolver)
-import { stripFrontmatter } from '../frontmatter.js'
+import { normalizePageFaq, parseFrontmatter } from '../frontmatter.js'
 import { installInlineCodeCopyRenderer } from './inline-code-copy.js'
 import { loadMathCss } from './page-tokens-support.js'
 
@@ -1136,6 +1136,55 @@ const renderExpandableTitle = (markdownInline, title, env) => {
     .replace(/<code\b[^>]*>/gi, '<code>')
 }
 
+// : plain text of inline or block Markdown (FAQ JSON-LD) — rendered by a bare
+//   parser (no copy affordances, no KaTeX markup), tags stripped; blocks are
+//   already newline-separated in the output, so whitespace collapse spaces them
+let plainTextParser = null
+const toPlainText = (source) => {
+  plainTextParser = plainTextParser || new MarkdownIt({ html: true })
+
+  return decodeBasicEntities(plainTextParser.render(String(source)).replace(/<[^>]*>/g, ''))
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// : a page source's FAQ as plain text `[{ question, text }]` — what the SSG
+//   prerender needs for JSON-LD, without tokenizing the whole page
+export const readPageFaqText = (source) => {
+  const { data } = parseFrontmatter(String(source ?? ''))
+
+  return normalizePageFaq(data?.faq).map(({ question, answer }) => ({
+    question: toPlainText(question),
+    text: toPlainText(answer)
+  }))
+}
+
+// : the closing FAQ token of a page — built after its content so every anchor
+//   is deduped against the page's own headings (a `## FAQ` of its own included)
+const buildFaqToken = (items, { markdownInline, markdownEnv, parserState, codeToolbarDefault }) => ({
+  tag: 'faq',
+  anchorId: parserState.headingSlugger.slug('faq'),
+  items: items.map(({ question, answer }) => {
+    const questionText = toPlainText(question)
+
+    return {
+      anchorId: parserState.headingSlugger.slug(`faq ${questionText}`),
+      question: questionText,
+      // ? Rendered as written — no entity decode (that belongs to <summary>
+      //   titles, which arrive attribute-escaped): an author's `&lt;b&gt;`
+      //   stays text, like it does in the page body. Copy affordances are
+      //   stripped — a role="button" would fight the expand toggle.
+      questionHTML: markdownInline.renderInline(question, markdownEnv).replace(/<code\b[^>]*>/gi, '<code>'),
+      text: toPlainText(answer),
+      tokens: tokenizePageSectionSource(answer, {
+        allowHeadingTokens: false,
+        parserState,
+        codeToolbarDefault
+      })
+    }
+  })
+})
+
 const createMarkdownBlockParser = () => {
   const markdown = installInlineCodeCopyRenderer(installMathSupport(new MarkdownIt({
     html: true
@@ -1219,13 +1268,19 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
     // ? opt-in: PAGE sources strip their leading frontmatter block (metadata,
     //   never content — it would render as a setext <h2> polluting the ToC);
     //   non-page sources (assistant answers!) may legitimately START with ---
-    //   and must never lose content to the strip
+    //   and must never lose content to the strip. The block's `faq` becomes
+    //   the page's closing FAQ token.
     stripFrontmatter: stripLeadingFrontmatter = false
   } = options
+  // ? normalized BEFORE the block is read: dev sources arrive with vue-i18n's
+  //   brace escapes, and the FAQ text must see the same characters the body does
+  const normalizedInput = normalizePageSectionSource(source)
+  const frontmatter = stripLeadingFrontmatter ? parseFrontmatter(normalizedInput) : null
+  const faqItems = allowHeadingTokens && frontmatter?.data ? normalizePageFaq(frontmatter.data.faq) : []
   // ? Convert native <details>/<summary> to the expandable syntax BEFORE shielding
   //   so any dedented body code is shielded/restored flush-left (not nested)
-  const preparedSource = stripLeadingFrontmatter ? stripFrontmatter(String(source)) : source
-  const normalizedSource = normalizeNativeDetails(normalizePageSectionSource(preparedSource))
+  const preparedSource = frontmatter ? frontmatter.content : normalizedInput
+  const normalizedSource = normalizeNativeDetails(preparedSource)
   const { source: sourceWithShieldedCode, codeSegmentsMap } = shieldMarkdownCodeSegments(normalizedSource)
   const { source: sourceWithTimelines, timelineMap } = extractTimelineBlocks(sourceWithShieldedCode)
 
@@ -1791,6 +1846,11 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
         level--
     }
   })
+
+  // @ Closing FAQ (page sources whose frontmatter declares one)
+  if (faqItems.length > 0) {
+    tokens.push(buildFaqToken(faqItems, { markdownInline, markdownEnv, parserState, codeToolbarDefault }))
+  }
 
   return tokens
 }

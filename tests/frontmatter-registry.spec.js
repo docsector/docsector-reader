@@ -51,12 +51,12 @@ describe('frontmatter overlay collection', () => {
     writePage(projectRoot, 'getting-started.showcase.pt-BR.md', '---\ntitle: Demonstração\n---\n\nDemo.\n')
     writePage(projectRoot, 'getting-started.overview.pt-BR.md', '## Sem frontmatter\n')
 
-    const { overlay, rawBlocksByFile } = collectFrontmatterOverlay(projectRoot)
+    const { overlay, fingerprintsByFile } = collectFrontmatterOverlay(projectRoot)
 
     expect(overlay.__current__['/guide/getting-started'].overview['en-US']).toEqual({ title: 'In-Page Title' })
     expect(overlay.__current__['/guide/getting-started'].showcase['pt-BR']).toEqual({ title: 'Demonstração' })
     expect(overlay.__current__['/guide/getting-started'].overview['pt-BR']).toBeUndefined()
-    expect(Object.keys(rawBlocksByFile)).toHaveLength(2)
+    expect(Object.keys(fingerprintsByFile)).toHaveLength(2)
   })
 
   it('ignores Homepage files and markdown without a leading block', () => {
@@ -70,6 +70,40 @@ describe('frontmatter overlay collection', () => {
 })
 
 describe('frontmatter in loadBooksRegistry', () => {
+  it('never merges a page faq into the registry — it ships with the page tokens', async () => {
+    const projectRoot = createProjectRoot()
+    const warnings = []
+    writePage(projectRoot, 'getting-started.overview.en-US.md', [
+      '---',
+      'title: With FAQ',
+      'faq:',
+      '  - q: Kept out of the registry?',
+      '    a: Yes.',
+      '  - q: Missing answer',
+      '---',
+      '',
+      '## Overview',
+      ''
+    ].join('\n'))
+    writePage(projectRoot, 'getting-started.showcase.en-US.md', '---\nfaq:\n  - q: Showcase question?\n    a: Allowed.\n---\n\nDemo.\n')
+
+    const originalWarn = console.warn
+    console.warn = (...args) => warnings.push(args.join(' '))
+    let registry
+    try {
+      registry = await loadBooksRegistry(projectRoot)
+    } finally {
+      console.warn = originalWarn
+    }
+    const page = registry.books.guide.routes['/getting-started']
+
+    expect(page.data['en-US'].title).toBe('With FAQ')
+    expect(page.config.faq).toBeUndefined()
+    expect(JSON.stringify(page)).not.toContain('Kept out of the registry')
+    expect(warnings.some(message => message.includes('only applies from the overview file'))).toBe(false)
+    expect(warnings.some(message => message.includes('faq item 2'))).toBe(true)
+  })
+
   it('applies the full Quasar-style block to the registry entry', async () => {
     const projectRoot = createProjectRoot()
     writePage(projectRoot, 'getting-started.overview.en-US.md', [

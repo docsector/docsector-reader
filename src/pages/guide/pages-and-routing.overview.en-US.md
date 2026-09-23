@@ -108,7 +108,7 @@ related:
 ## Overview
 ```
 
-The block is metadata, never content: it is removed from the rendered page, the Table of Contents, and the search content index. The raw `.md` served to agents (and `llms-full.txt`) keeps it verbatim.
+The block is metadata, never content: it is removed from the rendered page, the Table of Contents, and the search content index. The raw `.md` served to agents (and `llms-full.txt`) keeps it verbatim — except `faq`, which leaves the block and becomes a readable `## FAQ` section at the end.
 
 In-page metadata merges into the page's registry entry. A key present in both places is **overridden by the page**; a key present only in the page is **merged in**. Localized keys apply per file — frontmatter in `headings.overview.pt-BR.md` only touches the `pt-BR` values.
 
@@ -119,11 +119,12 @@ In-page metadata merges into the page's registry entry. A key present in both pl
 | `keys` | **Appends** to the sidebar search tags for that locale (`metadata.tags`) — registry tags are kept |
 | `icon`, `status`, `version`, … | Scalar registry config keys, overridden from the `overview` file only. Object-valued keys (`menu`, `subpages`, `link`, `layouts`) and structural blocks (`meta`, `data`, `metadata`) cannot be set from frontmatter and warn at build time |
 | `examples`, `related`, anything else | Stored on the page config untouched, available for future features |
+| `faq` | Renders the page's closing FAQ from a list of `- q:` / `a:` items — see [Page FAQ](/manual/basic/page-faq/overview/). Applies per file, and never enters the registry |
 | `book` / `type` | Never honored — the file's own path decides the book |
 
-Subpage files (`showcase` / `vs`) may only override the `title` and `desc` of **their own subpage** (used by the prerendered `<title>`/description of that route) and append `keys`; other keys there warn at build time and are ignored.
+Subpage files (`showcase` / `vs`) may only override the `title` and `desc` of **their own subpage** (used by the prerendered `<title>`/description of that route), append `keys` and declare their own `faq`; other keys there warn at build time and are ignored.
 
-The supported syntax is a YAML subset: `key: value` scalars (quoted strings, booleans, numbers, `null`) and one-level lists. Nested maps, block scalars, inline collections and anchors are not supported — unsupported lines warn at build time and are skipped. The block only exists when `---` is the very first line of the file and it is closed by a `---` (or `...`) line; a `---` later in the document stays a plain thematic break.
+The supported syntax is a YAML subset: `key: value` scalars (quoted strings, booleans, numbers, `null`; a value may continue on deeper-indented lines), block scalars (`|` literal, `>` folded, with the `-`/`+` chomping indicators), one-level lists, and lists of maps (`- q: …` items continued by lines indented to their first key — the `faq` form). A map directly under a key, inline collections and anchors are not supported — unsupported lines warn at build time and are skipped. The block only exists when `---` is the very first line of the file and it is closed by a `---` (or `...`) line; a `---` later in the document stays a plain thematic break.
 
 ## Route Generation
 

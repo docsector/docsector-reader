@@ -322,6 +322,34 @@ export default {
     }
   },
 
+  '/basic/page-faq': {
+    config: {
+      icon: 'quiz',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Page FAQ — Documentation of Docsector Reader',
+          'pt-BR': 'FAQ da Página — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Page FAQ' },
+      'pt-BR': { title: 'FAQ da Página' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'faq frequently asked questions accordion frontmatter json-ld schema faqpage',
+        'pt-BR': 'faq perguntas frequentes acordeão frontmatter json-ld schema faqpage'
+      }
+    }
+  },
+
   '/basic/previous-and-next': {
     config: {
       icon: 'last_page',

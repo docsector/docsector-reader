@@ -34,8 +34,9 @@ import HJSON from 'hjson'
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import { buildFeedbackServerConfig, renderFeedbackServer } from './feedback/build.js'
 import { normalizeFeedbackConfig } from './feedback/config.js'
+import { buildAgentMarkdown, buildFaqJsonLd, injectFaqJsonLd } from './page-faq.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
-import { applyFrontmatterOverlayToRoutes, compileFrontmatterPatch, parseFrontmatter, resolveSubpageMeta, stripFrontmatter } from './frontmatter.js'
+import { applyFrontmatterOverlayToRoutes, compileFrontmatterPatch, fingerprintFrontmatter, parseFrontmatter, resolveSubpageMeta, stripFrontmatter } from './frontmatter.js'
 import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
 import { appendSitemapsToRobots, createSitemap } from './sitemap.js'
 import { THEME_INLINE_SCRIPT } from './theme.inline.js'
@@ -334,11 +335,12 @@ const FRONTMATTER_FILE_PATTERN = /^(.+)\.(overview|showcase|vs)\.([A-Za-z0-9-]+)
  *
  * Returns:
  *   overlay          — { versionId: { '/<book><pagePath>': { subpage: { locale: data } } } }
- *   rawBlocksByFile  — { absolutePath: rawFrontmatterBlock } (dev cache + pages hash)
+ *   fingerprintsByFile — { absolutePath: fingerprintFrontmatter(data) } (dev cache:
+ *                        what of each block the registry reads)
  */
 export function collectFrontmatterOverlay (projectRoot) {
   const overlay = {}
-  const rawBlocksByFile = {}
+  const fingerprintsByFile = {}
 
   // ? manual walk instead of readdirSync({recursive}) — that option (and
   //   Dirent.parentPath) only exists from Node 18.17/20.12, which the engines
@@ -381,11 +383,11 @@ export function collectFrontmatterOverlay (projectRoot) {
       const onWarning = message => console.warn(`\x1b[33m[docsector]\x1b[0m frontmatter ${absolutePath}: ${message}`)
       const { data, raw } = parseFrontmatter(source, { onWarning })
 
-      // ! seed the raw-block cache even for empty/comment-only blocks — the dev
-      //   watcher compares against this map, and an unseeded file would restart
-      //   the server on every body edit forever
+      // ! seed the fingerprint cache even for empty/comment-only blocks — the
+      //   dev watcher compares against this map, and an unseeded file would
+      //   restart the server on every body edit forever
       if (raw !== '') {
-        rawBlocksByFile[absolutePath] = raw
+        fingerprintsByFile[absolutePath] = fingerprintFrontmatter(data)
       }
 
       if (data === null || Object.keys(data).length === 0) continue
@@ -397,7 +399,7 @@ export function collectFrontmatterOverlay (projectRoot) {
     }
   }
 
-  return { overlay, rawBlocksByFile }
+  return { overlay, fingerprintsByFile }
 }
 
 /**
@@ -1469,10 +1471,11 @@ function createBooksPlugin (projectRoot) {
       }
 
       // ? frontmatter lives inside the page markdown but feeds the registry —
-      //   compare only the raw block per file so body edits (the 99% case)
-      //   keep instant HMR and never touch the registry
+      //   compare only what the registry reads from each block, so body edits
+      //   (the 99% case) and content keys (`faq`) keep instant HMR and never
+      //   touch the registry
       const frontmatterBlocks = new Map(
-        Object.entries(collectFrontmatterOverlay(projectRoot).rawBlocksByFile)
+        Object.entries(collectFrontmatterOverlay(projectRoot).fingerprintsByFile)
       )
       const pagesDir = resolve(projectRoot, 'src', 'pages')
 
@@ -1480,7 +1483,7 @@ function createBooksPlugin (projectRoot) {
         try {
           const source = readFileSync(path, 'utf-8')
           if (!/^\uFEFF?---/.test(source)) return null
-          return parseFrontmatter(source).raw || null
+          return fingerprintFrontmatter(parseFrontmatter(source).data)
         } catch {
           return null
         }
@@ -1848,6 +1851,9 @@ function createPrerenderMetaPlugin (projectRoot) {
       const langs = (config.languages || []).map(language => language?.value).filter(Boolean)
       if (langs.length === 0) langs.push(defaultLang)
 
+      // ? markdown-it only loads for the build step that needs it
+      const { readPageFaqText } = await import('./components/page-section-tokens.js')
+
       let count = 0
       const bookRoots = new Set()
 
@@ -1910,6 +1916,13 @@ function createPrerenderMetaPlugin (projectRoot) {
               (_, p1) => `${p1}${brandingLogo}"`
             )
 
+          // @ FAQPage JSON-LD of the page's default-language FAQ (static head;
+          //   the client swaps it for the useMeta-managed one on mount)
+          const faqFile = resolveMarkdownSourceFile(pagesDir, entry, subpage, defaultLang)
+          const faqHtml = existsSync(faqFile)
+            ? injectFaqJsonLd(html, buildFaqJsonLd(readPageFaqText(readFileSync(faqFile, 'utf-8'))))
+            : html
+
           // @ Inject the route's preloads (shared graph + this page's markdown)
           const mdLinks = []
           for (const lang of langs) {
@@ -1923,8 +1936,8 @@ function createPrerenderMetaPlugin (projectRoot) {
 
           const links = [...sharedLinks, ...mdLinks]
           const routeHtml = links.length > 0
-            ? html.replace('</head>', `  ${links.join('\n  ')}\n</head>`)
-            : html
+            ? faqHtml.replace('</head>', `  ${links.join('\n  ')}\n</head>`)
+            : faqHtml
 
           const dir = resolve(distDir, routePath)
           mkdirSync(dir, { recursive: true })
@@ -2716,20 +2729,22 @@ function createMarkdownEndpointPlugin (projectRoot) {
           const homepageMarkdown = homepageByLang?.[requestedLang] || homepageByLang?.[defaultLang] || null
 
           if (typeof homepageMarkdown === 'string' && homepageMarkdown.length > 0) {
+            const agentMarkdown = buildAgentMarkdown(homepageMarkdown)
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.setHeader('Vary', 'Accept')
-            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(homepageMarkdown)))
-            res.end(homepageMarkdown)
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(agentMarkdown)))
+            res.end(agentMarkdown)
             return
           }
         }
 
         if (homepagePath && typeof remoteHomepage === 'string' && remoteHomepage.length > 0) {
           if ((markdownNegotiationEnabled && wantsMarkdown) || (markdownAgentFallback && matchesMarkdownAgentUserAgent(req.headers['user-agent'] || ''))) {
+            const agentMarkdown = buildAgentMarkdown(remoteHomepage)
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.setHeader('Vary', 'Accept')
-            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(remoteHomepage)))
-            res.end(remoteHomepage)
+            res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(agentMarkdown)))
+            res.end(agentMarkdown)
             return
           }
         }
@@ -2739,7 +2754,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
           const file = resolveMarkdownFile(url.pathname, lang)
           if (!file) return next()
 
-          const content = readFileSync(file, 'utf-8')
+          const content = buildAgentMarkdown(readFileSync(file, 'utf-8'))
           res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
           res.setHeader('Vary', 'Accept')
           res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
@@ -2751,7 +2766,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
         if (markdownNegotiationEnabled && wantsMarkdown) {
           const file = resolveNegotiatedFile(url.pathname, lang)
           if (file) {
-            const content = readFileSync(file, 'utf-8')
+            const content = buildAgentMarkdown(readFileSync(file, 'utf-8'))
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.setHeader('Vary', 'Accept')
             res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
@@ -2765,7 +2780,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
         if (markdownAgentFallback && matchesMarkdownAgentUserAgent(ua)) {
           const file = resolveNegotiatedFile(url.pathname, lang)
           if (file) {
-            const content = readFileSync(file, 'utf-8')
+            const content = buildAgentMarkdown(readFileSync(file, 'utf-8'))
             res.setHeader('Content-Type', 'text/markdown; charset=utf-8')
             res.setHeader('Vary', 'Accept')
             res.setHeader('x-markdown-tokens', String(estimateMarkdownTokens(content)))
@@ -2913,7 +2928,8 @@ function createMarkdownBuildPlugin (projectRoot) {
               mkdirSync(destDir, { recursive: true })
             }
 
-            const content = readFileSync(srcFile, 'utf-8')
+            // ? agents read the FAQ as a `## FAQ` section, not raw frontmatter
+            const content = buildAgentMarkdown(readFileSync(srcFile, 'utf-8'))
             writeFileSync(resolve(distDir, `${routePath}.${lang}.md`), content)
             if (lang === defaultLang) {
               writeFileSync(resolve(distDir, `${routePath}.md`), content)
@@ -2929,8 +2945,9 @@ function createMarkdownBuildPlugin (projectRoot) {
       const homepageSources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
       let homepageCount = 0
       for (const lang of homepageSources.langs) {
-        const homepageContent = homepageSources.byLang?.[lang]
-        if (typeof homepageContent !== 'string' || homepageContent.length === 0) continue
+        const homepageSource = homepageSources.byLang?.[lang]
+        if (typeof homepageSource !== 'string' || homepageSource.length === 0) continue
+        const homepageContent = buildAgentMarkdown(homepageSource)
 
         writeFileSync(resolve(distDir, `homepage.${lang}.md`), homepageContent)
         if (lang === homepageSources.defaultLang) {
@@ -3015,7 +3032,7 @@ function createMarkdownBuildPlugin (projectRoot) {
                 : `- [${subpageTitle}](${mdUrl})`
             )
 
-            const content = readFileSync(srcFile, 'utf-8')
+            const content = buildAgentMarkdown(readFileSync(srcFile, 'utf-8'))
             llmsFull += `## ${subpageTitle}\n\nSource: ${pageUrl}\n\n${content}\n\n---\n\n`
           }
         }
@@ -4341,8 +4358,9 @@ export function createQuasarConfig (options = {}) {
               .update(readFileSync(file))
           }
           // ? in-page frontmatter feeds the registry too — the hash must move
-          //   when a frontmatter block changes across restarts
-          pagesHashBuilder.update(JSON.stringify(collectFrontmatterOverlay(projectRoot).overlay))
+          //   when what the registry reads from a block changes across
+          //   restarts (content keys such as `faq` are left out)
+          pagesHashBuilder.update(JSON.stringify(collectFrontmatterOverlay(projectRoot).fingerprintsByFile))
 
           const pagesHash = createHash('sha256')
             .update(pagesHashBuilder.digest('hex'))

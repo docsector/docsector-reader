@@ -36,7 +36,8 @@ Use it for:
 5. Put reusable assets in stable public paths such as `/images/...`, `/files/...`, `/api/...`, or `/quasar-api/...`.
 6. For live examples, place Vue SFCs under `src/examples/**/*.vue` and reference them with `<d-block-code-example>`.
 7. For API references, serve JSON from a same-origin public asset and reference it with `<d-block-api>`.
-8. Validate links, anchors, code fences, and custom element closing tags before finishing.
+8. Put frequently asked questions in the page's `faq:` frontmatter (`- q:` / `a:` items) instead of a hand-written section: Docsector renders them as the closing FAQ, adds the ToC entry and emits FAQPage JSON-LD.
+9. Validate links, anchors, code fences, and custom element closing tags before finishing.
 
 ## Quick Block Selection
 

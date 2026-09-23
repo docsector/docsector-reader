@@ -78,6 +78,17 @@ describe('applyTemplateSections', () => {
     expect(out[3].content).toBe('sec')
   })
 
+  it('keeps the closing FAQ last, outside the reordering', () => {
+    const faq = { tag: 'faq', anchorId: 'faq', items: [] }
+    const out = applyTemplateSections(
+      [h2('security', 'Security'), p('sec'), h2('features', 'Features'), p('feat'), faq],
+      getTemplate('vs')
+    )
+
+    expect(out.map(token => token.anchorId || token.content)).toEqual(['features', 'feat', 'security', 'sec', 'faq'])
+    expect(out.at(-1)).toBe(faq)
+  })
+
   it('omits sections absent from the markdown', () => {
     const out = applyTemplateSections([h2('features', 'Features'), p('a')], getTemplate('vs'))
     expect(out.filter(token => token.tag === 'h2').map(token => token.anchorId)).toEqual(['features'])

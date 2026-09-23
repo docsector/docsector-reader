@@ -108,7 +108,7 @@ related:
 ## Overview
 ```
 
-O bloco é metadado, nunca conteúdo: ele é removido da página renderizada, do sumário (ToC) e do índice de busca. O `.md` raw servido para agentes (e o `llms-full.txt`) o mantém intacto.
+O bloco é metadado, nunca conteúdo: ele é removido da página renderizada, do sumário (ToC) e do índice de busca. O `.md` raw servido para agentes (e o `llms-full.txt`) o mantém intacto — exceto o `faq`, que sai do bloco e vira uma seção `## FAQ` legível no final.
 
 Os metadados in-page mergeiam na entrada do registro da página. Uma chave presente nos dois lugares é **sobrescrita pela página**; uma chave presente só na página é **mergeada**. Chaves localizadas valem por arquivo — frontmatter em `headings.overview.pt-BR.md` só afeta os valores `pt-BR`.
 
@@ -119,11 +119,12 @@ Os metadados in-page mergeiam na entrada do registro da página. Uma chave prese
 | `keys` | **Acrescenta** às tags de busca da sidebar naquele locale (`metadata.tags`) — as tags do registro são mantidas |
 | `icon`, `status`, `version`, … | Chaves escalares de config do registro, sobrescritas apenas a partir do arquivo `overview`. Chaves de valor-objeto (`menu`, `subpages`, `link`, `layouts`) e blocos estruturais (`meta`, `data`, `metadata`) não podem ser definidos via frontmatter e geram warning no build |
 | `examples`, `related`, qualquer outra | Guardada no config da página sem alteração, disponível para features futuras |
+| `faq` | Renderiza o FAQ que fecha a página a partir de uma lista de itens `- q:` / `a:` — veja [FAQ da Página](/manual/basic/page-faq/overview/). Vale por arquivo e nunca entra no registro |
 | `book` / `type` | Nunca honradas — o caminho do próprio arquivo decide o book |
 
-Arquivos de subpágina (`showcase` / `vs`) só podem sobrescrever o `title` e o `desc` **da própria subpágina** (usados no `<title>`/descrição prerenderizados daquela rota) e acrescentar `keys`; outras chaves ali geram warning no build e são ignoradas.
+Arquivos de subpágina (`showcase` / `vs`) só podem sobrescrever o `title` e o `desc` **da própria subpágina** (usados no `<title>`/descrição prerenderizados daquela rota), acrescentar `keys` e declarar o próprio `faq`; outras chaves ali geram warning no build e são ignoradas.
 
-A sintaxe suportada é um subconjunto de YAML: escalares `key: value` (strings com aspas, booleanos, números, `null`) e listas de um nível. Mapas aninhados, block scalars, coleções inline e anchors não são suportados — linhas não suportadas geram warning no build e são puladas. O bloco só existe quando `---` é a primeira linha do arquivo e é fechado por uma linha `---` (ou `...`); um `---` mais adiante no documento continua sendo um separador temático comum.
+A sintaxe suportada é um subconjunto de YAML: escalares `key: value` (strings com aspas, booleanos, números, `null`; um valor pode continuar em linhas mais indentadas), block scalars (`|` literal, `>` dobrado, com os indicadores de chomping `-`/`+`), listas de um nível e listas de mapas (itens `- q: …` continuados por linhas indentadas até a primeira chave — a forma do `faq`). Um mapa direto sob uma chave, coleções inline e anchors não são suportados — linhas não suportadas geram warning no build e são puladas. O bloco só existe quando `---` é a primeira linha do arquivo e é fechado por uma linha `---` (ou `...`); um `---` mais adiante no documento continua sendo um separador temático comum.
 
 ## Geração de Rotas
 

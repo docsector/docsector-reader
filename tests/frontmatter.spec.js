@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyFrontmatterOverlayToRoutes,
+  compileFrontmatterPatch,
   extractFrontmatterBlock,
+  fingerprintFrontmatter,
   mergePageFrontmatter,
   mergeTagTerms,
+  normalizePageFaq,
   parseFrontmatter,
   resolveSubpageMeta,
   stripFrontmatter
@@ -123,6 +126,288 @@ describe('frontmatter parsing', () => {
     expect(data).toEqual({ title: 'Kept' })
     expect(data.menu).toBeUndefined()
     expect(warnings.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('frontmatter lists of maps and block scalars', () => {
+  const parse = (lines, options) => parseFrontmatter(['---', ...lines, '---', 'Body.'].join('\n'), options)
+
+  it('parses a list of maps — the faq form', () => {
+    const { data } = parse([
+      'faq:',
+      '  - q: What is Docsector?',
+      '    a: A documentation engine.',
+      '  - q: "Is it free: really?"',
+      '    a: Yes, MIT.'
+    ])
+
+    expect(data.faq).toEqual([
+      { q: 'What is Docsector?', a: 'A documentation engine.' },
+      { q: 'Is it free: really?', a: 'Yes, MIT.' }
+    ])
+  })
+
+  it('keeps colons inside unquoted values and tells maps from scalars the YAML way', () => {
+    const { data } = parse([
+      'faq:',
+      '  - q: What is X: a thing?',
+      '    a: See http://example.com',
+      'related:',
+      '  - http://example.com/a',
+      '  - /plain/path'
+    ])
+
+    expect(data.faq).toEqual([{ q: 'What is X: a thing?', a: 'See http://example.com' }])
+    expect(data.related).toEqual(['http://example.com/a', '/plain/path'])
+  })
+
+  it('reads literal block scalars with dedent, blank lines and comment-like lines', () => {
+    const { data } = parse([
+      'faq:',
+      '  - q: How do I publish?',
+      '    a: |',
+      '      Run the build:',
+      '',
+      '      ```bash',
+      '      # not a comment here',
+      '      docsector build',
+      '      ```',
+      '  - q: Next?',
+      '    a: Done.'
+    ])
+
+    expect(data.faq[0].a).toBe('Run the build:\n\n```bash\n# not a comment here\ndocsector build\n```\n')
+    expect(data.faq[1]).toEqual({ q: 'Next?', a: 'Done.' })
+  })
+
+  it('honors the strip (-) and keep (+) chomping indicators', () => {
+    const { data } = parse([
+      'strip: |-',
+      '  one',
+      '  two',
+      '',
+      'keep: |+',
+      '  three',
+      '',
+      '',
+      'clip: |',
+      '  four',
+      ''
+    ])
+
+    expect(data.strip).toBe('one\ntwo')
+    expect(data.keep).toBe('three\n\n\n')
+    expect(data.clip).toBe('four\n')
+  })
+
+  it('folds > blocks into paragraphs', () => {
+    const { data } = parse([
+      'desc: >',
+      '  A long description',
+      '  that wraps.',
+      '',
+      '  Second paragraph.'
+    ])
+
+    expect(data.desc).toBe('A long description that wraps.\nSecond paragraph.\n')
+  })
+
+  it('keeps more-indented lines of a block and stops at the next key', () => {
+    const { data } = parse([
+      'faq:',
+      '  - q: Code?',
+      '    a: |',
+      '      Indented:',
+      '',
+      '          four spaces',
+      'title: After'
+    ])
+
+    expect(data.faq[0].a).toBe('Indented:\n\n    four spaces\n')
+    expect(data.title).toBe('After')
+  })
+
+  it('allows blank lines and comments between list items', () => {
+    const { data } = parse([
+      'faq:',
+      '  - q: One',
+      '    a: 1',
+      '',
+      '  # second one below',
+      '  - q: Two',
+      '    a: 2'
+    ])
+
+    expect(data.faq).toEqual([{ q: 'One', a: 1 }, { q: 'Two', a: 2 }])
+  })
+
+  it('still rejects a nested map directly under a key', () => {
+    const warnings = []
+    const { data } = parse(['menu:', '  header: nested'], { onWarning: message => warnings.push(message) })
+
+    expect(data.menu).toBeUndefined()
+    expect(warnings.some(message => message.includes('header: nested'))).toBe(true)
+  })
+
+  it('warns about a line inside a map item that is not an entry', () => {
+    const warnings = []
+    const { data } = parse(['faq:', '  - q: One', '    just text', '    a: 1'], { onWarning: message => warnings.push(message) })
+
+    expect(data.faq[0].q).toBe('One')
+    expect(warnings.some(message => message.includes('just text'))).toBe(true)
+  })
+
+  it('reports each top-level key span, ignoring trailing blank lines', () => {
+    const { spans } = parse([
+      'title: X',
+      'faq:',
+      '  - q: One',
+      '    a: |',
+      '      Line',
+      '',
+      'keys: a b'
+    ])
+
+    expect(spans).toEqual({ title: [0, 0], faq: [1, 4], keys: [6, 6] })
+  })
+
+  it('returns empty spans when there is no block', () => {
+    expect(parseFrontmatter('## Title\n').spans).toEqual({})
+  })
+})
+
+describe('frontmatter multi-line plain scalars', () => {
+  const parse = (lines, options) => parseFrontmatter(['---', ...lines, '---', 'Body.'].join('\n'), options)
+
+  it('continues a value on deeper-indented lines, as YAML folds them', () => {
+    const warnings = []
+    const { data, spans } = parse([
+      'title: Getting started',
+      'faq:',
+      '  - q: Is it free?',
+      '    a: Yes, it is MIT licensed, and you can use it',
+      '      in commercial projects.',
+      '  - q: A question written',
+      '      over two lines?',
+      '    a: Still one question.'
+    ], { onWarning: message => warnings.push(message) })
+
+    expect(data.faq).toEqual([
+      { q: 'Is it free?', a: 'Yes, it is MIT licensed, and you can use it in commercial projects.' },
+      { q: 'A question written over two lines?', a: 'Still one question.' }
+    ])
+    expect(spans.faq).toEqual([1, 7])
+    expect(warnings).toEqual([])
+  })
+
+  it('keeps a blank line inside a continued value as a line break', () => {
+    const { data } = parse(['desc: First line', '  second line', '', '  new paragraph'])
+
+    expect(data.desc).toBe('First line second line\nnew paragraph')
+  })
+
+  it('continues quoted scalars and top-level values too', () => {
+    const { data } = parse(['title: "A quoted title', '  that wraps"', 'keys: a b'])
+
+    expect(data).toEqual({ title: 'A quoted title that wraps', keys: 'a b' })
+  })
+
+  it('takes the value of a bare entry from the lines below it', () => {
+    const { data } = parse(['faq:', '  - q: One', '    a:', '      The answer.'])
+
+    expect(data.faq).toEqual([{ q: 'One', a: 'The answer.' }])
+  })
+
+  it('ends a continued value at a comment line', () => {
+    const { data } = parse(['faq:', '  - q: One', '    a: The answer', '    # a note', '    x: 1'])
+
+    expect(data.faq).toEqual([{ q: 'One', a: 'The answer', x: 1 }])
+  })
+
+  it('reads the entries of an item across comment lines', () => {
+    const { data } = parse(['faq:', '  - q: One', '    # the answer below', '    a: 1'])
+
+    expect(data.faq).toEqual([{ q: 'One', a: 1 }])
+  })
+
+  it('covers warned lines in the key span', () => {
+    const warnings = []
+    const { spans } = parse(['faq:', '  - q: One', '    a: 1', '   misaligned: 2', 'title: X'], { onWarning: message => warnings.push(message) })
+
+    expect(spans.faq).toEqual([0, 3])
+    expect(warnings.some(message => message.includes('misaligned'))).toBe(true)
+  })
+
+  it('warns about a duplicate key and records every occurrence', () => {
+    const warnings = []
+    const { data, ranges } = parse(['faq: first', 'title: X', 'faq: second'], { onWarning: message => warnings.push(message) })
+
+    expect(data.faq).toBe('second')
+    expect(ranges.filter(range => range.key === 'faq').map(range => [range.start, range.end])).toEqual([[0, 0], [2, 2]])
+    expect(warnings).toContain('duplicate key "faq" — the last one wins')
+  })
+})
+
+describe('fingerprintFrontmatter', () => {
+  it('ignores content keys, so FAQ edits never restart the dev server', () => {
+    const base = parseFrontmatter('---\ntitle: X\nfaq:\n  - q: One\n    a: 1\n---\n').data
+    const edited = parseFrontmatter('---\ntitle: X\nfaq:\n  - q: One\n    a: 2\n---\n').data
+    const retitled = parseFrontmatter('---\ntitle: Y\nfaq:\n  - q: One\n    a: 1\n---\n').data
+
+    expect(fingerprintFrontmatter(edited)).toBe(fingerprintFrontmatter(base))
+    expect(fingerprintFrontmatter(retitled)).not.toBe(fingerprintFrontmatter(base))
+  })
+
+  it('is null without a block and stable for an empty one', () => {
+    expect(fingerprintFrontmatter(null)).toBeNull()
+    expect(fingerprintFrontmatter(parseFrontmatter('---\n# only a comment\n---\n').data)).toBe('{}')
+  })
+})
+
+describe('block scalars in registry text', () => {
+  it('trims the line break a block scalar leaves in a title or description', () => {
+    const { data } = parseFrontmatter('---\ntitle: |\n  Getting started\ndesc: >\n  A long\n  description.\n---\n')
+    const patch = compileFrontmatterPatch({ overview: { 'en-US': data } })
+
+    expect(patch.titleByLocale['en-US']).toBe('Getting started')
+    expect(patch.descByLocale['en-US']).toBe('A long description.')
+  })
+})
+
+describe('normalizePageFaq', () => {
+  it('keeps text q/a pairs, trimmed, and coerces numbers', () => {
+    expect(normalizePageFaq([
+      { q: '  What?  ', a: 'This.\n' },
+      { q: 42, a: 7 }
+    ])).toEqual([
+      { question: 'What?', answer: 'This.' },
+      { question: '42', answer: '7' }
+    ])
+  })
+
+  it('drops incomplete items with a warning', () => {
+    const warnings = []
+    const items = normalizePageFaq([
+      { q: 'No answer' },
+      { a: 'No question' },
+      { q: '', a: 'Empty question' },
+      'plain string',
+      { q: true, a: 'Boolean question' },
+      { q: 'Kept', a: 'Yes' }
+    ], { onWarning: message => warnings.push(message) })
+
+    expect(items).toEqual([{ question: 'Kept', answer: 'Yes' }])
+    expect(warnings).toHaveLength(5)
+    expect(warnings[0]).toContain('faq item 1')
+  })
+
+  it('ignores a missing key and warns about a non-list value', () => {
+    const warnings = []
+
+    expect(normalizePageFaq(undefined)).toEqual([])
+    expect(normalizePageFaq(null)).toEqual([])
+    expect(normalizePageFaq('What? This.', { onWarning: message => warnings.push(message) })).toEqual([])
+    expect(warnings).toHaveLength(1)
   })
 })
 

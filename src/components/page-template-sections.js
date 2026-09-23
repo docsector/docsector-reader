@@ -124,6 +124,11 @@ export function applyTemplateSections (tokens, template, locale = 'en-US', optio
     return Array.isArray(tokens) ? tokens : []
   }
 
+  // ? The closing FAQ is no template section — it stays last, untouched
+  if (Array.isArray(tokens) && tokens.at(-1)?.tag === 'faq') {
+    return [...applyTemplateSections(tokens.slice(0, -1), template, locale, options), tokens.at(-1)]
+  }
+
   // ? Map every accepted slug (canonical key + each localized title) to its section index
   const indexBySlug = new Map()
   sections.forEach((section, index) => {

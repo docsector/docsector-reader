@@ -41,6 +41,7 @@ import DBlockCards from './DBlockCards.vue'
 import DBlockQuickLinks from './DBlockQuickLinks.vue'
 import DBlockTimeline from './DBlockTimeline.vue'
 import DBlockExpandable from './DBlockExpandable.vue'
+import DBlockFaq from './DBlockFaq.vue'
 import DBlockStepper from './DBlockStepper.vue'
 import DBlockCodeExample from './DBlockCodeExample.vue'
 import DBlockTerminal from './DBlockTerminal.vue'
@@ -247,5 +248,19 @@ import DBlockApi from './DBlockApi.vue'
       :tokens="token.tokens"
     />
   </d-block-expandable>
+
+  <d-block-faq
+    v-else-if="token.tag === 'faq'"
+    :anchor-id="token.anchorId"
+    :items="token.items"
+  >
+    <template #default="{ item }">
+      <d-page-tokens
+        :id="id"
+        :code-toolbar-default="codeToolbarDefault"
+        :tokens="item.tokens"
+      />
+    </template>
+  </d-block-faq>
 </template>
 </template>

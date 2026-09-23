@@ -1,3 +1,11 @@
+---
+faq:
+  - q: O widget usa cookies ou rastreia leitores?
+    a: Não. O voto fica salvo no `localStorage` do próprio leitor, e a function grava só o caminho da página, o locale, a versão da documentação e a avaliação — nenhum IP ou identificador.
+  - q: Por que os votos respondem 503 depois de um deploy?
+    a: Falta o binding `FEEDBACK` do Analytics Engine naquele ambiente. Adicione-o em **Production** e em **Preview** nas configurações do projeto Pages.
+---
+
 ## Visão Geral
 
 O Feedback da Página adiciona ao rodapé a pergunta **"Esta página foi útil?"**, com três carinhas: verde para útil, amarela para mais ou menos útil e vermelha para não foi útil. O leitor escolhe uma e o rodapé agradece. Escolher outra carinha troca o voto, e escolher a mesma de novo cancela.

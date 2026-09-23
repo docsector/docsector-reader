@@ -95,6 +95,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 👍 **Page Feedback** — Opt-in "Was this helpful?" footer prompt; votes land in a Workers Analytics Engine dataset through a generated Cloudflare Pages Function
+- ❓ **Page FAQ** — A closing FAQ accordion declared in a page's `faq:` frontmatter (Markdown answers), with a ToC entry, deep links per question, schema.org FAQPage JSON-LD and a `## FAQ` section in the Markdown served to agents
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback and automatic primary-title handoff when the remote README already provides the project heading
@@ -1193,7 +1194,20 @@ related:
 ## Overview
 ```
 
-The block never renders (page, ToC and search index are stripped), while the raw served `.md` keeps it verbatim. Subpage files (`showcase`/`vs`) may retitle their own subpage only. Syntax is a YAML subset — scalars and one-level lists; unsupported lines warn at build time. See the Pages and Routing guide for the full key table.
+The block never renders (page, ToC and search index are stripped), while the raw served `.md` keeps it verbatim — except `faq`, which becomes a `## FAQ` section at the end. Subpage files (`showcase`/`vs`) may retitle their own subpage and declare their own `faq` only. Syntax is a YAML subset — scalars, block scalars (`|`, `>`), one-level lists and lists of maps; unsupported lines warn at build time. See the Pages and Routing guide for the full key table.
+
+A `faq` key closes the page with an FAQ accordion:
+
+```markdown
+---
+faq:
+  - q: What is Docsector?
+    a: A documentation engine built on Vue 3.
+  - q: How do I publish?
+    a: |
+      Run `docsector build` and deploy `dist/spa`.
+---
+```
 
 ### Internal Links / Menu Shortcuts
 

@@ -14,7 +14,7 @@
  * Runs under plain Node ESM (Vite build) and in the client bundle only inside
  * the lazy dev fallback / assistant chunks — never in the critical path.
  */
-import { stripFrontmatter } from '../frontmatter.js'
+import { normalizePageFaq, parseFrontmatter, stripFrontmatter } from '../frontmatter.js'
 import { loadMathEngine, sourceHasMath, tokenizePageSectionSource } from './page-section-tokens.js'
 
 export const PAGE_TOKENS_VERSION = 1
@@ -42,20 +42,24 @@ export const extractPageHeading = (source) => {
 }
 
 export async function compilePageTokens (source, options = {}) {
-  // ? metadata never reaches the compiled artifact — the heading and the
-  //   serialized tokens both read the stripped text
-  const text = stripFrontmatter(String(source ?? ''))
+  // ? metadata never reaches the compiled artifact as content — the heading
+  //   reads the stripped text, and the tokenizer strips the block itself,
+  //   turning its `faq` into the closing FAQ token
+  const raw = String(source ?? '')
+  const text = stripFrontmatter(raw)
+  const faqAnswers = normalizePageFaq(parseFrontmatter(raw).data?.faq).map(item => item.answer)
 
   // ? Math pages pre-render KaTeX at build — load the engine first so the
-  //   tokenizer emits final HTML instead of raw dollar delimiters
-  const math = sourceHasMath(text)
+  //   tokenizer emits final HTML instead of raw dollar delimiters. The body and
+  //   the FAQ answers count; other metadata (a `$` in `desc`) does not.
+  const math = [text, ...faqAnswers].some(part => sourceHasMath(part))
   if (math) {
     await loadMathEngine()
   }
 
   // ! codeToolbarDefault stays unbaked (null): the per-page default is applied
   //   at render time by DPageTokens, so one compiled artifact serves all pages
-  const tokens = tokenizePageSectionSource(text, { codeToolbarDefault: null, ...options })
+  const tokens = tokenizePageSectionSource(raw, { codeToolbarDefault: null, ...options, stripFrontmatter: true })
 
   return {
     v: PAGE_TOKENS_VERSION,

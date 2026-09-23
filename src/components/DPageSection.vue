@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, hydrateOnIdle, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useI18n } from "vue-i18n"
+import { useMeta } from 'quasar'
 
 import DPageTokens from './DPageTokens.vue'
 
@@ -19,6 +20,7 @@ import { pageValueI18nPath } from '../i18n/path'
 import { buildPageAnchorTree } from './page-anchor-tree'
 import { isCompiledPageSource, loadMathCss, parseCompiledPageTokens } from './page-tokens-support'
 import { applyTemplateSections } from './page-template-sections'
+import { buildFaqJsonLd, FAQ_STATIC_JSON_LD_ATTRIBUTE } from '../page-faq'
 import docsectorConfig from 'docsector.config.js'
 
 const props = defineProps({
@@ -127,9 +129,25 @@ const sectionTokens = computed(() => {
   return tokens
 })
 
-watch(sectionTokens, (tokens) => {
-  store.commit('page/setAnchorTree', buildPageAnchorTree(tokens))
+watch([sectionTokens, locale], ([tokens]) => {
+  store.commit('page/setAnchorTree', buildPageAnchorTree(tokens, { faqLabel: t('page.faq.title') }))
 }, { immediate: true })
+
+// # FAQ structured data
+// ? FAQPage JSON-LD for the page's closing FAQ — rendered into the static head
+//   under SSR, kept current on client-side navigation, dropped with the FAQ
+const faqToken = computed(() => {
+  const last = sectionTokens.value.at(-1)
+  return last?.tag === 'faq' ? last : null
+})
+
+useMeta(() => {
+  const jsonLd = buildFaqJsonLd(faqToken.value?.items)
+
+  return jsonLd
+    ? { script: { docsectorFaq: { type: 'application/ld+json', innerHTML: jsonLd } } }
+    : {}
+})
 
 // # Progressive reveal
 // ! Enough blocks to overfill the tallest first viewport — the deferred tail
@@ -218,6 +236,9 @@ function start () {
 }
 
 onMounted(() => {
+  // ? The SSG prerender's static JSON-LD gives way to the useMeta-managed one
+  document.head.querySelectorAll(`script[${FAQ_STATIC_JSON_LD_ATTRIBUTE}]`).forEach(node => node.remove())
+
   // ? Hydration/SSR first paint is already complete — no reveal to run
   if (!suppressProgressive) {
     start()

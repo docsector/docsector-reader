@@ -8,6 +8,7 @@ import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/ext
 import DMenuItem from './DMenuItem.vue'
 import { scrollMenuToActive } from '../composables/menu-scroll'
 import { stripFrontmatter } from '../frontmatter.js'
+import { omitFaqTokens } from '../page-faq.js'
 import docsectorConfig from 'docsector.config.js'
 import { allBooks, booksByVersion, bookTagsByVersion, versions } from 'virtual:docsector-books'
 import { namespacedLabelI18nPath, routeSubpageSourceI18nPath } from '../i18n/path'
@@ -323,10 +324,12 @@ const searchTermInI18nTexts = (route, term, locale) => {
       const raw = tm(path, locale)
       // ? Compiled token modules carry the page text inside the tokens JSON
       //   (already frontmatter-free); dev raw strings still open with the
-      //   frontmatter block, which is metadata — never searchable content
+      //   frontmatter block, which is metadata — never searchable content.
+      //   The closing FAQ (a compiled token, a frontmatter key in dev) is not
+      //   searchable content either.
       source = typeof raw === 'string'
         ? stripFrontmatter(raw)
-        : (raw && typeof raw.tokens === 'string' ? raw.tokens : '')
+        : (raw && typeof raw.tokens === 'string' ? omitFaqTokens(raw.tokens) : '')
     }
 
     if (msgExists && source && source.toLowerCase().includes(term)) {
