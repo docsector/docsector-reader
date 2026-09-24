@@ -28,6 +28,11 @@ const CODE_EXAMPLE_MARKER_PREFIX = '@@DOCSECTOR_CODE_EXAMPLE_'
 const TERMINAL_MARKER_PREFIX = '@@DOCSECTOR_TERMINAL_'
 const API_BLOCK_MARKER_PREFIX = '@@DOCSECTOR_API_BLOCK_'
 const CODE_SEGMENT_MARKER_PREFIX = '@@DOCSECTOR_CODE_SEGMENT_'
+
+// ! A table nested in a hint or a list item gets the same scroll wrapper as a
+//   top-level one (DPageTokens), so a wide table never overflows its container
+const TABLE_OPEN = '<div class="d-table-wrapper"><table>'
+const TABLE_CLOSE = '</table></div>'
 const MATH_KATEX_OPTIONS = {
   throwOnError: false,
   strict: 'ignore'
@@ -1394,8 +1399,10 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
       return
     }
 
+    // ? attributes carry what Markdown asked for — a cell's text-align, an
+    //   ordered list's start, a task item's class
     blockquote.content += open
-      ? `<${element.tag}>`
+      ? `<${element.tag}${renderTokenAttributes(element)}>`
       : `</${element.tag}>`
   }
 
@@ -1456,6 +1463,18 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
       if (element.type === 'math_block') {
         blockquote.content += renderBlockToken(markdown, element, markdownEnv)
+        return
+      }
+
+      // ? a table scrolls inside its own wrapper, as it does at the top level —
+      //   bare, its max-content width would overflow the hint on narrow screens
+      if (element.type === 'table_open') {
+        blockquote.content += TABLE_OPEN
+        return
+      }
+
+      if (element.type === 'table_close') {
+        blockquote.content += TABLE_CLOSE
         return
       }
 
@@ -1764,7 +1783,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
               content: ''
             })
           } else {
-            parent.content += '<table>'
+            parent.content += TABLE_OPEN
           }
           break
 
@@ -1781,11 +1800,12 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
         case 'tr_open':
           parent.content += '<tr>'
           break
+        // ? a column's alignment (|:-|:-:|-:|) arrives as a text-align style
         case 'th_open':
-          parent.content += '<th>'
+          parent.content += `<th${renderTokenAttributes(element)}>`
           break
         case 'td_open':
-          parent.content += '<td>'
+          parent.content += `<td${renderTokenAttributes(element)}>`
           break
 
         case 'inline':
@@ -1817,7 +1837,7 @@ export const tokenizePageSectionSource = (source = '', options = {}) => {
 
         case 'table_close':
           if (level > 1) {
-            parent.content += '</table>'
+            parent.content += TABLE_CLOSE
           }
           break
 

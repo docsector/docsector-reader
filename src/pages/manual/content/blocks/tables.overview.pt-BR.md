@@ -12,6 +12,20 @@ Tabelas são úteis para comparações, matrizes de opções, notas de compatibi
 | Mermaid | Done | Diagramas adaptados ao tema |
 ```
 
+## Alinhamento
+
+Dois-pontos na linha separadora alinham a coluna: `:---` à esquerda, `:---:` ao centro, `---:` à direita. Uma coluna sem dois-pontos mantém o alinhamento padrão, à esquerda.
+
+```markdown
+| Plano | Preço | Variação |
+|:--------|------:|:--------:|
+| Inicial | 1,200 | +9.9% |
+```
+
+## Tabelas Largas
+
+Uma tabela mais larga que a página rola para o lado dentro da própria caixa, em vez de esticar a página — também dentro de um hint (`> [!NOTE]`) ou de um item de lista.
+
 ## Observações
 
 - Mantenha os rótulos das colunas curtos e claros.

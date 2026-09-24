@@ -1496,3 +1496,82 @@ After.
     expect(tokens[0]).toMatchObject({ tag: 'p', content: 'Uses {placeholders}.' })
   })
 })
+
+describe('tables and hints', () => {
+  it('wraps a table inside a hint in the scroll wrapper, like a top-level table', () => {
+    const tokens = tokenizePageSectionSource([
+      '> [!IMPORTANT]',
+      '> Measured values:',
+      '>',
+      '> | Workers | Bootgly | Swoole |',
+      '> |---|--:|--:|',
+      '> | 16 | **1,084,550** | 991,147 |',
+      '>',
+      '> After the table.'
+    ].join('\n'))
+    const [quote] = tokens.filter((token) => token.tag === 'blockquote')
+
+    expect(quote.alertType).toBe('important')
+    expect(quote.content).toContain('<div class="d-table-wrapper"><table><thead>')
+    expect(quote.content).toContain('</tbody></table></div>')
+    expect(quote.content.indexOf('<div class="d-table-wrapper">')).toBeLessThan(quote.content.indexOf('After the table.'))
+    expect(quote.content.match(/<table>/g)).toHaveLength(1)
+    expect(quote.content.match(/<div class="d-table-wrapper">/g)).toHaveLength(1)
+  })
+
+  it('wraps a table nested in a list item, and keeps a top-level table as its own token', () => {
+    const tokens = tokenizePageSectionSource([
+      '- Results:',
+      '',
+      '  | A | B |',
+      '  |---|---|',
+      '  | 1 | 2 |',
+      '',
+      '| C | D |',
+      '|---|---|',
+      '| 3 | 4 |'
+    ].join('\n'))
+    const list = tokens.find((token) => token.tag === 'ul')
+    const table = tokens.find((token) => token.tag === 'table')
+
+    expect(list.content).toContain('<div class="d-table-wrapper"><table>')
+    expect(list.content).toContain('</table></div>')
+    expect(table.content).not.toContain('d-table-wrapper')
+    expect(table.content).toContain('<td>3</td>')
+  })
+
+  it('keeps the column alignment Markdown asks for, at the top level and inside a hint', () => {
+    const tokens = tokenizePageSectionSource([
+      '| Left | Center | Right | Plain |',
+      '|:-----|:------:|------:|-------|',
+      '| a | b | c | d |',
+      '',
+      '> [!NOTE]',
+      '> | Workers | Bootgly |',
+      '> |---|--:|',
+      '> | 16 | 1,084,550 |'
+    ].join('\n'))
+    const table = tokens.find((token) => token.tag === 'table')
+    const quote = tokens.find((token) => token.tag === 'blockquote')
+
+    expect(table.content).toContain('<th style="text-align:left">Left</th>')
+    expect(table.content).toContain('<th style="text-align:center">Center</th>')
+    expect(table.content).toContain('<th style="text-align:right">Right</th>')
+    expect(table.content).toContain('<th>Plain</th>')
+    expect(table.content).toContain('<td style="text-align:left">a</td><td style="text-align:center">b</td><td style="text-align:right">c</td><td>d</td>')
+    expect(quote.content).toContain('<th>Workers</th><th style="text-align:right">Bootgly</th>')
+    expect(quote.content).toContain('<td>16</td><td style="text-align:right">1,084,550</td>')
+  })
+
+  it('keeps list attributes inside a hint (an ordered list start)', () => {
+    const tokens = tokenizePageSectionSource([
+      '> [!TIP]',
+      '>',
+      '> 3. third',
+      '> 4. fourth'
+    ].join('\n'))
+    const quote = tokens.find((token) => token.tag === 'blockquote')
+
+    expect(quote.content).toContain('<ol start="3">')
+  })
+})
