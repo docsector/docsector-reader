@@ -96,6 +96,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
 - 👍 **Page Feedback** — Opt-in "Was this helpful?" footer prompt; votes land in a Workers Analytics Engine dataset through a generated Cloudflare Pages Function
 - ❓ **Page FAQ** — A closing FAQ accordion declared in a page's `faq:` frontmatter (Markdown answers), with a ToC entry, deep links per question, schema.org FAQPage JSON-LD and a `## FAQ` section in the Markdown served to agents
+- 🤝 **Sponsors** — Opt-in sponsor tiers under the Table of Contents (wide and square logos, dark-theme variants), a "Your sponsor here" example slot in every empty tier and a "Your logo here" button, both opening a configurable fallback URL
+- 📣 **Page Ad** — Opt-in ad with your own creatives above every subpage: one stable creative per page, SSR-safe, no third-party scripts
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer
 - 🌍 **Remote README as Home** — Optional build-time remote README source for homepage with automatic local fallback and automatic primary-title handoff when the remote README already provides the project heading
@@ -884,6 +886,18 @@ export default {
     binding: 'FEEDBACK'     // Analytics Engine binding of the Pages project
   },
 
+  sponsors: {
+    enabled: true,          // logos under the Table of Contents
+    fallbackUrl: null,      // example slots + "Your logo here"; defaults to links.sponsor
+    tiers: [{ id: 'platinum', layout: 'wide' }, { id: 'gold', layout: 'square' }],
+    items: [{ name: 'Acme', tier: 'platinum', href: 'https://acme.example', logo: '/images/sponsors/acme.svg' }]
+  },
+
+  ads: {
+    enabled: true,          // your own creative above every subpage
+    items: [{ href: 'https://example.com/course', title: 'Official course', image: '/images/promo/course.png' }]
+  },
+
   linkHeaders: {
     enabled: true,
     apiCatalog: '/.well-known/api-catalog',
@@ -1076,7 +1090,7 @@ my-docs/
     └── files/                 # Downloadable attachments served as /files/...
 ```
 
-  A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Page Feedback, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
+  A common manual pattern is to keep core UI references under `src/pages/manual/basic/` with user-friendly page titles and focused entry pages such as Search, Branding, Version Switcher, Edit on GitHub, Page Feedback, Page FAQ, Sponsors, Page Ad, and Previous & Next, end-user content references under `src/pages/manual/content/blocks/`, structural docs under `src/pages/manual/content/structures/`, and legacy/internal engine-specific references under `src/pages/manual/components/`.
 
   Blocks in `src/pages/manual/content/blocks/` should normally provide both `overview` and `showcase` markdown pages, while structural topics can stay overview-only when a visual demo adds little value.
 

@@ -122,6 +122,7 @@ import { scrollMenuToActive } from '../composables/menu-scroll'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { resolveSubpageMeta } from '../frontmatter.js'
+import { resolveLocaleMap } from '../i18n/locale-map'
 import { resolveRoutePageLayout } from '../page-layout'
 
 defineOptions({ name: 'LayoutDefault' })
@@ -289,15 +290,6 @@ const activeBookTab = computed(() => {
   return exists ? routeBook : null
 })
 
-const resolveLocalizedValue = (source) => {
-  if (!source) return ''
-  if (typeof source === 'string') return source
-  if (typeof source === 'object') {
-    return source[locale.value] || source['*'] || source['en-US'] || Object.values(source)[0] || ''
-  }
-  return ''
-}
-
 // @ Dynamic page title & meta tags
 const currentSubpage = computed(() => {
   const segment = route.path.replace(/\/+$/, '').split('/').pop()
@@ -323,7 +315,7 @@ const pageTitle = computed(() => {
 const pageDescription = computed(() => {
   if (subpageOverride.value?.description) return subpageOverride.value.description
 
-  const description = resolveLocalizedValue(route.matched[0]?.meta?.meta?.description)
+  const description = resolveLocaleMap(route.matched[0]?.meta?.meta?.description, locale.value)
   if (description) return description
 
   if (pageTitle.value && branding.name) {

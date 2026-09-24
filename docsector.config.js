@@ -66,6 +66,37 @@ export default {
     // binding: 'FEEDBACK'
   },
 
+  // @ Sponsors
+  // Opt-in sponsor logos under the Table of Contents (desktop rail, tablet
+  // overlay and the mobile ToC dialog); they follow the ToC's visibility.
+  // Tiers are listed highest first: 'wide' = one 3:1 logo per row, 'square' =
+  // two 1:1 logos per row. An empty tier shows a "Your sponsor here" example
+  // slot, and the panel ends with a "Your logo here" button; both open
+  // fallbackUrl, which defaults to links.sponsor.
+  // sponsors: {
+  //   enabled: true,
+  //   fallbackUrl: null,
+  //   tiers: [{ id: 'platinum', layout: 'wide' }, { id: 'gold', layout: 'square' }],
+  //   items: [
+  //     { name: 'Acme', tier: 'platinum', href: 'https://acme.example',
+  //       logo: '/images/sponsors/acme.svg', logoDark: '/images/sponsors/acme-dark.svg' }
+  //   ]
+  // },
+
+  // @ Page ad
+  // Opt-in ad with your own creatives above the content of every overview,
+  // showcase and vs page (never the home page). Each page shows one creative
+  // chosen from its path; with no creative, an example "Your ad here" ad opens
+  // the sponsors fallback URL.
+  // ads: {
+  //   enabled: true,
+  //   items: [
+  //     { href: 'https://example.com/course', image: '/images/promo/course.png',
+  //       title: { 'en-US': 'Official course', 'pt-BR': 'Curso oficial' },
+  //       text: { 'en-US': 'Learn it in a weekend.', 'pt-BR': 'Aprenda em um fim de semana.' } }
+  //   ]
+  // },
+
   // @ GitHub
   github: {
     // Base URL for "Edit on GitHub" links

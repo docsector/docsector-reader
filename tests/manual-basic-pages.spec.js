@@ -13,6 +13,8 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/d-page-meta']).toBeDefined()
     expect(manualPages['/basic/edit-on-github']).toBeDefined()
     expect(manualPages['/basic/page-feedback']).toBeDefined()
+    expect(manualPages['/basic/sponsors']).toBeDefined()
+    expect(manualPages['/basic/page-ad']).toBeDefined()
     expect(manualPages['/basic/previous-and-next']).toBeDefined()
     expect(manualPages['/basic/agent-skills']).toBeDefined()
 
@@ -26,6 +28,10 @@ describe('manual basic pages registry', () => {
     expect(manualPages['/basic/d-page-meta'].data['en-US'].title).toBe('Page Footer')
     expect(manualPages['/basic/edit-on-github'].data['en-US'].title).toBe('Edit on GitHub')
     expect(manualPages['/basic/page-feedback'].data['en-US'].title).toBe('Page Feedback')
+    expect(manualPages['/basic/sponsors'].data['en-US'].title).toBe('Sponsors')
+    expect(manualPages['/basic/page-ad'].data['en-US'].title).toBe('Page Ad')
+    expect(manualPages['/basic/sponsors'].config.subpages.showcase).toBe(false)
+    expect(manualPages['/basic/page-ad'].config.subpages.showcase).toBe(false)
     expect(manualPages['/basic/previous-and-next'].data['en-US'].title).toBe('Previous & Next')
     expect(manualPages['/basic/agent-skills'].data['en-US'].title).toBe('Agent Skills')
 

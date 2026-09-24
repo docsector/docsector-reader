@@ -36,6 +36,15 @@
       negative: 'Not helpful',
       undo: 'Click again to undo'
     },
+    sponsors: {
+      title: 'Sponsors',
+      cta: 'Your logo here',
+      example: 'Your sponsor here'
+    },
+    ad: {
+      label: 'Ad',
+      example: 'Your ad here'
+    },
     nav: {
       prev: 'Previous page',
       next: 'Next page'

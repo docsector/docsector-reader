@@ -167,6 +167,12 @@ describe('i18n message builder', () => {
     expect(messages['en-US'].page.stepper).toEqual({ continue: 'Continue', back: 'Back', finish: 'Finish' })
     expect(messages['pt-BR'].page.stepper).toEqual({ continue: 'Continuar', back: 'Voltar', finish: 'Finalizar' })
     expect(messages['en-US'].page.file.download).toBe('Download')
+    expect(messages['en-US'].page.sponsors).toEqual({ title: 'Sponsors', cta: 'Your logo here', example: 'Your sponsor here' })
+    expect(messages['pt-BR'].page.sponsors).toEqual({ title: 'Patrocinadores', cta: 'Sua logo aqui', example: 'Seu patrocinador aqui' })
+    expect(messages['en-US'].page.ad).toEqual({ label: 'Ad', example: 'Your ad here' })
+    expect(messages['pt-BR'].page.ad).toEqual({ label: 'Anúncio', example: 'Seu anúncio aqui' })
+    expect(messages['en-US'].system.support).toBe('Sponsor this project')
+    expect(messages['pt-BR'].system.support).toBe('Patrocine este projeto')
     // ? The consumer's own value still wins, and the package page texts never leak
     expect(messages['en-US'].page.copyPage).toBe('Copy page')
     expect(messages['pt-BR'].page.copyPage).toBe('Copiar página')

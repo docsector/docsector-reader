@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useStore } from 'vuex'
-import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from "vue-router";
 
@@ -9,7 +8,6 @@ import useNavigator from '../composables/useNavigator'
 import { pageTitleI18nPath } from '../i18n/path'
 
 const store = useStore()
-const $q = useQuasar()
 const route = useRoute()
 const { t } = useI18n()
 const { navigate, anchor, selected: navigatorSelected } = useNavigator()
@@ -37,14 +35,6 @@ const selected = computed({
 })
 
 navigatorSelected.value = selected.value
-
-const stylize = computed(() => {
-  if ($q.platform.is.mobile && !$q.screen.lt.lg) {
-    return 'fixed'
-  } else {
-    return 'q-ma-xs'
-  }
-})
 
 const fallbackNodeLabel = computed(() => {
   const base = store.state.i18n.base
@@ -113,7 +103,7 @@ onBeforeUnmount(() => {
   v-model:selected="selected"
   v-model:expanded="expanded"
   default-expand-all
-  :class="stylize"
+  class="q-ma-xs"
   :nodes="nodes"
   node-key="id"
 >

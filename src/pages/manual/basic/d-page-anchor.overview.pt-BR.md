@@ -46,6 +46,10 @@ Quando o usuário faz scroll no conteúdo da página, o observador de scroll do 
 - **onMounted** — Habilita toggle de meta, inicia rastreamento de scroll após 1s de delay, ancora no hash da URL se presente
 - **onBeforeUnmount** — Limpa timers locais e desabilita o toggle do drawer meta sem apagar o estado do índice da página durante desmontagens responsivas da UI
 
+## Patrocinadores
+
+Quando os [Patrocinadores](/manual/basic/sponsors/overview/) estão ativos, os logos ficam logo abaixo da árvore, na mesma coluna, e seguem a visibilidade dela.
+
 ## Estilização
 
 A árvore usa a estilização padrão de árvore do Quasar com cores customizadas para modos claro/escuro. Nós selecionados recebem fundo com a cor primária. O texto dos títulos é exibido em negrito a 15px.

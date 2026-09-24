@@ -31,10 +31,12 @@ import { resolve } from 'path'
 import { pathToFileURL } from 'url'
 import HJSON from 'hjson'
 
+import { normalizeAdsConfig } from './ads/config.js'
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import { buildFeedbackServerConfig, renderFeedbackServer } from './feedback/build.js'
 import { normalizeFeedbackConfig } from './feedback/config.js'
 import { buildAgentMarkdown, buildFaqJsonLd, injectFaqJsonLd } from './page-faq.js'
+import { normalizeSponsorsConfig } from './sponsors/config.js'
 import { createAiSearchIndexArtifacts } from './ai-assistant/indexing.js'
 import { applyFrontmatterOverlayToRoutes, compileFrontmatterPatch, fingerprintFrontmatter, parseFrontmatter, resolveSubpageMeta, stripFrontmatter } from './frontmatter.js'
 import { MARKDOWN_AGENT_USER_AGENT_SOURCE, matchesMarkdownAgentUserAgent } from './markdown-agent.js'
@@ -2610,6 +2612,20 @@ function createRoutePreloadPlugin () {
   }
 }
 
+// : print the sponsors/ads config problems — each distinct message once (both
+//   sections share the fallback URL, so a bad one would otherwise print twice)
+export function reportSponsorshipWarnings (config) {
+  const messages = new Set()
+  const onWarning = message => messages.add(message)
+
+  normalizeSponsorsConfig(config, { onWarning })
+  normalizeAdsConfig(config, { onWarning })
+
+  for (const message of messages) {
+    console.warn(`\x1b[33m[docsector]\x1b[0m ${message}`)
+  }
+}
+
 function createMarkdownEndpointPlugin (projectRoot) {
   const pagesDir = resolve(projectRoot, 'src', 'pages')
 
@@ -2686,6 +2702,9 @@ function createMarkdownEndpointPlugin (projectRoot) {
 
           const sources = await resolveHomePageSources(projectRoot, config, { logPrefix: '[docsector]' })
           homepageByLang = sources.byLang
+
+          // ? last, so a config problem here can never switch the endpoint off
+          reportSponsorshipWarnings(config)
         } catch (error) {
           console.warn(`[docsector] Could not load config for markdown endpoint: ${error?.message || String(error)}`)
         }
@@ -2883,9 +2902,16 @@ export function getAdvertisedRobotsSitemapPaths ({ sitemapEnabled = true } = {})
  * `dist/spa/<routePath>.md` so that `.md` URLs work on static hosts.
  */
 function createMarkdownBuildPlugin (projectRoot) {
+  // ? an SSR build bundles twice (client + server) — report config warnings on
+  //   the client pass only, so each prints once per build
+  let ssrBuild = false
+
   return {
     name: 'docsector-markdown-build',
     apply: 'build',
+    configResolved (resolved) {
+      ssrBuild = Boolean(resolved.build?.ssr)
+    },
     async closeBundle () {
       const distDir = resolveClientDistDir(projectRoot)
       if (!existsSync(distDir)) return
@@ -2894,6 +2920,9 @@ function createMarkdownBuildPlugin (projectRoot) {
       const configUrl = pathToFileURL(resolve(projectRoot, 'docsector.config.js')).href
 
       const { default: config } = await import(configUrl)
+      if (!ssrBuild) {
+        reportSponsorshipWarnings(config)
+      }
       const { pageEntries, versions: registryVersions } = await loadBooksRegistry(projectRoot)
       const assistantConfig = normalizeAiAssistantConfig(config)
       const feedbackConfig = normalizeFeedbackConfig(config)

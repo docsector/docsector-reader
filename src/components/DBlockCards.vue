@@ -1,5 +1,5 @@
 <script setup>
-const BASE_URL = import.meta.env.BASE_URL || '/'
+import { resolveAssetUrl } from '../asset-url'
 
 defineOptions({
   name: 'DBlockCards'
@@ -39,27 +39,6 @@ const itemProps = (item) => {
     target: isExternal(item) ? '_blank' : undefined,
     rel: isExternal(item) ? 'noopener noreferrer' : undefined
   }
-}
-
-const resolveAssetUrl = (raw = '') => {
-  const value = String(raw || '').trim()
-
-  if (!value) {
-    return ''
-  }
-
-  if (/^(?:[a-z]+:)?\/\//i.test(value) || /^(?:data:|blob:)/i.test(value)) {
-    return value
-  }
-
-  const trimmedBase = String(BASE_URL).replace(/\/$/, '')
-
-  if (value.startsWith('/')) {
-    return `${trimmedBase}${value}` || value
-  }
-
-  const normalized = value.replace(/^\.\//, '')
-  return `${trimmedBase}/${normalized}`.replace(/\/+/g, '/')
 }
 </script>
 

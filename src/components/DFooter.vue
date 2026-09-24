@@ -44,18 +44,11 @@ import { useI18n } from 'vue-i18n'
 
 import docsectorConfig from 'docsector.config.js'
 import logoUrl from '../assets/docsector-logo.png'
+import { resolveLocaleMap } from '../i18n/locale-map'
 
 defineOptions({ name: 'DFooter' })
 
 const { locale } = useI18n()
-
-// ? Resolve a link label that is either a plain string or a locale map ({ 'en-US': ..., 'pt-BR': ... })
-const resolveLabel = (label) => {
-  if (label && typeof label === 'object') {
-    return label[locale.value] || label['*'] || label['en-US'] || Object.values(label)[0] || ''
-  }
-  return typeof label === 'string' ? label : ''
-}
 
 // : Opt-in legal/compliance links from `docsector.config.js` (footer.legalLinks); empty ⇒ row hidden
 const legalLinks = computed(() => {
@@ -68,7 +61,7 @@ const legalLinks = computed(() => {
   return list
     .filter(item => item && typeof item.href === 'string' && item.href.length > 0)
     .map(item => ({
-      label: resolveLabel(item.label) || item.href,
+      label: resolveLocaleMap(item.label, locale.value) || item.href,
       href: item.href,
       external: item.external === true || /^https?:\/\//i.test(item.href)
     }))
@@ -76,7 +69,7 @@ const legalLinks = computed(() => {
 
 // : Opt-in copyright notice from `docsector.config.js` (footer.copyright), shown
 //   below the "Powered by" line; a plain string or a locale map; empty ⇒ hidden
-const copyright = computed(() => resolveLabel(docsectorConfig?.footer?.copyright))
+const copyright = computed(() => resolveLocaleMap(docsectorConfig?.footer?.copyright, locale.value))
 
 // : Deploy-tracing tooltip on the brand button — engine version + build ID
 //   (compile-time constants baked in by quasar.factory.js). A 40-hex build is a

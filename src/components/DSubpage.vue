@@ -3,12 +3,16 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStore } from 'vuex'
 import { homePageSourceMode } from 'virtual:docsector-homepage-override'
+import docsectorConfig from 'docsector.config.js'
 // components
 import DPage from "./DPage.vue";
 import DPageBar from "./DPageBar.vue";
 import DH1 from "./DH1.vue";
 import DPageSection from "./DPageSection.vue";
+import DPageAd from './DPageAd.vue'
+import { normalizeAdsConfig, resolvePageAd } from '../ads/config'
 import { usesRemoteReadmeHomeContent } from '../home-page-mode'
+import { hashString } from '../hash'
 import { getTemplate } from '../page-template'
 
 const route = useRoute()
@@ -21,16 +25,14 @@ const template = computed(() => {
   return getTemplate(templates?.[subpage])
 })
 
-const id = computed(() => {
-  const path = route.path
+// ? raw route.path on purpose — the id seeds code-line anchors that shared
+//   links already point to
+const id = computed(() => hashString(route.path))
 
-  let hash = 5381
-  for (let i = 0; i < path.length; i++) {
-    hash = (hash * 33) ^ path.charCodeAt(i)
-  }
-
-  return hash >>> 0
-})
+// ? static config and a normalized path — the server and the client pick the
+//   same creative for /x/overview and /x/overview/
+const ads = normalizeAdsConfig(docsectorConfig)
+const ad = computed(() => resolvePageAd(ads, route))
 
 const usesRemoteReadmeHome = computed(() => {
   return usesRemoteReadmeHomeContent({
@@ -48,6 +50,8 @@ const usesRemoteReadmeHome = computed(() => {
     <d-h1 v-if="!usesRemoteReadmeHome" :id="0" />
     <span v-else id="0" aria-hidden="true"></span>
   </header>
+
+  <d-page-ad v-if="ad" :ad="ad" />
 
   <main>
     <!-- Remote README homepages can't carry :toolbar= fence attributes (the file

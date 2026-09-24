@@ -12,7 +12,7 @@ Os dados de branding vêm de `docsector.config.js`:
 - `branding.name`
 - `branding.version`
 - `links.github`, `links.discussions`, `links.chat`, `links.email`
-- `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore`
+- `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore` — `links.sponsor` também alimenta o link de fallback dos [Patrocinadores](/manual/basic/sponsors/overview/)
 
 ## A Assinatura da Marca
 

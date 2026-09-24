@@ -12,10 +12,12 @@ import { ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY } from '../composables/anchor-scrol
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { getAssistantRightRailState } from '../ai-assistant/layout'
 import { resolveRoutePageLayout } from '../page-layout'
+import { normalizeSponsorsConfig } from '../sponsors/config'
 
 import DPageAnchor from './DPageAnchor.vue'
 import DFooterOutlet from './DFooterOutlet.vue'
 import DPageMeta from './DPageMeta.vue'
+import DPageSponsors from './DPageSponsors.vue'
 
 // ? Async on purpose: the assistant graph (composer, markdown tokenizer for
 //   LLM answers) loads only when the panel actually renders — it would
@@ -50,6 +52,8 @@ const readingProgress = ref(getReadingProgressState())
 const routeHashScrollTimeout = ref(null)
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantEnabled = assistantConfig.enabled === true
+// ? static config — server and client normalize to the same markup
+const sponsors = normalizeSponsorsConfig(docsectorConfig)
 const pageLayout = computed(() => resolveRoutePageLayout(route))
 const showSubmenu = computed(() => pageLayout.value.submenu)
 const showToc = computed(() => pageLayout.value.toc)
@@ -561,6 +565,7 @@ watch(() => route.fullPath, () => {
     <div class="d-right-rail">
       <div v-if="showToc && rightRailState.showToc" class="d-right-rail__toc" :style="{ width: `${rightRailState.tocWidth}px` }">
         <d-page-anchor id="anchor" />
+        <d-page-sponsors v-if="sponsors.visible" :sponsors="sponsors" />
       </div>
       <q-separator v-if="showToc && rightRailState.showToc && rightRailState.showAssistant" vertical />
       <d-assistant-panel
@@ -585,8 +590,13 @@ watch(() => route.fullPath, () => {
     full-height
     class="d-mobile-anchor-dialog"
   >
-    <div id="anchor" class="d-mobile-anchor-dialog__panel">
-      <d-page-anchor />
+    <div class="d-mobile-anchor-dialog__panel" :class="{ 'd-mobile-anchor-dialog__panel--sponsored': sponsors.visible }">
+      <!-- ? #anchor wraps the tree only: its styles and scroll lookup stay as
+           they were, and the sponsors below never inherit them -->
+      <div id="anchor" class="d-mobile-anchor-dialog__tree">
+        <d-page-anchor />
+      </div>
+      <d-page-sponsors v-if="sponsors.visible" :sponsors="sponsors" />
     </div>
   </q-dialog>
 
@@ -675,6 +685,12 @@ watch(() => route.fullPath, () => {
     max-height: 100dvh
     margin: 0
 
+// ! Mobile ToC glass — shared by the base panel and its sponsored variant
+$d-mobile-toc-dim: 0.8
+$d-mobile-toc-bg-alpha: 0.88
+$d-mobile-toc-bg-alpha-dark: 0.9
+$d-mobile-toc-shadow-alpha: 0.22
+
 .d-mobile-anchor-dialog
   .q-dialog__inner
     padding: 0
@@ -691,17 +707,30 @@ watch(() => route.fullPath, () => {
     max-height: 100dvh
     padding-top: env(safe-area-inset-top, 0px)
     padding-bottom: env(safe-area-inset-bottom, 0px)
-    background: rgba(248, 250, 252, 0.88)
+    background: rgba(248, 250, 252, $d-mobile-toc-bg-alpha)
     backdrop-filter: blur(18px)
     -webkit-backdrop-filter: blur(18px)
     overflow: auto
-    box-shadow: -16px 0 40px rgba(15, 23, 42, 0.22)
+    box-shadow: -16px 0 40px rgba(15, 23, 42, $d-mobile-toc-shadow-alpha)
 
 .d-mobile-anchor-dialog__panel
-  opacity: 0.8
+  opacity: $d-mobile-toc-dim
 body.body--dark
   .d-mobile-anchor-dialog__panel
-    background: rgba(15, 23, 42, 0.9)
+    background: rgba(15, 23, 42, $d-mobile-toc-bg-alpha-dark)
+
+// ? With sponsors the panel stays opaque and only the tree keeps the dim, so
+//   logos render at full strength — the glass alphas absorb the dim instead
+.d-mobile-anchor-dialog .d-mobile-anchor-dialog__panel--sponsored
+  opacity: 1
+  background: rgba(248, 250, 252, $d-mobile-toc-bg-alpha * $d-mobile-toc-dim)
+  box-shadow: -16px 0 40px rgba(15, 23, 42, $d-mobile-toc-shadow-alpha * $d-mobile-toc-dim)
+
+  .d-mobile-anchor-dialog__tree
+    opacity: $d-mobile-toc-dim
+
+body.body--dark .d-mobile-anchor-dialog .d-mobile-anchor-dialog__panel--sponsored
+  background: rgba(15, 23, 42, $d-mobile-toc-bg-alpha-dark * $d-mobile-toc-dim)
 
 #scroll-container
   width: 100%

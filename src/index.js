@@ -103,6 +103,14 @@
  * @param {string|null} [config.homePage.remoteReadmeUrl=null] - Absolute URL of remote README markdown when source is remote-readme
  * @param {number} [config.homePage.timeoutMs=8000] - Timeout in milliseconds for remote README fetch during build
  * @param {boolean} [config.homePage.fallbackToLocal=true] - Fallback to local Homepage.{lang}.md when remote fetch fails
+ * @param {Object} [config.sponsors] - Sponsor logos under the Table of Contents (follow its visibility); defaults live in the normalizer
+ * @param {boolean} [config.sponsors.enabled=false] - Only the boolean true enables the panel
+ * @param {string|null} [config.sponsors.fallbackUrl=null] - Target of the example slots, the "Your logo here" button and the example ad; defaults to config.links.sponsor
+ * @param {Array<{id: string, layout: 'wide'|'square'}>} [config.sponsors.tiers] - Tiers, highest first; 'wide' = one 3:1 logo per row, 'square' = two 1:1 logos per row
+ * @param {Array<{name: string, tier: string, href: string, logo: string, logoDark?: string}>} [config.sponsors.items] - Sponsors; href must be an absolute http(s) URL
+ * @param {Object} [config.ads] - Your own ad creatives above the content of every overview/showcase/vs page (never the home page)
+ * @param {boolean} [config.ads.enabled=false] - Only the boolean true enables the ad; with no valid creative, an example ad points to the sponsors fallback URL
+ * @param {Array<{href: string, title: string|Object, text?: string|Object, image?: string}>} [config.ads.items] - Creatives; title/text are strings or locale maps
  * @returns {Object} Resolved Docsector configuration
  */
 export function createDocsector (config = {}) {
@@ -143,6 +151,12 @@ export function createDocsector (config = {}) {
     defaultLanguage: config.defaultLanguage || 'en-US',
 
     mcp: config.mcp || null,
+
+    // ? passed through as written — the defaults live in the normalizers
+    //   (src/sponsors/config.js, src/ads/config.js)
+    sponsors: config.sponsors || null,
+
+    ads: config.ads || null,
 
     linkHeaders: {
       enabled: true,

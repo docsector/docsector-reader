@@ -46,6 +46,10 @@ When the user scrolls the page content, the `DPage` scroll observer calls `useNa
 - **onMounted** — Enables meta toggle, starts scroll tracking after 1s delay, anchors to URL hash if present
 - **onBeforeUnmount** — Clears local timers and disables the meta drawer toggle without clearing the page Table of Contents state during responsive UI unmounts
 
+## Sponsors
+
+When [Sponsors](/manual/basic/sponsors/overview/) are enabled, their logos sit right under the tree, in the same column, and follow its visibility.
+
 ## Styling
 
 The tree uses Quasar's default tree styling with custom colors for light/dark modes. Selected nodes get the primary color background. Heading text is displayed in bold at 15px.

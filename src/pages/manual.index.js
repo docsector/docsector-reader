@@ -350,6 +350,62 @@ export default {
     }
   },
 
+  '/basic/sponsors': {
+    config: {
+      icon: 'volunteer_activism',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Sponsors — Documentation of Docsector Reader',
+          'pt-BR': 'Patrocinadores — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Sponsors' },
+      'pt-BR': { title: 'Patrocinadores' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'sponsors sponsorship logos tiers funding table of contents rail',
+        'pt-BR': 'patrocinadores patrocínio logos tiers financiamento sumário'
+      }
+    }
+  },
+
+  '/basic/page-ad': {
+    config: {
+      icon: 'campaign',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Page Ad — Documentation of Docsector Reader',
+          'pt-BR': 'Anúncio da Página — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Page Ad' },
+      'pt-BR': { title: 'Anúncio da Página' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'ad ads advertising creative banner promotion sponsor',
+        'pt-BR': 'anúncio anúncios publicidade criativo banner promoção patrocinador'
+      }
+    }
+  },
+
   '/basic/previous-and-next': {
     config: {
       icon: 'last_page',

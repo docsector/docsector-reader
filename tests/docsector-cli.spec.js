@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 
+import HJSON from 'hjson'
 import { describe, expect, it } from 'vitest'
 
 const cliPath = resolve(process.cwd(), 'bin/docsector.js')
@@ -27,6 +28,26 @@ describe('docsector CLI', () => {
       expect(bookSource).toContain("active: 'white'")
       expect(bookSource).toContain("inactive: 'white'")
       expect(bookSource).not.toContain("color: 'secondary'")
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  it('scaffolds the sponsors and ad UI strings', () => {
+    const projectDir = mkdtempSync(join(tmpdir(), 'docsector-init-sponsorship-'))
+    const projectName = 'DocsSponsorship'
+
+    try {
+      runCli(projectDir, ['init', projectName])
+
+      const messages = HJSON.parse(readFileSync(join(projectDir, projectName, 'src/i18n/languages/en-US.hjson'), 'utf-8'))
+
+      expect(messages.page.sponsors).toEqual({ title: 'Sponsors', cta: 'Your logo here', example: 'Your sponsor here' })
+      expect(messages.page.ad).toEqual({ label: 'Ad', example: 'Your ad here' })
+
+      const configSource = readFileSync(join(projectDir, projectName, 'docsector.config.js'), 'utf-8')
+      expect(configSource).toContain('// sponsors: {')
+      expect(configSource).toContain('// ads: {')
     } finally {
       rmSync(projectDir, { recursive: true, force: true })
     }

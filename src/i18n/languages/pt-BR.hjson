@@ -35,6 +35,15 @@
       negative: 'Não foi útil',
       undo: 'Clique de novo para desfazer'
     },
+    sponsors: {
+      title: 'Patrocinadores',
+      cta: 'Sua logo aqui',
+      example: 'Seu patrocinador aqui'
+    },
+    ad: {
+      label: 'Anúncio',
+      example: 'Seu anúncio aqui'
+    },
     nav: {
       prev: 'Página anterior',
       next: 'Próxima página'

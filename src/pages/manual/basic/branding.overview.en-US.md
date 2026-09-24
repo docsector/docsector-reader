@@ -12,7 +12,7 @@ Branding data comes from `docsector.config.js`:
 - `branding.name`
 - `branding.version`
 - `links.github`, `links.discussions`, `links.chat`, `links.email`
-- `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore`
+- `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore` — `links.sponsor` also feeds the [Sponsors](/manual/basic/sponsors/overview/) fallback link
 
 ## The Brand Lockup
 
