@@ -1,6 +1,6 @@
 ---
 desc: Defina páginas nos registros divididos, ou direto no Markdown com frontmatter no estilo Quasar.
-keys: frontmatter metadados yaml registro index
+keys: frontmatter metadados yaml registro index avulsa oculta
 ---
 
 ## Registro de Páginas
@@ -30,11 +30,11 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 
 ## Propriedades do Config
 
-- **book** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'` (compatível com `type` legado)
+- **book** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'` (compatível com `type` legado). Um id que nenhum `*.book.js` define coloca a página fora de todos os books — veja Páginas Avulsas abaixo
 - **status** — Status da página: `'done'`, `'draft'`, `'empty'` ou `'new'`; `new` é exibido em verde
 - **version** — Versão opcional em que a página foi introduzida, exibida abaixo da data de última atualização como `Novo em: ...` (por exemplo, `'v2.1.0'`)
 - **icon** — Nome do ícone Material Design exibido no menu lateral
-- **menu** — Objeto controlando exibição do menu (header, subheader, separators)
+- **menu** — Objeto controlando exibição do menu (header, subheader, separators, hidden)
 - **subpages** — Ativar abas adicionais: `showcase`, `vs`
 
 ## Nós de Categoria
@@ -80,6 +80,23 @@ O valor de um separador também pode nomear uma variante de espessura dos estilo
 
 A forma legada `separator: true` (ou uma string de sufixo de classe como `' page'`) continua suportada e significa uma linha **abaixo** do item; quando `separators` está presente, ele vence.
 
+## Páginas Ocultas
+
+Defina `menu.hidden` para manter uma página roteada e publicada enquanto a navegação a pula:
+
+```javascript
+menu: &#123; hidden: true &#125;
+```
+
+Uma página oculta:
+
+- não aparece na árvore de páginas do menu lateral, então a busca do menu nunca a encontra;
+- é pulada pelos links anterior/próximo, e não mostra os seus;
+- nunca vira a página de entrada da aba do seu book, nem o fallback do seletor de versão;
+- continua com suas rotas, seu HTML pré-renderizado, sua entrada no sitemap, sua cópia `.md` para agentes e seu lugar no `llms.txt` e na lista de páginas do MCP.
+
+Aponte para ela a partir de uma página, do rodapé ou de um link do topo do menu lateral.
+
 ## Convenção de Arquivos Markdown
 
 Cada página requer arquivos Markdown seguindo este padrão de nomenclatura:
@@ -91,6 +108,8 @@ Por exemplo, uma página em `/content/blocks/headings` com book `manual`:
 - `src/pages/manual/content/blocks/headings.overview.en-US.md`
 - `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
 - `src/pages/manual/content/blocks/headings.showcase.en-US.md` (se showcase habilitado)
+
+Uma página com chave `''` — a página raiz do seu book, ou uma página avulsa — dispensa o caminho: `src/pages/&#123;book&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`, ao lado da pasta do book.
 
 ## Frontmatter no Markdown
 
@@ -135,3 +154,60 @@ Rotas são geradas automaticamente a partir do registro de páginas. Uma página
 - `/guide/my-page/vs` — Aba de comparação (se habilitada)
 
 Versões major arquivadas usam a mesma estrutura em `src/pages/.old/&#123;version&#125;/`. Uma página registrada em `src/pages/.old/v0.x/guide.index.js` produz `/v0.x/guide/my-page/overview`, enquanto a versão atual continua em `/guide/my-page/overview`.
+
+## Páginas Avulsas
+
+Uma página avulsa fica fora de todos os books: nenhuma aba de book fica destacada nela e nenhuma árvore de páginas a lista. Use-a para páginas sobre o projeto, e não sobre a documentação — patrocínio, anúncios, o time — e abra-a por um link do topo do menu lateral.
+
+**1. Registre-a** como a última entrada de qualquer index cujo book não seja fullwidth (por exemplo `src/pages/guide.index.js`), com a chave `''`:
+
+```javascript
+'': &#123;
+  config: &#123;
+    book: 'sponsors',
+    icon: 'favorite',
+    status: 'done',
+    menu: &#123; hidden: true &#125;
+  &#125;,
+  data: &#123;
+    'en-US': &#123; title: 'Sponsors' &#125;,
+    'pt-BR': &#123; title: 'Patrocinadores' &#125;
+  &#125;
+&#125;
+```
+
+`book` usa um id que nenhum `*.book.js` define: ele vira o prefixo da rota e não ganha aba. `menu.hidden` mantém a página fora do anterior/próximo, que percorre todos os books, e fora da árvore de páginas mostrada na própria página.
+
+**2. Escreva o Markdown** na raiz de `src/pages/`:
+
+- `src/pages/sponsors.overview.en-US.md`
+- `src/pages/sponsors.overview.pt-BR.md`
+
+O frontmatter (`title`, `desc`, `keys`, `faq`) funciona como em qualquer página.
+
+**3. Aponte para ela.** A página responde em `/sponsors/overview/`, e `/sponsors` redireciona para lá. Aponte um link do topo do menu — e o fallback dos patrocinadores, numa página de patrocínio — para o caminho sem subpágina:
+
+```javascript
+links: &#123; sponsor: '/sponsors/' &#125;,
+sponsors: &#123; enabled: true, fallbackUrl: '/sponsors/' &#125;
+```
+
+O link Sponsor passa a abrir a página na mesma aba e fica destacado enquanto ela está aberta — veja o [Menu de Navegação](/manual/basic/d-menu/overview/).
+
+O que o leitor vê numa página avulsa:
+
+| Área | Comportamento |
+| --- | --- |
+| Abas dos books | Nenhuma fica destacada; cada aba continua abrindo o seu book |
+| Menu lateral | Seletor de versão e links do topo; sem árvore de páginas, então a busca, que filtra a árvore, fica desabilitada |
+| Anterior / próximo | Nenhum |
+| Conteúdo | Sumário, FAQ, feedback, patrocinadores e anúncio, como em qualquer página |
+| Build | HTML pré-renderizado, entrada no sitemap, `.md` para agentes, uma seção própria no `llms.txt` e uma linha na lista de páginas do MCP; fora do índice de busca do menu |
+
+Regras:
+
+- Declare páginas avulsas na raiz de páginas atual, nunca em `src/pages/.old/&#123;version&#125;/` — o build avisa ali, porque um link do topo é um caminho fixo.
+- O id não pode ser o id de um book registrado, uma pasta em `public/` ou um caminho de rota reservado: `assets`, `assistant`, `home`, `mcp` e — para a página com chave `''` — `404`, `feedback`, `index` (o build avisa nesses).
+- Uma chave `''` por index. Mais páginas sob o mesmo id usam chaves nomeadas com o mesmo `book` e `menu.hidden`: `'/team'` responde em `/sponsors/team/overview/` a partir de `src/pages/sponsors/team.overview.&#123;lang&#125;.md`.
+- A página herda os `layouts` do book cujo index a declara; defina `layouts` na entrada para mudá-los.
+- `book` e `menu` não podem vir do frontmatter.

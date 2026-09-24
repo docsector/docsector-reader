@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveAssetUrl } from '../src/asset-url.js'
+import { SITE_PATH, resolveAssetUrl } from '../src/asset-url.js'
 
 describe('resolveAssetUrl', () => {
   it('returns an empty string for nothing', () => {
@@ -35,5 +35,17 @@ describe('resolveAssetUrl', () => {
 
   it('defaults to the Vite base', () => {
     expect(resolveAssetUrl('/images/a.svg')).toBe('/images/a.svg')
+  })
+})
+
+describe('SITE_PATH', () => {
+  it('matches paths of this site only', () => {
+    for (const value of ['/', '/a', '/sponsors/', '/sponsors/overview/#faq', '/sponsor.html']) {
+      expect(SITE_PATH.test(value), value).toBe(true)
+    }
+
+    for (const value of ['', 'a', '//a', '//cdn.example/x', 'https://a', 'mailto:a@b.c', '/a b', ' /a', '/\\a', '/\\/a', '/a\\b']) {
+      expect(SITE_PATH.test(value), value).toBe(false)
+    }
   })
 })

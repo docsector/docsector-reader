@@ -42,6 +42,8 @@ links: &#123;
 
 Set any link to `null` to hide it from the sidebar menu.
 
+`changelog`, `roadmap`, `sponsor` and each `explore` url take either a URL, opened in a new tab, or the path of a page of this site, opened in place and highlighted while open — see [Top Links](/manual/basic/d-menu/overview/#top-links).
+
 ## GitHub Integration
 
 ```javascript

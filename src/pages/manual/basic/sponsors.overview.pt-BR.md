@@ -74,13 +74,15 @@ As vagas de exemplo e o botão abrem o **link de fallback**:
 ```js
 sponsors: {
   enabled: true,
-  fallbackUrl: '/guide/sponsoring/overview/',
+  fallbackUrl: '/sponsors/',
   tiers: [{ id: 'platinum', layout: 'wide' }, { id: 'gold', layout: 'square' }],
   items: []
 }
 ```
 
 Sem nenhum patrocinador, o painel mostra uma vaga de exemplo por tier e o botão. Um link para outro site abre em uma nova aba; um caminho do seu site abre na mesma aba. Sem link de fallback, os tiers vazios e o botão ficam ocultos.
+
+Um bom destino é uma página de patrocínio sua que fica fora de todos os books, aberta também pelo link Sponsor do menu — veja Páginas Avulsas em [Páginas e Rotas](/guide/pages-and-routing/overview/). Nessa página, as vagas de exemplo e o botão apontam para a própria página.
 
 ## Onde Aparece e Quando Some
 

@@ -102,6 +102,7 @@ Key conventions:
 - Downloadable files should use `/files/...` paths backed by `public/files/...`.
 - Images should use `/images/...` paths backed by `public/images/...`.
 - API JSON should use same-origin public paths such as `/api/...` or `/quasar-api/...`.
+- A page about the project rather than its docs (sponsoring, advertising, the team) can be a standalone page: an entry keyed `''` with a `book` id that no `*.book.js` defines and `menu: { hidden: true }`, its Markdown at `src/pages/<id>.overview.<lang>.md`, answering at `/<id>/overview/`. Open it from a sidebar top link with its path (`links.sponsor: '/sponsors/'`), which navigates in place; see the Pages and Routing guide.
 
 ## Authoring Patterns
 

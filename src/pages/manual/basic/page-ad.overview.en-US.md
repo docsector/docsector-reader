@@ -69,7 +69,7 @@ ads: {
 
 ## The Example Ad
 
-With `enabled: true` and no creative yet, the page shows an example ad, **"Your ad here"**. It opens the same fallback link as the [Sponsors](/manual/basic/sponsors/overview/) example slots: `sponsors.fallbackUrl`, or `links.sponsor` when that is not set. A URL on another site opens in a new tab; a path of your site opens in the same tab. Without any fallback link, nothing shows.
+With `enabled: true` and no creative yet, the page shows an example ad, **"Your ad here"**. It opens the same fallback link as the [Sponsors](/manual/basic/sponsors/overview/) example slots: `sponsors.fallbackUrl`, or `links.sponsor` when that is not set. A URL on another site opens in a new tab; a path of your site opens in the same tab. Without any fallback link, nothing shows. When the fallback is a [standalone sponsors page](/guide/pages-and-routing/overview/#standalone-pages), the example ad on that page links to the page itself.
 
 ## Creative Guidelines
 

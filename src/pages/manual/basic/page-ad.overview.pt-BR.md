@@ -69,7 +69,7 @@ ads: {
 
 ## O Anúncio de Exemplo
 
-Com `enabled: true` e nenhum criativo ainda, a página mostra um anúncio de exemplo, **"Seu anúncio aqui"**. Ele abre o mesmo link de fallback das vagas de exemplo dos [Patrocinadores](/manual/basic/sponsors/overview/): `sponsors.fallbackUrl`, ou `links.sponsor` quando ele não está definido. Uma URL de outro site abre em uma nova aba; um caminho do seu site abre na mesma aba. Sem link de fallback, nada aparece.
+Com `enabled: true` e nenhum criativo ainda, a página mostra um anúncio de exemplo, **"Seu anúncio aqui"**. Ele abre o mesmo link de fallback das vagas de exemplo dos [Patrocinadores](/manual/basic/sponsors/overview/): `sponsors.fallbackUrl`, ou `links.sponsor` quando ele não está definido. Uma URL de outro site abre em uma nova aba; um caminho do seu site abre na mesma aba. Sem link de fallback, nada aparece. Quando o fallback é uma página de patrocínio avulsa (veja Páginas Avulsas em [Páginas e Rotas](/guide/pages-and-routing/overview/)), o anúncio de exemplo nessa página aponta para a própria página.
 
 ## Diretrizes para Criativos
 

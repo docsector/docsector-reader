@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/extras/fontawesome-v5'
 
 import DMenuItem from './DMenuItem.vue'
+import * as MenuLink from './menu-link.js'
 import { scrollMenuToActive } from '../composables/menu-scroll'
 import { stripFrontmatter } from '../frontmatter.js'
 import { omitFaqTokens } from '../page-faq.js'
@@ -23,6 +24,19 @@ const { t, te, tm } = useI18n()
 const branding = docsectorConfig.branding || {}
 const links = docsectorConfig.links || {}
 const github = docsectorConfig.github || {}
+
+// ! Top links, computed once from the static config and the static routes, so
+//   the server markup and the hydrated menu agree: a page of this site opens
+//   in place (highlighted while open), anything else in a new tab
+const onLinkWarning = process.env.DEV ? message => console.warn(`[docsector] links: ${message}`) : undefined
+const topLinks = Object.freeze({
+  changelog: MenuLink.resolve(links.changelog, $router, { onWarning: onLinkWarning }),
+  roadmap: MenuLink.resolve(links.roadmap, $router, { onWarning: onLinkWarning }),
+  sponsor: MenuLink.resolve(links.sponsor, $router, { onWarning: onLinkWarning })
+})
+const exploreLinks = Object.freeze((Array.isArray(links.explore) ? links.explore : [])
+  .map(item => ({ label: item?.label, url: item?.url, attrs: MenuLink.resolve(item?.url, $router, { onWarning: onLinkWarning }) }))
+  .filter(item => item.attrs !== null))
 
 // Localized brand lockup — each locale owns the word order around {name}
 const brandLockup = computed(() => t('system.brand', { name: branding.name || 'Docsector' }))
@@ -154,6 +168,9 @@ const defaultBookId = computed(() => {
   return sortedBooks[0]?.id || null
 })
 
+// ? the route's book passes through unchecked: on a standalone page (a book
+//   no *.book.js registers, every page hidden) the tree stays empty instead
+//   of showing the default book
 const currentBookId = computed(() => {
   const routeBook = $route.matched?.[0]?.meta?.book ?? $route.meta?.book ?? null
   if (routeBook && routeBook !== 'home') {
@@ -534,7 +551,9 @@ watch([currentBookId, activeVersionId], rebuildItems)
 <!-- ? No <transition appear> here: Vue SSR serializes it as an inert
      <template> tag, hiding the search bar until the menu hydrates (which
      only happens on interaction). The entrance animation was cosmetic. -->
-<q-input for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300">
+<!-- ? the search filters the page tree: with no tree (a standalone page)
+     there is nothing to filter, so the input is disabled -->
+<q-input for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300" :disable="items.length === 0">
   <template v-slot:prepend>
     <q-icon class="q-ml-sm" name="search" />
   </template>
@@ -608,42 +627,44 @@ watch([currentBookId, activeVersionId], rebuildItems)
     <div role="none">
       <q-separator role="separator" />
     </div>
-    <q-item v-if="links.changelog" :href="links.changelog" target="_blank" role="link">
+    <!-- ? v-bind carries { to } for a page of this site (same tab, router
+         active class) or { href, target } for anything else (new tab + icon) -->
+    <q-item v-if="topLinks.changelog" v-bind="topLinks.changelog" role="link">
       <q-item-section side>
         <q-icon name="assignment" />
       </q-item-section>
       <q-item-section>{{ t('menu.changelog') }}</q-item-section>
-      <q-item-section side>
+      <q-item-section v-if="topLinks.changelog.target" side>
         <q-icon name="open_in_new" size="xs" />
       </q-item-section>
     </q-item>
-    <q-item v-if="links.roadmap" :href="links.roadmap" target="_blank" role="link">
+    <q-item v-if="topLinks.roadmap" v-bind="topLinks.roadmap" role="link">
       <q-item-section side>
         <q-icon name="playlist_add_check_circle" />
       </q-item-section>
       <q-item-section>{{ t('menu.roadmap') }}</q-item-section>
-      <q-item-section side>
+      <q-item-section v-if="topLinks.roadmap.target" side>
         <q-icon name="open_in_new" size="xs" />
       </q-item-section>
     </q-item>
-    <q-item v-if="links.sponsor" :href="links.sponsor" target="_blank" role="link">
+    <q-item v-if="topLinks.sponsor" v-bind="topLinks.sponsor" role="link">
       <q-item-section side>
         <q-icon name="favorite" color="red" />
       </q-item-section>
       <q-item-section>{{ t('menu.sponsor') }}</q-item-section>
-      <q-item-section side>
+      <q-item-section v-if="topLinks.sponsor.target" side>
         <q-icon name="open_in_new" size="xs" />
       </q-item-section>
     </q-item>
 
-    <template v-if="links.explore && links.explore.length">
+    <template v-if="exploreLinks.length > 0">
       <div role="none">
         <q-separator role="separator" spaced />
         <q-item-section side class="q-ml-md">{{ t('menu.explore') }}</q-item-section>
       </div>
-      <q-item v-for="link in links.explore" :key="link.url" :href="link.url" target="_blank" role="link">
+      <q-item v-for="link in exploreLinks" :key="link.url" v-bind="link.attrs" role="link">
         <q-item-section>{{ link.label }}</q-item-section>
-        <q-item-section side>
+        <q-item-section v-if="link.attrs.target" side>
           <q-icon name="open_in_new" size="xs" />
         </q-item-section>
       </q-item>

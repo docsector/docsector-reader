@@ -28,15 +28,15 @@
  * @param {string} config.branding.version - Version label
  * @param {string} [config.branding.description] - Project description (used in llms.txt)
  * @param {Array<string|Object>} [config.branding.versions] - Available versions for dropdown. Current docs keep unprefixed routes; archived versions can live in src/pages/.old/<version>/ and use /<version>/ route prefixes. Version objects may set released:false/status:'draft', status:'deprecated'/deprecated:true, or badge:{label,color,textColor} for selector badges.
- * @param {Object} config.links - External links
+ * @param {Object} config.links - Sidebar links. changelog, roadmap, sponsor and explore[].url take an http(s) URL (opened in a new tab) or the path of a page of this site (opened in place, highlighted while open)
  * @param {string} [config.links.github] - GitHub repository URL
  * @param {string} [config.links.discussions] - GitHub discussions URL
  * @param {string} [config.links.chat] - Chat/Discord invite URL
  * @param {string} [config.links.email] - Contact email
- * @param {string} [config.links.changelog] - Changelog path or URL
- * @param {string} [config.links.roadmap] - Roadmap URL
- * @param {string} [config.links.sponsor] - Sponsor URL
- * @param {Array} [config.links.explore] - Related links array [{label, url}]
+ * @param {string} [config.links.changelog] - Changelog URL or page path
+ * @param {string} [config.links.roadmap] - Roadmap URL or page path
+ * @param {string} [config.links.sponsor] - Sponsor URL or page path (e.g. '/sponsors/', a standalone page); also the default sponsors fallback
+ * @param {Array} [config.links.explore] - Related links array [{label, url}], each url a URL or page path
  * @param {Object} config.github - GitHub integration settings
  * @param {string} config.github.editBaseUrl - Base URL for "Edit on GitHub" links
  * @param {Array} config.languages - Available languages [{image, label, value}]

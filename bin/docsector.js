@@ -138,6 +138,8 @@ export default {
   },
 
   // @ Links
+  // changelog, roadmap, sponsor and explore[].url: a URL (new tab) or the
+  // path of a page of this site, e.g. '/sponsors/' (same tab, highlighted)
   links: {
     github: 'https://github.com/your-org/your-repo',
     discussions: null,

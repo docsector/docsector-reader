@@ -17,7 +17,7 @@
  * Pure: no Vue, no config import, never throws. Every rejected entry goes
  * through `onWarning` (silent without it), so the build reports it once.
  */
-import { resolveAssetUrl } from '../asset-url.js'
+import { SITE_PATH, resolveAssetUrl } from '../asset-url.js'
 
 // ! Engine-owned layouts a tier picks by name. They render as CSS custom
 //   properties, so a new layout is one entry here, one test and one docs row.
@@ -29,7 +29,6 @@ export const SPONSOR_LAYOUTS = Object.freeze({
 const FALLBACK_LAYOUT = 'square'
 
 const HTTP_URL = /^https?:\/\/\S+$/i
-const ROOT_PATH = /^\/(?!\/)\S*$/
 
 const isFilledString = (value) => typeof value === 'string' && value.trim() !== ''
 
@@ -73,7 +72,7 @@ const readLink = (value, name, consequence, onWarning) => {
   if (typeof value === 'string' && value.trim() === '') return null
 
   const url = typeof value === 'string' ? value.trim() : ''
-  if (HTTP_URL.test(url) || ROOT_PATH.test(url)) return url
+  if (HTTP_URL.test(url) || SITE_PATH.test(url)) return url
 
   warn(onWarning, `${name} must be an http(s) URL or a root-relative path — ${consequence}`)
   return null

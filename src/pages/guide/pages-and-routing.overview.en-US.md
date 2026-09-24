@@ -1,6 +1,6 @@
 ---
 desc: Define pages in split registries, or right inside the Markdown with Quasar-style frontmatter.
-keys: frontmatter metadata yaml registry index
+keys: frontmatter metadata yaml registry index standalone hidden
 ---
 
 ## Page Registry
@@ -30,11 +30,11 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 
 ## Config Properties
 
-- **book** — Route prefix: `'guide'`, `'manual'`, or `'API'` (legacy `type` is still supported)
+- **book** — Route prefix: `'guide'`, `'manual'`, or `'API'` (legacy `type` is still supported). An id that no `*.book.js` defines puts the page outside every book — see Standalone Pages below
 - **status** — Page status: `'done'`, `'draft'`, `'empty'`, or `'new'`; `new` is shown in green
 - **version** — Optional version where the page was introduced, shown under the last updated date as `New in: ...` (for example, `'v2.1.0'`)
 - **icon** — Material Design icon name shown in the sidebar
-- **menu** — Object controlling menu display (header, subheader, separators)
+- **menu** — Object controlling menu display (header, subheader, separators, hidden)
 - **subpages** — Enable additional tabs: `showcase`, `vs`
 
 ## Category Nodes
@@ -80,6 +80,23 @@ A separator value can also name a thickness variant from the menu styles — `li
 
 The legacy form `separator: true` (or a class-suffix string like `' page'`) is still supported and means a line **below** the item; when `separators` is present, it wins.
 
+## Hidden Pages
+
+Set `menu.hidden` to keep a page routed and published while the navigation skips it:
+
+```javascript
+menu: &#123; hidden: true &#125;
+```
+
+A hidden page:
+
+- is not listed in the sidebar page tree, so the sidebar search never finds it;
+- is skipped by the previous/next links, and shows none of its own;
+- never becomes the landing page of its book tab, nor the fallback of the version selector;
+- still has its routes, its prerendered HTML, its sitemap entry, its `.md` copy for agents, and its place in `llms.txt` and the MCP page list.
+
+Link to it from a page, the footer or a sidebar top link.
+
 ## Markdown File Convention
 
 Each page requires Markdown files following this naming pattern:
@@ -91,6 +108,8 @@ For example, a page at `/content/blocks/headings` with book `manual`:
 - `src/pages/manual/content/blocks/headings.overview.en-US.md`
 - `src/pages/manual/content/blocks/headings.overview.pt-BR.md`
 - `src/pages/manual/content/blocks/headings.showcase.en-US.md` (if showcase enabled)
+
+A page keyed `''` — the root page of its book, or a standalone page — drops the path: `src/pages/&#123;book&#125;.&#123;subpage&#125;.&#123;lang&#125;.md`, next to the book's folder.
 
 ## Markdown Frontmatter
 
@@ -135,3 +154,60 @@ Routes are automatically generated from the page registry. A page with path `/my
 - `/guide/my-page/vs` — Comparison tab (if enabled)
 
 Archived major versions use the same structure under `src/pages/.old/&#123;version&#125;/`. A page registered in `src/pages/.old/v0.x/guide.index.js` produces `/v0.x/guide/my-page/overview` while the current version remains `/guide/my-page/overview`.
+
+## Standalone Pages
+
+A standalone page lives outside every book: no book tab is highlighted on it and no page tree lists it. Use one for pages about the project rather than its docs — sponsoring, advertising, the team — and open it from a sidebar top link.
+
+**1. Register it** as the last entry of any index whose book is not fullwidth (for example `src/pages/guide.index.js`), keyed `''`:
+
+```javascript
+'': &#123;
+  config: &#123;
+    book: 'sponsors',
+    icon: 'favorite',
+    status: 'done',
+    menu: &#123; hidden: true &#125;
+  &#125;,
+  data: &#123;
+    'en-US': &#123; title: 'Sponsors' &#125;,
+    'pt-BR': &#123; title: 'Patrocinadores' &#125;
+  &#125;
+&#125;
+```
+
+`book` names an id that no `*.book.js` defines: it becomes the route prefix and gets no tab. `menu.hidden` keeps the page out of previous/next, which runs across every book, and off the page tree shown on the page itself.
+
+**2. Write its Markdown** at the root of `src/pages/`:
+
+- `src/pages/sponsors.overview.en-US.md`
+- `src/pages/sponsors.overview.pt-BR.md`
+
+Frontmatter (`title`, `desc`, `keys`, `faq`) works as on any page.
+
+**3. Link it.** The page answers at `/sponsors/overview/`, and `/sponsors` redirects there. Point a sidebar top link — and the sponsors fallback, for a sponsors page — at the bare path:
+
+```javascript
+links: &#123; sponsor: '/sponsors/' &#125;,
+sponsors: &#123; enabled: true, fallbackUrl: '/sponsors/' &#125;
+```
+
+The Sponsor link then opens the page in the same tab and stays highlighted while it is open — see the [Navigation Menu](/manual/basic/d-menu/overview/).
+
+What readers see on a standalone page:
+
+| Area | Behavior |
+| --- | --- |
+| Book tabs | None is highlighted; every tab still opens its book |
+| Sidebar | Version selector and top links; no page tree, so the search, which filters it, is disabled |
+| Previous / next | None |
+| Content | Table of Contents, FAQ, feedback, sponsors and page ad, like any page |
+| Build | Prerendered HTML, sitemap entry, `.md` for agents, its own section in `llms.txt` and a row in the MCP page list; not in the sidebar search index |
+
+Rules:
+
+- Declare standalone pages in the current pages root, never under `src/pages/.old/&#123;version&#125;/` — the build warns there, because a top link is one fixed path.
+- The id must not be a registered book id, a folder under `public/`, or a reserved route path: `assets`, `assistant`, `home`, `mcp`, and — for the page keyed `''` — `404`, `feedback`, `index` (the build warns on those).
+- One `''` key per index. More pages under the same id use named keys with the same `book` and `menu.hidden`: `'/team'` answers at `/sponsors/team/overview/` from `src/pages/sponsors/team.overview.&#123;lang&#125;.md`.
+- The page takes the `layouts` of the book whose index declares it; set `layouts` on the entry to change them.
+- `book` and `menu` cannot come from frontmatter.

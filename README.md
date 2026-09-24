@@ -97,6 +97,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 👍 **Page Feedback** — Opt-in "Was this helpful?" footer prompt; votes land in a Workers Analytics Engine dataset through a generated Cloudflare Pages Function
 - ❓ **Page FAQ** — A closing FAQ accordion declared in a page's `faq:` frontmatter (Markdown answers), with a ToC entry, deep links per question, schema.org FAQPage JSON-LD and a `## FAQ` section in the Markdown served to agents
 - 🤝 **Sponsors** — Opt-in sponsor tiers under the Table of Contents (wide and square logos, dark-theme variants), a "Your sponsor here" example slot in every empty tier and a "Your logo here" button, both opening a configurable fallback URL
+- 🧭 **In-Place Top Links** — The sidebar's Changelog, Roadmap, Sponsor and Explore links take a URL (new tab) or the path of a page of the site, which opens in place and stays highlighted while open
+- 🏝️ **Standalone Pages** — Pages outside every book (sponsoring, advertising, the team): an entry keyed `''` with an unregistered `book` and `menu.hidden`, routed at `/<id>/overview/` with no book tab and no page tree
 - 📣 **Page Ad** — Opt-in ad with your own creatives above every subpage: one stable creative per page, SSR-safe, no third-party scripts
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer
@@ -871,7 +873,7 @@ export default {
     email: 'contact@example.com',
     changelog: 'https://github.com/org/repo/releases',
     roadmap: 'https://github.com/org/repo/blob/main/ROADMAP.md',
-    sponsor: 'https://github.com/sponsors/user',
+    sponsor: 'https://github.com/sponsors/user', // or '/sponsors/': a page of the site opens in place
     explore: [
       { label: '🌟 Related Project', url: 'https://github.com/org/related' }
     ]
@@ -1250,6 +1252,24 @@ Notes:
 - For shortcut pages, `link.to` and `data` are enough.
 - `icon` and `status` automatically fall back to the destination page when omitted.
 - Internal links redirect directly to the target route instead of rendering `overview` / `showcase` / `vs` locally.
+
+### Hidden and Standalone Pages
+
+`menu: { hidden: true }` keeps a page routed and published (sitemap, `.md`, `llms.txt`, MCP) while the page tree, the sidebar search, previous/next and the book-tab landing skip it.
+
+A **standalone page** lives outside every book — no tab is highlighted and no page tree lists it. Declare it as the last entry of a non-fullwidth index, keyed `''`, with a `book` id that no `*.book.js` defines:
+
+```javascript
+'': definePage({
+  config: { book: 'sponsors', icon: 'favorite', status: 'done', menu: { hidden: true } },
+  data: {
+    'en-US': { title: 'Sponsors' },
+    'pt-BR': { title: 'Patrocinadores' }
+  }
+})
+```
+
+Its Markdown lives at the pages root (`src/pages/sponsors.overview.en-US.md`), it answers at `/sponsors/overview/`, and `links.sponsor: '/sponsors/'` opens it in place from the sidebar.
 
 ### GitHub-Style Alert Example
 

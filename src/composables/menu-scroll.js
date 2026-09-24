@@ -11,7 +11,10 @@ export function scrollMenuToActive (duration = 300) {
     return
   }
 
-  const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
+  // ? the last highlighted item: a page-tree item wins over a top link that
+  //   points to the same page (it comes later in the menu)
+  const actives = menu.getElementsByClassName('q-router-link--active')
+  const menuItemActive = actives[actives.length - 1]
   if (!menuItemActive || typeof menuItemActive !== 'object') {
     return
   }

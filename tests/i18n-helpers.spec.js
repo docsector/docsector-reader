@@ -314,3 +314,60 @@ describe('homepage frontmatter', () => {
     expect(messages['en-US']._.home._).toBe('Remote Title')
   })
 })
+
+describe('eager page sources', () => {
+  const standalone = {
+    config: { book: 'sponsors', status: 'done', menu: { hidden: true } },
+    data: { 'en-US': { title: 'Sponsors' } }
+  }
+  const gettingStarted = {
+    config: { status: 'done' },
+    data: { 'en-US': { title: 'Getting Started' } }
+  }
+  const sources = {
+    ...mdModules,
+    '../pages/sponsors.overview.en-US.md': '# Sponsors\n\nBody',
+    '../pages/guide/getting-started.overview.en-US.md': '# Getting Started\n\nBody',
+    '../pages/.old/v1/sponsors.overview.en-US.md': '# Old sponsors\n\nBody'
+  }
+
+  it('loads a page keyed \'\' from src/pages/<book>.<subpage>.<lang>.md (books registry)', () => {
+    const messages = buildMessages({
+      langModules,
+      mdModules: sources,
+      books: { guide: { config: { id: 'guide' }, routes: { '/getting-started': gettingStarted, '': standalone } } },
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(messages['en-US']._.sponsors._).toBe('Sponsors')
+    expect(messages['en-US']._.sponsors.overview.source).toBe('# Sponsors\n\nBody')
+    expect(messages['en-US']._.guide['getting-started'].overview.source).toBe('# Getting Started\n\nBody')
+  })
+
+  it('loads a page keyed \'\' from its version root (page entries)', () => {
+    const messages = buildMessages({
+      langModules,
+      mdModules: sources,
+      pageEntries: [
+        { pagePath: '/getting-started', page: gettingStarted, book: 'guide', sourceRoot: '' },
+        { pagePath: '', page: standalone, book: 'sponsors', sourceRoot: '' }
+      ],
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(messages['en-US']._.sponsors.overview.source).toBe('# Sponsors\n\nBody')
+    expect(messages['en-US']._.guide['getting-started'].overview.source).toBe('# Getting Started\n\nBody')
+
+    const archived = buildMessages({
+      langModules,
+      mdModules: sources,
+      pageEntries: [{ pagePath: '', page: standalone, book: 'sponsors', sourceRoot: '.old/v1' }],
+      boot,
+      langs: ['en-US']
+    })
+
+    expect(archived['en-US']._.sponsors.overview.source).toBe('# Old sponsors\n\nBody')
+  })
+})

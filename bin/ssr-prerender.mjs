@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import * as DocumentHeaders from '../src/document-headers.js'
 import { buildWebMcpInlineScript } from '../src/webmcp-tools.js'
 
 // ? A neutral desktop UA: Quasar Platform only uses it for body classes, which
@@ -350,8 +351,9 @@ export async function prerenderSsr ({ projectRoot, packageRoot }) {
       }
     }
 
-    const bookRoots = [...new Set(routes.map((route) => route.routePath.split('/')[0]))].sort()
-    const paths = bookRoots.map((root) => `/${root}/*`).concat(['/', '/index.html'])
+    // ? a bare page path is a written document too (single-segment ones need
+    //   their own exact rule)
+    const paths = DocumentHeaders.list(routes.flatMap((route) => route.basePath ? [route.routePath, route.basePath] : [route.routePath]))
 
     // ? Cloudflare Pages lets the LAST rule matching a path own a header
     //   name — appending a second "/" block here would clobber the

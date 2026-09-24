@@ -35,8 +35,8 @@ export default {
     },
     metadata: {
       tags: {
-        'en-US': 'menu sidebar navigation search branding links tree expansion',
-        'pt-BR': 'menu lateral navegação busca branding links árvore expansão'
+        'en-US': 'menu sidebar navigation search branding links top links sponsor tree expansion hidden',
+        'pt-BR': 'menu lateral navegação busca branding links links do topo patrocínio árvore expansão oculta'
       }
     }
   },

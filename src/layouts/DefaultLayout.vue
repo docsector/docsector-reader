@@ -389,6 +389,8 @@ function getFirstRoutePathByBook (bookId) {
     if (!topRoute || typeof topRoute.path !== 'string') continue
     if (versionId && topRoute.meta?.version !== versionId) continue
     if ((topRoute.meta?.book ?? topRoute.meta?.type) !== bookId) continue
+    // ? a hidden page is off the tree, so it never becomes the tab's landing
+    if (topRoute.meta?.menu?.hidden === true) continue
 
     const children = Array.isArray(topRoute.children) ? topRoute.children : []
     const hasOverview = children.some(child => child.path === 'overview')

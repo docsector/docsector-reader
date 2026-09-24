@@ -351,7 +351,10 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
 
   function load (topPage, path, subpage, lang, sourceRoot = '') {
     const normalizedSourceRoot = String(sourceRoot || '').replace(/^\/+|\/+$/g, '')
-    const key = `../pages/${normalizedSourceRoot ? normalizedSourceRoot + '/' : ''}${topPage}/${path}.${subpage}.${lang}.md`
+    // ? a page keyed '' (a book's root page, or a standalone page) lives at
+    //   src/pages/<book>.<subpage>.<lang>.md, next to its book folder
+    const base = path ? `${topPage}/${path}` : topPage
+    const key = `../pages/${normalizedSourceRoot ? normalizedSourceRoot + '/' : ''}${base}.${subpage}.${lang}.md`
     const content = mdModules[key]
 
     if (!content) {

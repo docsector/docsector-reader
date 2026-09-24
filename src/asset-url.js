@@ -4,6 +4,11 @@
  * relative paths are served from the site's base path.
  */
 
+// ! A path of this site: one leading slash, never protocol-relative ('//' —
+//   nor '/\\', which browsers read the same way), no whitespace and no
+//   backslash — the one definition every config link check shares
+export const SITE_PATH = /^\/(?![/\\])[^\s\\]*$/
+
 // : `raw` as a URL the browser can load under `base` ('' for nothing)
 export function resolveAssetUrl (raw = '', base = import.meta.env?.BASE_URL || '/') {
   const value = String(raw || '').trim()

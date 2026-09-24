@@ -33,6 +33,7 @@ import HJSON from 'hjson'
 
 import { normalizeAdsConfig } from './ads/config.js'
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
+import * as DocumentHeaders from './document-headers.js'
 import { buildFeedbackServerConfig, renderFeedbackServer } from './feedback/build.js'
 import { normalizeFeedbackConfig } from './feedback/config.js'
 import { buildAgentMarkdown, buildFaqJsonLd, injectFaqJsonLd } from './page-faq.js'
@@ -238,6 +239,8 @@ export function buildSearchContentIndex (pagesDir, pageEntries, lang) {
     if (page.config === null) continue
     if (page.config.status === 'empty') continue
     if (typeof page.config?.link?.to === 'string' && page.config.link.to.trim().length > 0) continue
+    // ? this index only filters the sidebar tree, which never lists hidden pages
+    if (page.config.menu?.hidden === true) continue
 
     const subpages = ['overview']
     if (page.config.subpages?.showcase) subpages.push('showcase')
@@ -1339,6 +1342,7 @@ export async function loadBooksRegistry (projectRoot) {
 
   const allBooks = Object.values(currentBooks).map(book => book.config)
   const pageEntries = getBookPageEntries(booksByVersion)
+  warnPageRoots(pageEntries, booksByVersion)
 
   return {
     versions,
@@ -1349,6 +1353,59 @@ export async function loadBooksRegistry (projectRoot) {
     books: currentBooks,
     allBooks,
     allPages
+  }
+}
+
+// ! Route paths a page must not take — the build writes or serves something
+//   else there. Compared case-insensitively: Cloudflare Pages and most file
+//   systems a site deploys from do not tell /Index from /index.
+// # Prefixes: every page under them collides
+const RESERVED_PAGE_PREFIXES = new Map([
+  ['assets', 'documents there would get the immutable /assets/* cache rule'],
+  ['assistant', 'it is the AI assistant endpoint'],
+  ['home', 'it is the home page route'],
+  ['mcp', 'it is the MCP endpoint']
+])
+// # Bare paths: only a page keyed '' there collides
+const RESERVED_PAGE_PATHS = new Map([
+  ['404', 'its twin would overwrite dist/404.html'],
+  ['feedback', 'it is the page feedback endpoint'],
+  ['index', 'its twin would overwrite dist/index.html, the home page']
+])
+
+// * Metadata
+// the registry loads several times per build — each warning prints once
+const pageRootWarnings = new Set()
+
+/**
+ * Warn about page routes the build cannot serve as declared: a reserved first
+ * segment, or a standalone page (a hidden page of a book its version does not
+ * register) declared in an archived version, where the sidebar top links and
+ * the sponsors fallback — one fixed path each — cannot follow it. Warnings
+ * only: the routes still build.
+ */
+function warnPageRoots (pageEntries = [], booksByVersion = {}) {
+  const warn = (message) => {
+    if (pageRootWarnings.has(message)) return
+
+    pageRootWarnings.add(message)
+    console.warn(`\x1b[33m[docsector]\x1b[0m ${message}`)
+  }
+
+  for (const entry of pageEntries) {
+    // ? the path the build writes — an archived page lives under its version
+    //   prefix (/v1/feedback/…), which collides with nothing
+    const path = buildPageRoutePath(entry, '')
+    const root = path.split('/')[0]
+    const reason = RESERVED_PAGE_PREFIXES.get(root.toLowerCase()) ?? RESERVED_PAGE_PATHS.get(path.toLowerCase())
+    if (reason) {
+      warn(`/${path} uses the reserved route path "/${root}" — ${reason}; pick another book id`)
+    }
+
+    const registered = booksByVersion?.[entry.version]?.books?.[entry.book] !== undefined
+    if (entry.versionCurrent !== true && entry.page?.config?.menu?.hidden === true && !registered) {
+      warn(`${entry.unversionedPath} is a standalone page declared in the archived version ${entry.version} — declare standalone pages in the current pages root only`)
+    }
   }
 }
 
@@ -1857,7 +1914,7 @@ function createPrerenderMetaPlugin (projectRoot) {
       const { readPageFaqText } = await import('./components/page-section-tokens.js')
 
       let count = 0
-      const bookRoots = new Set()
+      const documentPaths = []
 
       for (const entry of pageEntries) {
         const { page } = entry
@@ -1874,7 +1931,7 @@ function createPrerenderMetaPlugin (projectRoot) {
 
         for (const subpage of subpages) {
           const routePath = buildPageRoutePath(entry, subpage)
-          bookRoots.add(routePath.split('/')[0])
+          documentPaths.push(routePath)
 
           // ? a showcase/vs file's frontmatter may override its own subpage's
           //   title/description (page.subpageMeta) — per-subpage SEO
@@ -1954,6 +2011,7 @@ function createPrerenderMetaPlugin (projectRoot) {
           if (subpage === 'overview') {
             const basePath = buildPageRoutePath(entry, '')
             const baseDir = resolve(distDir, basePath)
+            documentPaths.push(basePath)
 
             mkdirSync(baseDir, { recursive: true })
             writeFileSync(resolve(baseDir, 'index.html'), routeHtml)
@@ -1964,7 +2022,8 @@ function createPrerenderMetaPlugin (projectRoot) {
 
       // @ Early Hints: expose the critical wave as Link headers so Cloudflare
       //   can 103-hint it before the HTML body arrives. One wildcard rule per
-      //   book (+ the homepage) — the shared wave is identical for every route.
+      //   book, an exact rule per single-segment document (+ the homepage) —
+      //   the shared wave is identical for every route.
       // ! the cache rules are NOT gated on Early Hints: stale cached documents
       //   referencing dead hashed chunks are exactly the F5 failure mode, so
       //   must-revalidate documents (+ immutable /assets/*) always ship.
@@ -1978,7 +2037,7 @@ function createPrerenderMetaPlugin (projectRoot) {
           })
           : ''
 
-        const paths = [...bookRoots].sort().map(root => `/${root}/*`).concat(['/', '/index.html'])
+        const paths = DocumentHeaders.list(documentPaths)
         const rules = paths
           .map(path => {
             const lines = []

@@ -74,13 +74,15 @@ Both the example slots and the button open the **fallback link**:
 ```js
 sponsors: {
   enabled: true,
-  fallbackUrl: '/guide/sponsoring/overview/',
+  fallbackUrl: '/sponsors/',
   tiers: [{ id: 'platinum', layout: 'wide' }, { id: 'gold', layout: 'square' }],
   items: []
 }
 ```
 
 With no sponsor at all, the panel shows one example slot per tier and the button. A link to another site opens in a new tab; a path of your site opens in the same tab. Without any fallback link, the empty tiers and the button are hidden.
+
+A good target is a sponsors page of your own that lives outside every book, opened from the menu's Sponsor link too — see [Standalone Pages](/guide/pages-and-routing/overview/#standalone-pages). On that page, the example slots and the button link to the page itself.
 
 ## Where It Shows and When It Hides
 

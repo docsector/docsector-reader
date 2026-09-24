@@ -7,7 +7,7 @@ It helps readers continue through a documentation sequence without returning to 
 ## How It Decides
 
 - It uses the current page position in the route sequence.
-- Only visible documentation pages are considered.
+- Only visible documentation pages are considered: a page with `menu.hidden` is skipped, and shows no links of its own.
 - Links are shown only when an adjacent page exists.
 
 ## Reader Benefit

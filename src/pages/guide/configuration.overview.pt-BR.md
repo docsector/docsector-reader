@@ -42,6 +42,8 @@ links: &#123;
 
 Defina qualquer link como `null` para ocultá-lo do menu lateral.
 
+`changelog`, `roadmap`, `sponsor` e cada url de `explore` aceitam uma URL, que abre em nova aba, ou o caminho de uma página deste site, que abre no lugar e fica destacado enquanto aberto — veja Links do Topo no [Menu de Navegação](/manual/basic/d-menu/overview/).
+
 ## Integração com GitHub
 
 ```javascript

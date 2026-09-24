@@ -351,3 +351,92 @@ describe('wiring — template expressions', () => {
     expect(expressionOf(cta, 'if')).toBe('sponsors.fallback')
   })
 })
+
+describe('DMenu top links', () => {
+  const menu = () => templateOf('DMenu.vue')
+
+  // : the q-item section holding the open_in_new icon of `item`
+  const newTabSection = (item) => find(item, node => node.tag === 'q-item-section' &&
+    findAll(node, child => child.tag === 'q-icon' && staticAttr(child, 'name') === 'open_in_new').length === 1, 'open_in_new section')
+
+  const topItem = (root, key) => find(root, node => node.tag === 'q-item' && expressionOf(node, 'if') === `topLinks.${key}`, `${key} top link`)
+
+  it.each([
+    ['changelog', 'assignment'],
+    ['roadmap', 'playlist_add_check_circle'],
+    ['sponsor', 'favorite']
+  ])('binds the resolved %s link and shows the new-tab icon only for external targets', (key, icon) => {
+    const item = topItem(menu(), key)
+
+    expect(spreadOf(item)).toBe(`topLinks.${key}`)
+    for (const name of ['href', 'target', 'to']) {
+      expect(staticAttr(item, name), `static ${name}`).toBeUndefined()
+      expect(directive(item, 'bind', name), `bound ${name}`).toBeUndefined()
+    }
+    expect(staticAttr(item, 'role')).toBe('link')
+    expect(findAll(item, node => node.tag === 'q-icon' && staticAttr(node, 'name') === icon)).toHaveLength(1)
+    expect(expressionOf(newTabSection(item), 'if')).toBe(`topLinks.${key}.target`)
+  })
+
+  it('keeps the heart of the Sponsor link red', () => {
+    const heart = find(topItem(menu(), 'sponsor'), node => node.tag === 'q-icon' && staticAttr(node, 'name') === 'favorite', 'heart')
+
+    expect(staticAttr(heart, 'color')).toBe('red')
+  })
+
+  it('binds each resolved explore link the same way', () => {
+    const root = menu()
+    const group = find(root, node => node.tag === 'template' && expressionOf(node, 'if') === 'exploreLinks.length>0', 'explore group')
+    const item = find(group, node => node.tag === 'q-item', 'explore item')
+
+    expect(expressionOf(item, 'for')).toBe('linkinexploreLinks')
+    expect(spreadOf(item)).toBe('link.attrs')
+    for (const name of ['href', 'target', 'to']) {
+      expect(staticAttr(item, name), `static ${name}`).toBeUndefined()
+      expect(directive(item, 'bind', name), `bound ${name}`).toBeUndefined()
+    }
+    expect(expressionOf(newTabSection(item), 'if')).toBe('link.attrs.target')
+  })
+
+  it('disables the search when there is no page tree to filter', () => {
+    const search = find(menu(), node => node.tag === 'q-input' && staticAttr(node, 'for') === 'search', 'search input')
+
+    expect(expressionOf(search, 'bind', 'disable')).toBe('items.length===0')
+  })
+
+  it('keeps Home as an exact in-place link', () => {
+    const home = find(menu(), node => node.tag === 'q-item' && staticAttr(node, 'to') === '/', 'Home link')
+
+    expect(home.props.some(prop => prop.type === ATTRIBUTE && prop.name === 'exact')).toBe(true)
+  })
+
+  it('resolves every top link through MenuLink with the router', () => {
+    const source = scriptSetupOf('DMenu.vue')
+    const ast = babelParse(source, { sourceType: 'module' })
+    const imports = []
+    const calls = []
+
+    walk(ast, {
+      enter (node) {
+        if (node.type === 'ImportDeclaration' && node.source.value === './menu-link.js') {
+          imports.push(...node.specifiers.map(specifier => `${specifier.type}:${specifier.local.name}`))
+        }
+        if (node.type === 'CallExpression' && node.callee?.type === 'MemberExpression' &&
+          node.callee.object?.name === 'MenuLink' && node.callee.property?.name === 'resolve') {
+          calls.push(node.arguments.map(argument => compact(source.slice(argument.start, argument.end))))
+        }
+      }
+    })
+
+    expect(imports).toEqual(['ImportNamespaceSpecifier:MenuLink'])
+    expect(calls.map(([url]) => url)).toEqual(['links.changelog', 'links.roadmap', 'links.sponsor', 'item?.url'])
+    for (const [, router] of calls) {
+      expect(router).toBe('$router')
+    }
+
+    const declarations = declarationsOf(source)
+    expect(declarations.topLinks).toMatch(/^Object\.freeze\(\{changelog:MenuLink\.resolve\(links\.changelog,/)
+    expect(declarations.exploreLinks).toMatch(/^Object\.freeze\(/)
+    expect(declarations.exploreLinks).toContain('.filter(item=>item.attrs!==null)')
+  })
+})

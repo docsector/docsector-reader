@@ -31,6 +31,8 @@ export default {
   },
 
   // @ Links
+  // changelog, roadmap, sponsor and explore[].url take a URL (new tab) or the
+  // path of a page of this site, e.g. '/sponsors/' (same tab, highlighted)
   links: {
     website: null, // e.g., project website URL
     github: 'https://github.com/docsector/docsector-reader',
@@ -39,7 +41,7 @@ export default {
     email: null, // e.g., 'mailto:contact@example.com'
     changelog: 'https://github.com/docsector/docsector-reader/releases',
     roadmap: null, // e.g., external roadmap URL
-    sponsor: null, // e.g., GitHub Sponsors URL
+    sponsor: null, // e.g., GitHub Sponsors URL, or '/sponsors/' for a standalone page
     explore: null // e.g., URL to explore related repos
   },
 

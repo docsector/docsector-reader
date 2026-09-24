@@ -7,7 +7,7 @@ Isso ajuda o leitor a continuar por uma sequência de documentação sem voltar 
 ## Como Ele Decide
 
 - Usa a posição da página atual na sequência de rotas.
-- Considera apenas páginas de documentação visíveis.
+- Considera apenas páginas de documentação visíveis: uma página com `menu.hidden` é pulada, e não mostra links próprios.
 - Os links só aparecem quando existe uma página adjacente.
 
 ## Benefício para o Leitor
