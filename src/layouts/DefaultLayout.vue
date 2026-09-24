@@ -42,9 +42,9 @@
                  arrow keys then move between rows -->
             <q-list role="none" data-autofocus @keydown="move">
               <template v-for="(link, index) in headerLinks" :key="index">
-                <div v-if="link.children.length > 0" role="group" :aria-label="link.label">
+                <div v-if="link.children.length > 0" class="d-header-links__section" role="group" :aria-label="link.label">
                   <q-item-label class="d-header-links__group" header aria-hidden="true">
-                    <q-icon v-if="link.icon" class="q-mr-sm" :name="link.icon" size="xs" />{{ link.label }}
+                    <q-icon v-if="link.icon" :name="link.icon" size="xs" />{{ link.label }}
                   </q-item-label>
                   <d-header-link-item v-for="(child, childIndex) in link.children" :key="childIndex" :link="child" />
                 </div>
@@ -584,8 +584,6 @@ onMounted(() => {
     display: none
     align-items: stretch
     justify-self: center
-    .q-btn:before
-      box-shadow: none
   @for $step from 5 through 16
     @container d-header-slot (min-width: #{$step * 100}px)
       .d-header__brand-slot--fit-#{$step * 100}
@@ -596,8 +594,6 @@ onMounted(() => {
           display: flex
         .d-header__brand .q-btn-dropdown__arrow-container
           display: none
-  .d-header__link
-    font-weight: 400
   .d-header__link--active
     background: rgba(255, 255, 255, 0.16)
     box-shadow: inset 0 -2px 0 currentColor
@@ -651,9 +647,35 @@ onMounted(() => {
     color: inherit
     font-weight: 500
     background-color: rgba(189, 189, 189, 0.35)
-.body--dark .d-header-links__menu .q-item--active
-  color: var(--q-primary-in-dark-bg)
-  background-color: rgba(255, 255, 255, 0.08)
+  // ? a group's title is a section heading, not a link: small uppercase muted
+  //   text set apart by a rule, its icon and text on the rows' icon and label
+  //   columns (beats Quasar's themed header color and app.sass' flush left)
+  .d-header-links__section + .d-header-links__section,
+  .d-header-links__section + .d-header-link-item,
+  .d-header-link-item + .d-header-links__section
+    border-top: 1px solid rgba(0, 0, 0, 0.12)
+  .q-item__label.d-header-links__group
+    display: flex
+    align-items: center
+    padding: 14px 16px 6px
+    color: rgba(0, 0, 0, 0.6)
+    font-size: 0.75rem
+    font-weight: 500
+    line-height: 1rem
+    letter-spacing: 0.08em
+    text-transform: uppercase
+    .q-icon
+      margin-right: 12px
+.body--dark .d-header-links__menu
+  .q-item--active
+    color: var(--q-primary-in-dark-bg)
+    background-color: rgba(255, 255, 255, 0.08)
+  .d-header-links__section + .d-header-links__section,
+  .d-header-links__section + .d-header-link-item,
+  .d-header-link-item + .d-header-links__section
+    border-top-color: rgba(255, 255, 255, 0.12)
+  .q-item__label.d-header-links__group
+    color: rgba(255, 255, 255, 0.6)
 // ? text only screen readers announce (the header links' new-tab cue)
 .d-sr-only
   position: absolute
@@ -665,8 +687,4 @@ onMounted(() => {
   clip: rect(0, 0, 0, 0)
   white-space: nowrap
   border: 0
-  .d-header-links__group
-    display: flex
-    align-items: center
-    padding: 12px 16px 4px
 </style>

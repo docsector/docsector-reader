@@ -66,9 +66,11 @@ A link opens like the [top links of the sidebar](/manual/basic/d-menu/overview/#
 
 | `href` | Opens |
 | --- | --- |
-| A URL (`https://…`) | In a new tab, with the open-in-new icon |
+| A URL (`https://…`) | In a new tab |
 | The path of a page of this site (`/sponsors/`) | In place |
-| Any other path (`/feed.xml`, a file under `public/`) | In a new tab, with the open-in-new icon |
+| Any other path (`/feed.xml`, a file under `public/`) | In a new tab |
+
+In the menus — a dropdown, or the arrow's menu — a link that opens in a new tab shows the open-in-new icon. The centered links leave it out to keep the header clean; screen readers still announce the new tab.
 
 Point to a page, not to a book root: `/guide/getting-started/`, not `/guide/`.
 

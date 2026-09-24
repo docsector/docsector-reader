@@ -504,6 +504,8 @@ describe('header links', () => {
     expect(expressionOf(list, 'on', 'keydown')).toBe('move')
     expect(expressionOf(loop, 'for')).toBe('(link,index)inheaderLinks')
     expect(expressionOf(group, 'if')).toBe('link.children.length>0')
+    expect(staticAttr(group, 'class')).toBe('d-header-links__section')
+    expect(staticAttr(heading, 'class')).toBe('d-header-links__group')
     expect(expressionOf(group, 'bind', 'aria-label')).toBe('link.label')
     expect(expressionOf(headingIcon, 'if')).toBe('link.icon')
     expect(expressionOf(headingIcon, 'bind', 'name')).toBe('link.icon')
@@ -557,8 +559,7 @@ describe('header links', () => {
     const list = find(dropdown, node => node.tag === 'q-list', 'dropdown list')
     const row = find(list, node => node.tag === 'd-header-link-item', 'dropdown row')
     const button = find(nav, node => node.tag === 'q-btn', 'link button')
-    const external = find(button, node => node.tag === 'template' && expressionOf(node, 'if') === 'link.attrs.target', 'new-tab cue')
-    const cue = find(external, node => node.tag === 'span' && hasClass(node, 'd-sr-only'), 'screen-reader cue')
+    const cue = find(button, node => node.tag === 'span' && hasClass(node, 'd-sr-only'), 'screen-reader cue')
 
     expect(expressionOf(nav, 'bind', 'aria-label')).toBe("t('header.links')")
     expect(expressionOf(loop, 'for')).toBe('(link,index)inlinks')
@@ -582,7 +583,9 @@ describe('header links', () => {
     expect(expressionOf(button, 'bind', 'class')).toBe("{'d-header__link--active':link.active}")
     expect(expressionOf(button, 'bind', 'aria-current')).toBe("link.active?'page':null")
     expect(hasAttr(button, 'no-wrap')).toBe(true)
-    expect(staticAttr(find(external, node => node.tag === 'q-icon', 'new-tab icon'), 'name')).toBe('open_in_new')
+    // ? the bar shows no open-in-new icon — only screen readers hear the new tab
+    expect(findAll(button, node => node.tag === 'q-icon')).toEqual([])
+    expect(expressionOf(cue, 'if')).toBe('link.attrs.target')
     expect(cue.children.some(child => child.type === INTERPOLATION && compact(child.content.content) === "t('header.newTab')")).toBe(true)
   })
 

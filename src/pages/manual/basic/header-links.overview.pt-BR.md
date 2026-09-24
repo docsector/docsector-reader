@@ -66,9 +66,11 @@ Um link abre como os [links do topo do menu lateral](/manual/basic/d-menu/overvi
 
 | `href` | Abre |
 | --- | --- |
-| Uma URL (`https://…`) | Em nova aba, com o ícone de link externo |
+| Uma URL (`https://…`) | Em nova aba |
 | O caminho de uma página deste site (`/sponsors/`) | No lugar |
-| Qualquer outro caminho (`/feed.xml`, um arquivo em `public/`) | Em nova aba, com o ícone de link externo |
+| Qualquer outro caminho (`/feed.xml`, um arquivo em `public/`) | Em nova aba |
+
+Nos menus — um menu suspenso ou o menu da seta — um link que abre em nova aba mostra o ícone de link externo. Os links centralizados o dispensam para deixar o header limpo; os leitores de tela continuam anunciando a nova aba.
 
 Aponte para uma página, não para a raiz de um book: `/guide/getting-started/`, não `/guide/`.
 

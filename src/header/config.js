@@ -177,13 +177,12 @@ export function normalize (config = {}, { onWarning } = {}) {
 // ! Header nav metrics (px) — deliberately generous: an estimate that runs
 //   short would clip the last links, one that runs long only keeps the arrow
 //   a little longer. 14px Roboto is ~7.5px per character; a QBtn has 16px of
-//   inline padding per side, a left icon 24px + 12px, the dropdown arrow and
-//   the open-in-new icon ~24px each.
+//   inline padding per side, a left icon 24px + 12px, the dropdown arrow ~24px.
+//   A link that opens in a new tab shows no icon in the bar.
 const CHARACTER = 8.4
 const PADDING = 32
 const ICON = 36
 const ARROW = 32
-const EXTERNAL = 22
 const MARGIN = 1.1
 
 // : the longest text a label renders, in characters, over every locale —
@@ -196,14 +195,9 @@ const measure = (value) => {
 
 // : the estimated width (px) of the centered header nav for normalized links
 export function estimate (links = []) {
-  const width = links.reduce((total, link) => {
-    const external = link.children.length === 0 && /^[a-z][a-z0-9+.-]*:|^\/\//i.test(link.href || '')
-
-    return total + PADDING + measure(link.label) * CHARACTER +
-      (link.icon !== null ? ICON : 0) +
-      (link.children.length > 0 ? ARROW : 0) +
-      (external ? EXTERNAL : 0)
-  }, 0)
+  const width = links.reduce((total, link) => total + PADDING + measure(link.label) * CHARACTER +
+    (link.icon !== null ? ICON : 0) +
+    (link.children.length > 0 ? ARROW : 0), 0)
 
   return Math.ceil(width * MARGIN)
 }

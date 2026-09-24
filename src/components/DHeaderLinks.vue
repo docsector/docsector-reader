@@ -55,10 +55,8 @@ const { t } = useI18n()
       no-wrap
       stretch
     >
-      <template v-if="link.attrs.target">
-        <q-icon class="q-ml-xs" name="open_in_new" size="xs" />
-        <span class="d-sr-only">{{ t('header.newTab') }}</span>
-      </template>
+      <!-- ? no open-in-new icon in the bar (the menus keep it): only screen readers hear the new tab -->
+      <span v-if="link.attrs.target" class="d-sr-only">{{ t('header.newTab') }}</span>
     </q-btn>
   </template>
 </nav>

@@ -48,6 +48,22 @@ describe('header links CSS', () => {
     expect(css).toContain('.d-header .d-header__brand.q-btn-group>.q-btn-dropdown--current{min-width:0;padding:13px 16px}')
   })
 
+  it('gives the centered links the tile shadow and weight of the other header buttons', () => {
+    expect(css).toContain('.d-header .q-btn:before{box-shadow:0 0 5px rgba(0,0,0,.2),0 0 2px rgba(0,0,0,.14),0 0 1px -2px rgba(0,0,0,.12);')
+    expect(css).not.toMatch(/d-header__nav \.q-btn:before/)
+    expect(css).not.toMatch(/\.d-header__link\{/)
+  })
+
+  it('sets a menu group title apart from the links, on the rows\' columns', () => {
+    // ? a class pair beats `body.body--light .q-item__label--header` and app.sass' flush left
+    expect(css).toContain('.d-header-links__menu .q-item__label.d-header-links__group{display:flex;align-items:center;padding:14px 16px 6px;color:rgba(0,0,0,.6);font-size:.75rem;font-weight:500;line-height:1rem;letter-spacing:.08em;text-transform:uppercase}')
+    expect(css).toContain('.d-header-links__menu .q-item__label.d-header-links__group .q-icon{margin-right:12px}')
+    expect(css).toContain('.body--dark .d-header-links__menu .q-item__label.d-header-links__group{color:hsla(0,0%,100%,.6)}')
+    expect(css).toContain('.d-header-links__menu .d-header-links__section+.d-header-links__section,.d-header-links__menu .d-header-links__section+.d-header-link-item,.d-header-links__menu .d-header-link-item+.d-header-links__section{border-top:1px solid rgba(0,0,0,.12)}')
+    expect(css).toContain('.body--dark .d-header-links__menu .d-header-links__section+.d-header-links__section,.body--dark .d-header-links__menu .d-header-links__section+.d-header-link-item,.body--dark .d-header-links__menu .d-header-link-item+.d-header-links__section{border-top-color:hsla(0,0%,100%,.12)}')
+    expect(css).not.toMatch(/d-sr-only \.d-header-links__group/)
+  })
+
   it('keeps the active menu row readable in both themes', () => {
     expect(css).toContain('.d-header-links__menu .q-item--active{color:inherit;font-weight:500;background-color:rgba(189,189,189,.35)}')
     expect(css).toContain('.body--dark .d-header-links__menu .q-item--active{color:var(--q-primary-in-dark-bg);')

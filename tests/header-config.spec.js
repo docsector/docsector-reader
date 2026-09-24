@@ -171,13 +171,13 @@ describe('HeaderConfig.normalize', () => {
 describe('HeaderConfig.estimate', () => {
   const link = (extra = {}) => ({ label: 'Docs', icon: null, href: '/docs/', children: [], ...extra })
 
-  it('grows with labels, icons, dropdown arrows and new-tab icons', () => {
+  it('grows with labels, icons and dropdown arrows, never with new-tab links', () => {
     const base = estimate([link()])
 
     expect(base).toBeGreaterThan(0)
     expect(estimate([link({ label: 'Documentation' })])).toBeGreaterThan(base)
     expect(estimate([link({ icon: 'book' })])).toBeGreaterThan(base)
-    expect(estimate([link({ href: 'https://example.com' })])).toBeGreaterThan(base)
+    expect(estimate([link({ href: 'https://example.com' })])).toBe(base)
     expect(estimate([link({ href: null, children: [link()] })])).toBeGreaterThan(base)
     expect(estimate([link(), link()])).toBeGreaterThan(base)
     expect(estimate([])).toBe(0)
@@ -197,13 +197,13 @@ describe('HeaderConfig.estimate', () => {
     expect(estimate([link()])).toBe(73)
     // (32 + 4 × 8.4 + icon 36 + dropdown arrow 32) × 1.1
     expect(estimate([link({ icon: 'hub', href: null, children: [link()] })])).toBe(147)
-    // (32 + 6 × 8.4 + new-tab icon 22) × 1.1
-    expect(estimate([link({ label: 'GitHub', href: 'https://github.com' })])).toBe(115)
+    // (32 + 6 × 8.4) × 1.1 — no new-tab icon in the bar
+    expect(estimate([link({ label: 'GitHub', href: 'https://github.com' })])).toBe(91)
   })
 
   it('stays generous: at least 8px per character plus the padding of each link', () => {
     const links = [link({ label: 'Getting started', icon: 'school' }), link({ label: 'GitHub', icon: 'code', href: 'https://github.com/org/repo' })]
-    const floor = (15 + 6) * 8 + 2 * 32 + 2 * 36 + 22
+    const floor = (15 + 6) * 8 + 2 * 32 + 2 * 36
 
     expect(estimate(links)).toBeGreaterThanOrEqual(floor)
   })
