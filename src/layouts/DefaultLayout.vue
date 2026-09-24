@@ -139,7 +139,7 @@ const menuHydration = createMenuHydration(router, {
   interactions: ['pointerenter', 'touchstart', 'focusin', 'click'],
   loader: () => import('../components/DMenu.vue'),
   // ? the server menu is in the DOM only while this layout hydrates it
-  hydrating: typeof window !== 'undefined' && window.__DOCSECTOR_HYDRATING__ === true && document.getElementById('menu') !== null
+  markup: typeof window !== 'undefined' && window.__DOCSECTOR_HYDRATING__ === true ? document.getElementById('menu') : null
 })
 const DMenu = defineAsyncComponent({
   loader: menuHydration.loader,

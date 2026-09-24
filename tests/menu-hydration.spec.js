@@ -25,12 +25,14 @@ const createRouter = () => {
 const setup = ({ hydrating = true, fail = false } = {}) => {
   const router = createRouter()
   const element = new EventTarget()
+  // : the server menu element — the drawer may replace it on the client
+  const markup = hydrating ? { isConnected: true } : null
   const hydrate = vi.fn()
   let finish = null
   const loaded = new Promise((resolve, reject) => {
     finish = () => (fail ? reject(new Error('chunk failed')) : resolve({ default: {} }))
   })
-  const menu = createMenuHydration(router, { interactions: INTERACTIONS, loader: () => loaded, hydrating })
+  const menu = createMenuHydration(router, { interactions: INTERACTIONS, loader: () => loaded, markup })
   const [guard] = router.guards
   // : what Vue does for a lazily hydrated async component — load, then install
   const load = async () => {
@@ -43,7 +45,7 @@ const setup = ({ hydrating = true, fail = false } = {}) => {
     }
     return menu.strategy(hydrate, (callback) => callback(element))
   }
-  return { router, element, hydrate, menu, guard, load }
+  return { router, element, hydrate, menu, guard, load, markup }
 }
 
 afterEach(() => {
@@ -117,6 +119,31 @@ describe('createMenuHydration', () => {
     menu.strategy(hydrate, (callback) => callback(element))
     element.dispatchEvent(new Event('focusin'))
     expect(hydrate).toHaveBeenCalledTimes(1)
+  })
+
+  it('goes on at once when the server menu was re-rendered on the client (below 1024px)', async () => {
+    vi.useFakeTimers()
+    const { router, hydrate, guard, markup } = setup()
+    let passed = false
+
+    markup.isConnected = false
+    const navigation = guard(TO, FROM).then(() => { passed = true })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(passed).toBe(true)
+    expect(hydrate).not.toHaveBeenCalled()
+    expect(router.guards.size).toBe(0)
+    await navigation
+  })
+
+  it('drops the guard once the layout has mounted when the server menu is already gone', () => {
+    const { router, menu, markup } = setup()
+    menu.loader()
+    markup.isConnected = false
+
+    menu.settle()
+
+    expect(router.guards.size).toBe(0)
   })
 
   it('leaves the menu asleep on same-path navigations (hash, query)', async () => {
@@ -241,7 +268,7 @@ describe('DefaultLayout wires the sidebar menu to it', () => {
     expect(menu).toContain('createMenuHydration(router,')
     expect(menu).toContain("interactions:['pointerenter','touchstart','focusin','click']")
     expect(menu).toContain("loader:()=>import('../components/DMenu.vue')")
-    expect(menu).toContain("hydrating:typeofwindow!=='undefined'&&window.__DOCSECTOR_HYDRATING__===true&&document.getElementById('menu')!==null")
+    expect(menu).toContain("markup:typeofwindow!=='undefined'&&window.__DOCSECTOR_HYDRATING__===true?document.getElementById('menu'):null")
     expect(declarations.router.start).toBeLessThan(declarations.menuHydration.start)
   })
 

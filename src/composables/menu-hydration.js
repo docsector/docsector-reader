@@ -19,18 +19,22 @@ export const MENU_WAIT_MS = 5000
  * Vue installs a hydration strategy only once the component's chunk has
  * loaded, so the guard is registered up front: a navigation that starts
  * before the chunk arrives waits for it (or for its failure) before going on,
- * never longer than MENU_WAIT_MS.
+ * never longer than MENU_WAIT_MS. When the server markup has left the page —
+ * the drawer re-renders its menu on the client below 1024px — the menu is
+ * already live and nothing is waited for.
  *
  * @param {Object} router - The app router
  * @param {Object} options
  * @param {Array<string>} options.interactions - DOM events that hydrate the menu
  * @param {Function} options.loader - The menu component loader (dynamic import)
- * @param {boolean} options.hydrating - Whether server markup of the menu is being hydrated
+ * @param {Element|null} options.markup - The server-rendered menu element this layout hydrates, or null
  * @returns {{ loader: Function, strategy: Function, settle: Function, dispose: Function }}
  *   The loader and hydration strategy for defineAsyncComponent, the check to
  *   run once the layout has mounted, and the cleanup for its unmount
  */
-export function createMenuHydration (router, { interactions = [], loader, hydrating = false } = {}) {
+export function createMenuHydration (router, { interactions = [], loader, markup = null } = {}) {
+  const hydrating = markup !== null
+
   // * Metadata
   let hydrate = null
   let hydrated = !hydrating
@@ -82,6 +86,13 @@ export function createMenuHydration (router, { interactions = [], loader, hydrat
         return
       }
 
+      // ? the server markup is gone (re-rendered on the client): nothing to
+      //   hydrate, nothing to wait for
+      if (!markup.isConnected) {
+        run()
+        return
+      }
+
       // ? never hold a navigation hostage to a stalled chunk
       if (await wait()) {
         run()
@@ -116,7 +127,7 @@ export function createMenuHydration (router, { interactions = [], loader, hydrat
     //   its chunk; if none did (no sidebar on this page), nothing will ever
     //   install the strategy, so the guard must not wait for it
     settle: () => {
-      if (!loading) {
+      if (!loading || !markup?.isConnected) {
         run()
       }
     },
