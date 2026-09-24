@@ -200,7 +200,7 @@ O que o leitor vê numa página avulsa:
 | Área | Comportamento |
 | --- | --- |
 | Abas dos books | Nenhuma fica destacada; cada aba continua abrindo o seu book |
-| Menu lateral | Seletor de versão e links do topo; sem árvore de páginas, então a busca, que filtra a árvore, fica desabilitada |
+| Menu lateral | O mesmo menu da página inicial: busca, seletor de versão, links do topo e a árvore do book padrão, sem item destacado |
 | Anterior / próximo | Nenhum |
 | Conteúdo | Sumário, FAQ, feedback, patrocinadores e anúncio, como em qualquer página |
 | Build | HTML pré-renderizado, entrada no sitemap, `.md` para agentes, uma seção própria no `llms.txt` e uma linha na lista de páginas do MCP; fora do índice de busca do menu |

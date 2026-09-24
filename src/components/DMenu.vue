@@ -168,12 +168,18 @@ const defaultBookId = computed(() => {
   return sortedBooks[0]?.id || null
 })
 
-// ? the route's book passes through unchecked: on a standalone page (a book
-//   no *.book.js registers, every page hidden) the tree stays empty instead
-//   of showing the default book
+// : whether a book has any page to list in the active version — a
+//   standalone page's book (every page hidden) has none
+const hasTree = (book) => getTopRoutes().some(route =>
+  (route.meta?.book ?? route.meta?.type) === book &&
+  (!activeVersionId.value || route.meta?.version === activeVersionId.value))
+
+// ? the route's book when it has a tree (legacy unregistered books such as
+//   `type: 'API'` keep theirs); otherwise — the home page, a standalone page —
+//   the default book's tree, so every page outside a book shows the home menu
 const currentBookId = computed(() => {
   const routeBook = $route.matched?.[0]?.meta?.book ?? $route.meta?.book ?? null
-  if (routeBook && routeBook !== 'home') {
+  if (routeBook && routeBook !== 'home' && hasTree(routeBook)) {
     return routeBook
   }
 

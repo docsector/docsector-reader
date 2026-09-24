@@ -99,7 +99,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - ❓ **Page FAQ** — A closing FAQ accordion declared in a page's `faq:` frontmatter (Markdown answers), with a ToC entry, deep links per question, schema.org FAQPage JSON-LD and a `## FAQ` section in the Markdown served to agents
 - 🤝 **Sponsors** — Opt-in sponsor tiers under the Table of Contents (wide and square logos, dark-theme variants), a "Your sponsor here" example slot in every empty tier and a "Your logo here" button, both opening a configurable fallback URL
 - 🧭 **In-Place Top Links** — The sidebar's Changelog, Roadmap, Sponsor and Explore links take a URL (new tab) or the path of a page of the site, which opens in place and stays highlighted while open
-- 🏝️ **Standalone Pages** — Pages outside every book (sponsoring, advertising, the team): an entry keyed `''` with an unregistered `book` and `menu.hidden`, routed at `/<id>/overview/` with no book tab and no page tree
+- 🏝️ **Standalone Pages** — Pages outside every book (sponsoring, advertising, the team): an entry keyed `''` with an unregistered `book` and `menu.hidden`, routed at `/<id>/overview/` with no book tab; its sidebar shows the home page's menu
 - 📣 **Page Ad** — Opt-in ad with your own creatives above every subpage: one stable creative per page, SSR-safe, no third-party scripts
 - 🏠 **Markdown Home at Root** — Homepage is rendered from `src/pages/Homepage.{lang}.md` directly at `/`
 - 🧱 **Configurable Homepage Layout** — Set `homePage.layout` to `default` or `fullwidth`; fullwidth keeps the header and book tabs while removing the sidebar, subpage toolbar, Table of Contents, and homepage footer

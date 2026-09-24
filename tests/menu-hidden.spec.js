@@ -46,12 +46,15 @@ describe('hidden pages stay off every navigation surface', () => {
     expect(landing.indexOf('hidden===true')).toBeLessThan(landing.indexOf('constcandidatePath'))
   })
 
-  it('shows an empty tree on a page whose book is not registered — the route book passes through unchecked', () => {
+  it('shows the home menu on a page whose book has no tree (a standalone page), keeping legacy trees', () => {
     const book = functionOf('components/DMenu.vue', 'currentBookId')
+    const tree = functionOf('components/DMenu.vue', 'hasTree')
 
-    expect(book).toContain("if(routeBook&&routeBook!=='home'){returnrouteBook}")
-    expect(book).not.toContain('allBooks')
-    expect(book).not.toContain('sortedBooks')
+    expect(book).toContain("if(routeBook&&routeBook!=='home'&&hasTree(routeBook)){returnrouteBook}")
+    expect(book).toContain('returndefaultBookId.value')
+    expect(tree).toContain('getTopRoutes().some(')
+    expect(tree).toContain('(route.meta?.book??route.meta?.type)===book')
+    expect(tree).toContain('(!activeVersionId.value||route.meta?.version===activeVersionId.value)')
   })
 
   it('highlights no book tab on a page whose book is not registered', () => {

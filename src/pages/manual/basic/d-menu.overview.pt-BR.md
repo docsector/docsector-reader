@@ -26,7 +26,7 @@ O input de busca no topo do menu filtra páginas comparando o termo de busca com
 1. **Tags** — Definidas por página em `src/pages/*.index.js` em `metadata.tags`
 2. **Conteúdo da página** — O source Markdown de cada sub-página overview, showcase e vs
 
-A busca tem debounce de 300ms e suporta o locale atual com fallback para en-US. Ela filtra a árvore de páginas do book atual, então fica desabilitada numa página fora de todos os books.
+A busca tem debounce de 300ms e suporta o locale atual com fallback para en-US. Ela filtra a árvore de páginas mostrada no menu, então só fica desabilitada quando não há árvore para filtrar.
 
 ## Seção de Branding
 
@@ -75,7 +75,7 @@ Website, Email, Chat, Discussions e GitHub são botões de ícone abaixo do menu
 
 A árvore de páginas é construída a partir das rotas do roteador no momento de criação do componente. Rotas são filtradas pela versão e pelo book ativos, depois agrupadas pelo basepath da página. Grupos com configuração `menu.header` recebem um painel de expansão com header sticky.
 
-Páginas com `menu.hidden` ficam de fora. Numa página fora de todos os books a árvore fica vazia: o menu mostra o branding e os links do topo, e a busca, que só filtra a árvore, fica desabilitada.
+Páginas com `menu.hidden` ficam de fora. Uma página fora de todos os books (como uma página de patrocínio avulsa) mostra o mesmo menu da página inicial: a árvore do book padrão, sem item destacado.
 
 Um atalho (`link.to`) que leva a outro book mostra uma seta (→) depois do rótulo, já que o clique sai da árvore do book atual. Um atalho dentro do mesmo book não mostra seta.
 

@@ -200,7 +200,7 @@ What readers see on a standalone page:
 | Area | Behavior |
 | --- | --- |
 | Book tabs | None is highlighted; every tab still opens its book |
-| Sidebar | Version selector and top links; no page tree, so the search, which filters it, is disabled |
+| Sidebar | The same menu as the home page: search, version selector, top links and the default book's tree, with no item highlighted |
 | Previous / next | None |
 | Content | Table of Contents, FAQ, feedback, sponsors and page ad, like any page |
 | Build | Prerendered HTML, sitemap entry, `.md` for agents, its own section in `llms.txt` and a row in the MCP page list; not in the sidebar search index |

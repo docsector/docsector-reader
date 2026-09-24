@@ -26,7 +26,7 @@ The search input at the top of the menu filters pages by matching the search ter
 1. **Tags** — Defined per page in `src/pages/*.index.js` under `metadata.tags`
 2. **Page content** — The Markdown source of each page's overview, showcase, and vs subpages
 
-Search is debounced by 300ms and supports the current locale with en-US fallback. It filters the page tree of the current book, so it is disabled on a page outside every book.
+Search is debounced by 300ms and supports the current locale with en-US fallback. It filters the page tree shown in the menu, so it is disabled only when there is no tree to filter.
 
 ## Branding Section
 
@@ -75,7 +75,7 @@ Website, Email, Chat, Discussions and GitHub are icon buttons under the menu. Th
 
 The page tree is built from the router's routes at component creation time. Routes are filtered by active version and book, then grouped by their page basepath. Groups with a `menu.header` configuration get an expansion panel with a sticky header.
 
-Pages with `menu.hidden` are left out. On a page outside every book the tree is empty: the menu shows its branding and top links, and the search, which only filters the tree, is disabled.
+Pages with `menu.hidden` are left out. A page outside every book (such as a standalone sponsors page) shows the same menu as the home page: the default book's tree, with no item highlighted.
 
 A shortcut entry (`link.to`) that lands in another book shows an arrow (→) after its label, since clicking it leaves the current book's tree. A shortcut within the same book shows none.
 
