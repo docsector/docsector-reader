@@ -482,9 +482,7 @@ onMounted(() => {
   //   $q.screen class bindings only settle after Screen measures — shifting
   //   the brand on every load (CLS)
   .d-header__brand-slot
-    justify-content: center
-    @media (max-width: 599px)
-      justify-content: flex-start
+    justify-content: flex-start
   .d-header__brand
     min-width: 0
     max-width: 100%
