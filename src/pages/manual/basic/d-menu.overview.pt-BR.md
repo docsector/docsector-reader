@@ -75,6 +75,8 @@ A árvore de páginas é construída a partir das rotas do roteador no momento d
 
 Páginas com `menu.hidden` ficam de fora. Numa página fora de todos os books a árvore fica vazia: o menu mostra o branding e os links do topo, e a busca, que só filtra a árvore, fica desabilitada.
 
+Um atalho (`link.to`) que leva a outro book mostra uma seta (→) depois do rótulo, já que o clique sai da árvore do book atual. Um atalho dentro do mesmo book não mostra seta.
+
 ## Agrupamento de Itens
 
 Itens são agrupados quando:

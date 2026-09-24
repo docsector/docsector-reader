@@ -75,6 +75,8 @@ The page tree is built from the router's routes at component creation time. Rout
 
 Pages with `menu.hidden` are left out. On a page outside every book the tree is empty: the menu shows its branding and top links, and the search, which only filters the tree, is disabled.
 
+A shortcut entry (`link.to`) that lands in another book shows an arrow (→) after its label, since clicking it leaves the current book's tree. A shortcut within the same book shows none.
+
 ## Menu Item Grouping
 
 Items are grouped when:

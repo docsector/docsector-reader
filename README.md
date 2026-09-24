@@ -1252,6 +1252,7 @@ Notes:
 - For shortcut pages, `link.to` and `data` are enough.
 - `icon` and `status` automatically fall back to the destination page when omitted.
 - Internal links redirect directly to the target route instead of rendering `overview` / `showcase` / `vs` locally.
+- A shortcut that lands in another book shows an arrow (→) after its label in the menu.
 
 ### Hidden and Standalone Pages
 

@@ -440,3 +440,21 @@ describe('DMenu top links', () => {
     expect(declarations.exploreLinks).toContain('.filter(item=>item.attrs!==null)')
   })
 })
+
+describe('DMenuItem cross-book arrow', () => {
+  it('shows an arrow after the label only for a shortcut into another book', () => {
+    const item = find(templateOf('DMenuItem.vue'), node => node.tag === 'q-item' && directive(node, 'bind', 'to'), 'page-tree item')
+    const sections = childElements(item).filter(node => node.tag === 'q-item-section')
+    const arrow = sections.at(-1)
+    const icon = find(arrow, node => node.tag === 'q-icon', 'arrow icon')
+
+    expect(expressionOf(arrow, 'if')).toBe('crossBook')
+    expect(arrow.props.some(prop => prop.type === ATTRIBUTE && prop.name === 'side')).toBe(true)
+    expect(staticAttr(icon, 'name')).toBe('arrow_forward')
+    expect(staticAttr(icon, 'size')).toBe('xs')
+  })
+
+  it('asks MenuLink.cross with the item meta and the router', () => {
+    expect(declarationsOf(scriptSetupOf('DMenuItem.vue')).crossBook).toBe('computed(()=>MenuLink.cross(props.subitem?.meta,$router))')
+  })
+})

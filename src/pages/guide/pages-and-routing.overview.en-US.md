@@ -35,6 +35,7 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 - **version** — Optional version where the page was introduced, shown under the last updated date as `New in: ...` (for example, `'v2.1.0'`)
 - **icon** — Material Design icon name shown in the sidebar
 - **menu** — Object controlling menu display (header, subheader, separators, hidden)
+- **link** — `&#123; to: '/guide/getting-started/overview/' &#125;` turns the entry into a menu shortcut that redirects to that page; a shortcut into another book shows an arrow (→) in the menu
 - **subpages** — Enable additional tabs: `showcase`, `vs`
 
 ## Category Nodes

@@ -3,7 +3,7 @@ import { renderToString } from 'vue/server-renderer'
 import { RouterLink, createMemoryHistory, createRouter } from 'vue-router'
 import { describe, expect, it, vi } from 'vitest'
 
-import { resolve } from '../src/components/menu-link.js'
+import { cross, resolve } from '../src/components/menu-link.js'
 
 const Empty = defineComponent({ render: () => null })
 
@@ -131,5 +131,39 @@ describe('an in-place top link is highlighted while its page is open', () => {
 
   it('stays inactive on other pages', async () => {
     expect(await render('/sponsors/', '/guide/getting-started/overview/')).not.toContain('router-link-active')
+  })
+})
+
+describe('MenuLink.cross', () => {
+  it('names the other book a shortcut lands in', () => {
+    const router = createTestRouter()
+
+    expect(cross({ book: 'manual', link: { to: '/guide/getting-started/overview/' } }, router)).toBe('guide')
+    expect(cross({ book: 'manual', link: { to: '  /guide/getting-started/  ' } }, router)).toBe('guide')
+    expect(cross({ book: 'manual', link: { to: 'guide/getting-started/overview/' } }, router)).toBe('guide')
+    expect(cross({ type: 'manual', link: { to: '/sponsors/' } }, router)).toBe('sponsors')
+    expect(cross({ book: 'manual', link: { to: '/' } }, router)).toBe('home')
+  })
+
+  it('gives nothing for a shortcut within the same book', () => {
+    expect(cross({ book: 'guide', link: { to: '/guide/getting-started/overview/' } }, createTestRouter())).toBeNull()
+  })
+
+  it('gives nothing without a shortcut or for a target that is not a page', () => {
+    const router = createTestRouter()
+
+    for (const meta of [undefined, null, {}, { book: 'manual' }, { book: 'manual', link: {} }, { book: 'manual', link: { to: '' } }, { book: 'manual', link: { to: 7 } }]) {
+      expect(cross(meta, router)).toBeNull()
+    }
+    expect(cross({ book: 'manual', link: { to: '/nowhere/overview/' } }, router)).toBeNull()
+    expect(cross({ book: 'manual', link: { to: '//cdn.example/x' } }, router)).toBeNull()
+    expect(cross({ book: 'manual', link: { to: 'https://example.com/guide/' } }, router)).toBeNull()
+  })
+
+  it('never throws — a failing or missing router means no arrow', () => {
+    const meta = { book: 'manual', link: { to: '/guide/getting-started/overview/' } }
+
+    expect(cross(meta, { resolve: () => { throw new Error('boom') } })).toBeNull()
+    expect(cross(meta, undefined)).toBeNull()
   })
 })

@@ -46,3 +46,31 @@ export function resolve (url, router, { onWarning } = {}) {
   // :
   return { href: value, target: '_blank' }
 }
+
+// : the book a page-tree shortcut (config.link.to) lands in, when that is not
+//   the entry's own book — null for no shortcut, the same book or an unknown
+//   target. Like resolve(), the router only answers where the path lands.
+export function cross (meta, router) {
+  const to = typeof meta?.link?.to === 'string' ? meta.link.to.trim() : ''
+  // ?
+  if (to === '') {
+    return null
+  }
+
+  // ? routes.js reads a link.to without its leading slash the same way
+  const path = to.startsWith('/') ? to : `/${to}`
+  if (!SITE_PATH.test(path)) {
+    return null
+  }
+
+  let book
+  try {
+    book = router?.resolve(path)?.matched?.[0]?.meta?.book
+  } catch {
+    book = undefined
+  }
+
+  // :
+  const own = meta.book ?? meta.type ?? null
+  return typeof book === 'string' && book !== own ? book : null
+}

@@ -35,6 +35,7 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 - **version** — Versão opcional em que a página foi introduzida, exibida abaixo da data de última atualização como `Novo em: ...` (por exemplo, `'v2.1.0'`)
 - **icon** — Nome do ícone Material Design exibido no menu lateral
 - **menu** — Objeto controlando exibição do menu (header, subheader, separators, hidden)
+- **link** — `&#123; to: '/guide/getting-started/overview/' &#125;` transforma a entrada num atalho do menu que redireciona para essa página; um atalho para outro book mostra uma seta (→) no menu
 - **subpages** — Ativar abas adicionais: `showcase`, `vs`
 
 ## Nós de Categoria

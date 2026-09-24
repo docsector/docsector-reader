@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { namespacedLabelI18nPath, routeTitleI18nPath } from '../i18n/path'
+import * as MenuLink from './menu-link.js'
 import { menuSeparatorClass, normalizeMenuSeparators } from './menu-separators'
 
 const $route = useRoute()
@@ -36,6 +37,10 @@ const props = defineProps({
 
 // Lines around the item — `separators.lineTop`/`lineBottom` (legacy `separator` = lineBottom)
 const separators = computed(() => normalizeMenuSeparators(props.subitem?.meta?.menu))
+
+// ? A shortcut (config.link.to) into another book gets an arrow: clicking it
+//   leaves the current book's tree
+const crossBook = computed(() => MenuLink.cross(props.subitem?.meta, $router))
 
 const getMenuItemLabel = (item) => {
   if (!item?.path) {
@@ -187,6 +192,9 @@ const onMenuItemClick = (event, path, currentSubpage) => {
       :style="getPageStatusStyle(subitem.meta.status)"
     />
     <q-tooltip :hide-delay="3">{{ getPageStatusTooltip(subitem.meta.status, subitem.meta.pageVersion) }}</q-tooltip>
+  </q-item-section>
+  <q-item-section v-if="crossBook" class="d-menu-item__cross" side>
+    <q-icon name="arrow_forward" size="xs" />
   </q-item-section>
 </q-item>
 
