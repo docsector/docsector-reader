@@ -101,23 +101,15 @@
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent, hydrateOnInteraction, onMounted, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
 import { useMeta, useQuasar } from 'quasar'
 
-// ? The sidebar menu is one of the heaviest shell subtrees (~200 entries).
-//   Under SSR its markup is already server-rendered with real <a href> links —
-//   hydrate it only when the user reaches for it (hover/touch/focus), keeping
-//   the initial hydration task (and Total Blocking Time) small. In SPA loads
-//   the async component mounts immediately as usual.
-const DMenu = defineAsyncComponent({
-  loader: () => import('../components/DMenu.vue'),
-  hydrate: hydrateOnInteraction(['pointerenter', 'touchstart', 'focusin', 'click'])
-})
 import DFooterHost from '../components/DFooterHost.vue'
 import docsectorConfig from 'docsector.config.js'
+import { createMenuHydration } from '../composables/menu-hydration'
 import { scrollMenuToActive } from '../composables/menu-scroll'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
@@ -137,6 +129,24 @@ const assistantEnabled = assistantConfig.enabled === true
 
 const route = useRoute()
 const router = useRouter()
+
+// ? The sidebar menu is one of the heaviest shell subtrees (~200 entries).
+//   Under SSR its markup is already server-rendered with real <a href> links —
+//   hydrate it only when the user reaches for it (hover/touch/focus) or right
+//   before the first navigation, keeping the initial hydration task (and Total
+//   Blocking Time) small. In SPA loads the async component mounts immediately.
+const menuHydration = createMenuHydration(router, {
+  interactions: ['pointerenter', 'touchstart', 'focusin', 'click'],
+  loader: () => import('../components/DMenu.vue'),
+  // ? the server menu is in the DOM only while this layout hydrates it
+  hydrating: typeof window !== 'undefined' && window.__DOCSECTOR_HYDRATING__ === true && document.getElementById('menu') !== null
+})
+const DMenu = defineAsyncComponent({
+  loader: menuHydration.loader,
+  hydrate: menuHydration.strategy
+})
+onMounted(menuHydration.settle)
+onBeforeUnmount(menuHydration.dispose)
 const store = useStore()
 const $q = useQuasar()
 const { t, locale } = useI18n()
@@ -446,10 +456,11 @@ router.afterEach((to, from) => {
 
 store.commit('page/resetAnchors')
 
-// @ Sidebar position on load: DMenu only hydrates on interaction, so its own
-//   mounted scroll never runs for a fresh visit — center the active item on
-//   the server-rendered markup from here (pure DOM, keeps the menu asleep),
-//   with the same smooth glide route changes use.
+// @ Sidebar position on load: DMenu only hydrates on interaction (or right
+//   before the first navigation), so its own mounted scroll never runs for a
+//   fresh visit — center the active item on the server-rendered markup from
+//   here (pure DOM, keeps the menu asleep), with the same smooth glide route
+//   changes use.
 //   Double rAF: let the pre-hydration layout CSS settle the drawer first.
 onMounted(() => {
   requestAnimationFrame(() => {

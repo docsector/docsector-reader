@@ -2,9 +2,9 @@ import { scroll } from 'quasar'
 
 // : Center the active menu item inside the sidebar's scroll area. Pure DOM on
 //   purpose: under SSR the menu markup is server-rendered and DMenu only
-//   hydrates on interaction, so the on-load scroll (DefaultLayout) must work
-//   on the un-hydrated markup without waking the component. DMenu reuses the
-//   same routine after route changes.
+//   hydrates on interaction or navigation, so the on-load scroll
+//   (DefaultLayout) must work on the un-hydrated markup without waking the
+//   component. DMenu reuses the same routine after route changes.
 export function scrollMenuToActive (duration = 300) {
   const menu = document.getElementById('menu')
   if (!menu) {

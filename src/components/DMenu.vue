@@ -550,7 +550,8 @@ watch([currentBookId, activeVersionId], rebuildItems)
 <template>
 <!-- ? No <transition appear> here: Vue SSR serializes it as an inert
      <template> tag, hiding the search bar until the menu hydrates (which
-     only happens on interaction). The entrance animation was cosmetic. -->
+     only happens on interaction or navigation). The entrance animation was
+     cosmetic. -->
 <!-- ? the search filters the page tree: with no tree (a standalone page)
      there is nothing to filter, so the input is disabled -->
 <q-input for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300" :disable="items.length === 0">
@@ -752,8 +753,8 @@ body.body--light
   --d-menu-item-opacity: 0.015
 
 // ? Menu tones are CSS-driven on purpose: this subtree is server-rendered
-//   and only hydrates on interaction — a JS-bound theme class would freeze
-//   the serialized (light) look for dark visitors until they touch the menu
+//   and only hydrates on interaction or navigation — a JS-bound theme class
+//   would freeze the serialized (light) look for dark visitors until then
 .menu-social
   background: #fff
   display: flex
