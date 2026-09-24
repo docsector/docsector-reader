@@ -65,6 +65,8 @@ For a page, prefer its bare path (`/sponsors/` rather than `/sponsors/overview/`
 
 The usual in-place target is a page outside every book — see [Standalone Pages](/guide/pages-and-routing/overview/#standalone-pages).
 
+For links in the main header, with icons and dropdowns, see [Header Links](/manual/basic/header-links/overview/); they follow the same rule.
+
 ## Footer Buttons
 
 Website, Email, Chat, Discussions and GitHub are icon buttons under the menu. They open in a new tab; set a link to `null` to hide its button.

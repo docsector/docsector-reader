@@ -44,10 +44,12 @@ describe('docsector CLI', () => {
 
       expect(messages.page.sponsors).toEqual({ title: 'Sponsors', cta: 'Your logo here', example: 'Your sponsor here' })
       expect(messages.page.ad).toEqual({ label: 'Ad', example: 'Your ad here' })
+      expect(messages.header).toEqual({ links: 'Site links', newTab: 'opens in a new tab' })
 
       const configSource = readFileSync(join(projectDir, projectName, 'docsector.config.js'), 'utf-8')
       expect(configSource).toContain('// sponsors: {')
       expect(configSource).toContain('// ads: {')
+      expect(configSource).toContain('// header: {')
     } finally {
       rmSync(projectDir, { recursive: true, force: true })
     }

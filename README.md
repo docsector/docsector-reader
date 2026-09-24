@@ -76,7 +76,8 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 🔡 **Self-Hosted Variable Roboto** — One variable woff2 covers every weight (replacing six ~25 KB static `.woff` files), split into `latin` / `latin-ext` `unicode-range` subsets so extended glyphs only download when used, with `font-display: optional` for a shift-free first paint — ~45% less font weight on the critical path
 - 💬 **Assistant Chat UX Enhancements** — Long conversations keep focus on recent messages, load earlier history progressively, deduplicate repeated sources, preserve the assistant panel open state across reloads, include per-message copy actions and hover-revealed message times, and show a floating quick return to the bottom
 - 📱 **Responsive** — Mobile-friendly with collapsible sidebar and drawers
-- 🏷️ **Clickable Header Branding** — The configured `branding.logo` and `branding.name` render as a home link in the global header, aligned left on desktop with a compact mobile treatment
+- 🏷️ **Clickable Header Branding** — The configured `branding.logo` and `branding.name` render as a home link on the left of the global header, with a compact mobile treatment
+- 🧷 **Header Links** — Opt-in `header.links` centered in the header where they fit, with icons and one level of dropdowns; where they don't (phones, a narrow header next to the sidebar) they open from an arrow attached to the brand (a split button), and they never wrap or clip. Page paths open in place and stay highlighted while open, URLs open in a new tab
 - 📖 **Localized Brand Lockup** — The header and menu render `branding.name` together with the word *Documentation* through the `system.brand` i18n key, where each locale owns the full phrase and its word order (`{name} Documentation` in `en-US`, `Documentação {name}` in `pt-BR`); override the key in your own language files to reword it
 - 🔄 **Update Notification** — Production builds stamp a build ID (Cloudflare Pages commit SHA, `DOCSECTOR_BUILD_ID`, or a per-build timestamp) into the bundle and into an emitted `version.json` (with a `Cache-Control: no-cache` `_headers` rule); open tabs poll it while visible and on re-focus, showing a high-contrast floating **Refresh** / **Dismiss** banner at the bottom center (inverse surface, dark/light aware) when a newer deploy is live — localized via `system.update.*`, tunable or disabled via the `updates` config key
 - ♻️ **Stale Chunk Auto-Recovery** — When a redeploy removes the hashed chunks a stale session still references, failed lazy route imports (`router.onError` + `vite:preloadError`) trigger a full-page reload straight to the intended route, with a session guard that falls back to the update banner instead of reload-looping on a broken deploy
@@ -862,6 +863,15 @@ export default {
     versions: [
       { id: 'v1.0.0', current: true, released: false },
       { id: 'v0.9.0', released: true, status: 'deprecated' }
+    ]
+  },
+
+  header: {
+    links: [
+      { label: 'Guide', icon: 'school', href: '/guide/getting-started/' },
+      { label: 'More', icon: 'menu_book', children: [
+        { label: 'Changelog', href: 'https://github.com/org/repo/releases' }
+      ] }
     ]
   },
 

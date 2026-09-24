@@ -65,6 +65,8 @@ Para uma página, prefira o caminho sem subpágina (`/sponsors/` em vez de `/spo
 
 O destino mais comum de um link no lugar é uma página fora de todos os books — veja Páginas Avulsas em [Páginas e Rotas](/guide/pages-and-routing/overview/).
 
+Para links no header principal, com ícones e menus suspensos, veja os [Links do Header](/manual/basic/header-links/overview/); eles seguem a mesma regra.
+
 ## Botões do Rodapé
 
 Website, Email, Chat, Discussions e GitHub são botões de ícone abaixo do menu. Eles abrem em nova aba; defina um link como `null` para ocultar o botão.

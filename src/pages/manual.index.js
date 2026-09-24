@@ -406,6 +406,34 @@ export default {
     }
   },
 
+  '/basic/header-links': {
+    config: {
+      icon: 'link',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Header Links — Documentation of Docsector Reader',
+          'pt-BR': 'Links do Header — Documentacao do Docsector Reader'
+        }
+      },
+      book: 'manual',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': { title: 'Header Links' },
+      'pt-BR': { title: 'Links do Header' }
+    },
+    metadata: {
+      tags: {
+        'en-US': 'header links navigation nav dropdown menu icons sublinks top bar',
+        'pt-BR': 'header links navegação menu suspenso ícones sublinks barra do topo'
+      }
+    }
+  },
+
   '/basic/previous-and-next': {
     config: {
       icon: 'last_page',

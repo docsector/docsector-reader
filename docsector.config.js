@@ -68,6 +68,20 @@ export default {
     // binding: 'FEEDBACK'
   },
 
+  // @ Header links
+  // Centered in the header where they fit; elsewhere (phones, or a narrow
+  // header next to the sidebar) they open from an arrow attached to the brand. href: a URL (new tab) or the path of a page of the
+  // site (in place, highlighted while open). A link with children is a
+  // dropdown (one level).
+  // header: {
+  //   links: [
+  //     { label: 'Guide', icon: 'school', href: '/guide/getting-started/' },
+  //     { label: { 'en-US': 'More', 'pt-BR': 'Mais' }, icon: 'menu_book', children: [
+  //       { label: 'Changelog', href: 'https://github.com/docsector/docsector-reader/releases' }
+  //     ] }
+  //   ]
+  // },
+
   // @ Sponsors
   // Opt-in sponsor logos under the Table of Contents (desktop rail, tablet
   // overlay and the mobile ToC dialog); they follow the ToC's visibility.

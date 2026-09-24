@@ -171,6 +171,8 @@ describe('i18n message builder', () => {
     expect(messages['pt-BR'].page.sponsors).toEqual({ title: 'Patrocinadores', cta: 'Sua logo aqui', example: 'Seu patrocinador aqui' })
     expect(messages['en-US'].page.ad).toEqual({ label: 'Ad', example: 'Your ad here' })
     expect(messages['pt-BR'].page.ad).toEqual({ label: 'Anúncio', example: 'Seu anúncio aqui' })
+    expect(messages['en-US'].header).toEqual({ links: 'Site links', newTab: 'opens in a new tab' })
+    expect(messages['pt-BR'].header).toEqual({ links: 'Links do site', newTab: 'abre em nova aba' })
     expect(messages['en-US'].system.support).toBe('Sponsor this project')
     expect(messages['pt-BR'].system.support).toBe('Patrocine este projeto')
     // ? The consumer's own value still wins, and the package page texts never leak

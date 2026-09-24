@@ -3,7 +3,7 @@ import { renderToString } from 'vue/server-renderer'
 import { RouterLink, createMemoryHistory, createRouter } from 'vue-router'
 import { describe, expect, it, vi } from 'vitest'
 
-import { cross, resolve } from '../src/components/menu-link.js'
+import { check, cross, resolve } from '../src/components/menu-link.js'
 
 const Empty = defineComponent({ render: () => null })
 
@@ -165,5 +165,121 @@ describe('MenuLink.cross', () => {
 
     expect(cross(meta, { resolve: () => { throw new Error('boom') } })).toBeNull()
     expect(cross(meta, undefined)).toBeNull()
+  })
+})
+
+// ! A wider router for the active rule: a page with vs, a shortcut page
+//   (both children redirect elsewhere, like routes.js link.to entries) and a
+//   page of an archived version
+const shortcutRecord = (path, to) => ({
+  path,
+  component: Empty,
+  meta: { book: 'manual', link: { to } },
+  children: [
+    { path: '', redirect: () => to },
+    { path: 'overview', redirect: () => to }
+  ]
+})
+
+const createActiveRouter = () => createRouter({
+  history: createMemoryHistory(),
+  routes: [
+    pageRecord('/guide/getting-started', 'guide'),
+    pageRecord('/sponsors', 'sponsors', ['overview', 'showcase'], { menu: { hidden: true } }),
+    pageRecord('/manual/x', 'manual', ['overview', 'vs']),
+    shortcutRecord('/manual/short', '/guide/getting-started/overview/'),
+    pageRecord('/v0.x/guide/old', 'guide'),
+    { path: '/home', alias: '/', component: Empty, meta: { book: 'home' }, children: [{ path: '', component: Empty }] },
+    { path: '/:catchAll(.*)*', component: Empty, meta: { menu: {} }, children: [{ path: '', component: Empty }] }
+  ]
+})
+
+describe('MenuLink.check', () => {
+  const at = async (path) => {
+    const router = createActiveRouter()
+    await router.push(path)
+    await router.isReady()
+    return router
+  }
+
+  it('keeps a bare page path active on every subpage, and a subpage path on its own', async () => {
+    const router = await at('/sponsors/showcase/')
+    const route = router.currentRoute.value
+
+    expect(check('/sponsors/', route, router)).toBe(true)
+    expect(check('/sponsors', route, router)).toBe(true)
+    expect(check('/sponsors/showcase/', route, router)).toBe(true)
+    expect(check('/sponsors/overview/', route, router)).toBe(false)
+    expect(check('/guide/getting-started/', route, router)).toBe(false)
+  })
+
+  it('treats home and its alias as one page', async () => {
+    const home = await at('/home')
+    const root = await at('/')
+
+    expect(check('/', home.currentRoute.value, home)).toBe(true)
+    expect(check('/home', root.currentRoute.value, root)).toBe(true)
+    expect(check('/sponsors/', root.currentRoute.value, root)).toBe(false)
+  })
+
+  it('never activates a target that is not a page, and never throws', async () => {
+    const router = await at('/nowhere')
+    const route = router.currentRoute.value
+
+    expect(check('/nowhere', route, router)).toBe(false)
+    expect(check('/sponsor.html', route, router)).toBe(false)
+    for (const to of [undefined, null, '', 7]) {
+      expect(check(to, route, router)).toBe(false)
+    }
+    expect(check('/sponsors/', route, { resolve: () => { throw new Error('boom') } })).toBe(false)
+    expect(check('/sponsors/', route, undefined)).toBe(false)
+    expect(check('/sponsors/', undefined, router)).toBe(false)
+    expect(check('/sponsors/', { matched: 'nope' }, router)).toBe(false)
+  })
+
+  it('never activates an empty target, which would resolve to the current page', async () => {
+    const router = await at('/sponsors/showcase/')
+
+    expect(check('', router.currentRoute.value, router)).toBe(false)
+  })
+
+  it('needs a parent record for the bare-path rule', () => {
+    const lone = { path: '/sponsors', meta: { book: 'sponsors' } }
+    const stub = { resolve: () => ({ matched: [lone] }) }
+
+    expect(check('/sponsors', { matched: [] }, stub)).toBe(false)
+    expect(check('/sponsors', { matched: [lone] }, stub)).toBe(true)
+  })
+
+  it('agrees with RouterLink for every in-place target on every page', async () => {
+    const targets = [
+      '/sponsors/', '/sponsors', '/sponsors/overview/', '/sponsors/showcase/', '/sponsors/overview/#faq', '/sponsors/?tab=1',
+      '/guide/getting-started/', '/guide/getting-started/overview/', '/manual/x/', '/manual/x/vs/', '/manual/short/',
+      '/v0.x/guide/old/', '/', '/home'
+    ]
+    const pages = [
+      '/sponsors/overview/', '/sponsors/showcase/', '/guide/getting-started/overview/', '/manual/x/overview/', '/manual/x/vs/',
+      '/manual/short/', '/v0.x/guide/old/overview/', '/', '/home', '/nowhere'
+    ]
+    const mismatches = []
+
+    for (const page of pages) {
+      const router = await at(page)
+      const route = router.currentRoute.value
+
+      for (const to of targets) {
+        expect(resolve(to, router), to).toEqual({ to })
+
+        const app = createSSRApp(defineComponent({ render: () => h(RouterLink, { to }, () => 'link') }))
+        app.use(router)
+        const expected = (await renderToString(app)).includes('router-link-active')
+
+        if (check(to, route, router) !== expected) {
+          mismatches.push(`${to} on ${page}: RouterLink ${expected}`)
+        }
+      }
+    }
+
+    expect(mismatches).toEqual([])
   })
 })

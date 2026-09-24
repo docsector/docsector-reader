@@ -34,6 +34,7 @@ import HJSON from 'hjson'
 import { normalizeAdsConfig } from './ads/config.js'
 import { normalizeAiAssistantConfig } from './ai-assistant/config.js'
 import * as DocumentHeaders from './document-headers.js'
+import * as HeaderConfig from './header/config.js'
 import { buildFeedbackServerConfig, renderFeedbackServer } from './feedback/build.js'
 import { normalizeFeedbackConfig } from './feedback/config.js'
 import { buildAgentMarkdown, buildFaqJsonLd, injectFaqJsonLd } from './page-faq.js'
@@ -2671,12 +2672,14 @@ function createRoutePreloadPlugin () {
   }
 }
 
-// : print the sponsors/ads config problems — each distinct message once (both
-//   sections share the fallback URL, so a bad one would otherwise print twice)
-export function reportSponsorshipWarnings (config) {
+// : print the config problems of the header, sponsors and ads sections — each
+//   distinct message once (sponsors and ads share the fallback URL, so a bad
+//   one would otherwise print twice)
+export function reportConfigWarnings (config) {
   const messages = new Set()
   const onWarning = message => messages.add(message)
 
+  HeaderConfig.normalize(config, { onWarning })
   normalizeSponsorsConfig(config, { onWarning })
   normalizeAdsConfig(config, { onWarning })
 
@@ -2763,7 +2766,7 @@ function createMarkdownEndpointPlugin (projectRoot) {
           homepageByLang = sources.byLang
 
           // ? last, so a config problem here can never switch the endpoint off
-          reportSponsorshipWarnings(config)
+          reportConfigWarnings(config)
         } catch (error) {
           console.warn(`[docsector] Could not load config for markdown endpoint: ${error?.message || String(error)}`)
         }
@@ -2980,7 +2983,7 @@ function createMarkdownBuildPlugin (projectRoot) {
 
       const { default: config } = await import(configUrl)
       if (!ssrBuild) {
-        reportSponsorshipWarnings(config)
+        reportConfigWarnings(config)
       }
       const { pageEntries, versions: registryVersions } = await loadBooksRegistry(projectRoot)
       const assistantConfig = normalizeAiAssistantConfig(config)

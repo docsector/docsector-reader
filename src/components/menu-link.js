@@ -1,6 +1,7 @@
 /**
- * Sidebar top links — links.changelog, links.roadmap, links.sponsor and each
- * links.explore[].url in docsector.config.js.
+ * Menu links — the sidebar top links (links.changelog, links.roadmap,
+ * links.sponsor and each links.explore[].url) and the header links
+ * (header.links[].href) in docsector.config.js.
  *
  * A path of a page of this site opens in place through the router and is
  * highlighted while that page is open; anything else (http(s) URLs, mailto:,
@@ -73,4 +74,41 @@ export function cross (meta, router) {
   // :
   const own = meta.book ?? meta.type ?? null
   return typeof book === 'string' && book !== own ? book : null
+}
+
+// ? a record and its alias copies are one route (/home and its '/' alias)
+const same = (a, b) => (a?.aliasOf || a) === (b?.aliasOf || b)
+const pathOf = (record) => (record?.aliasOf || record)?.path
+
+// : whether an in-place link to `to` is active on `route` — vue-router's
+//   RouterLink rule for docsector's routes: the target's last record is in the
+//   current match, or it is the empty child of a page (a bare page path) and
+//   that page is. Like resolve(), only a page of this site can be active.
+export function check (to, route, router) {
+  // ?
+  if (typeof to !== 'string' || to === '') {
+    return false
+  }
+
+  let matched
+  try {
+    matched = router?.resolve(to)?.matched
+  } catch {
+    matched = undefined
+  }
+
+  if (!Array.isArray(matched) || typeof matched[0]?.meta?.book !== 'string') {
+    return false
+  }
+
+  const current = Array.isArray(route?.matched) ? route.matched : []
+  const last = matched[matched.length - 1]
+
+  if (current.some(record => same(last, record))) {
+    return true
+  }
+
+  // :
+  const parent = matched[matched.length - 2]
+  return pathOf(last) === pathOf(parent) && current.some(record => same(parent, record))
 }

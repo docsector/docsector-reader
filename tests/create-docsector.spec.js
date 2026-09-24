@@ -20,3 +20,15 @@ describe('createDocsector — sponsors and ads', () => {
     expect(config.ads).toBe(ads)
   })
 })
+
+describe('createDocsector — header', () => {
+  it('leaves the header off when it is not configured', () => {
+    expect(createDocsector({}).header).toBeNull()
+  })
+
+  it('passes the header through as written', () => {
+    const header = { links: [{ label: 'Sponsors', href: '/sponsors/' }] }
+
+    expect(createDocsector({ header }).header).toBe(header)
+  })
+})

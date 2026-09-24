@@ -5,6 +5,15 @@
 
 const pick = (value) => (typeof value === 'string' && value.trim() !== '' ? value : '')
 
+// : whether a config value can render as text — a non-blank string, or a
+//   locale map with at least one non-blank string
+export function isText (value) {
+  if (typeof value === 'string') return value.trim() !== ''
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+
+  return Object.values(value).some((entry) => pick(entry) !== '')
+}
+
 // : the text for `locale` — a string as is; a map by locale, then '*', then
 //   'en-US', then its first non-empty string; anything else '' (a map value
 //   that is blank or not a string never renders)

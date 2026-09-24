@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveLocaleMap } from '../src/i18n/locale-map.js'
+import { isText, resolveLocaleMap } from '../src/i18n/locale-map.js'
 
 // ! Reference copies of the two resolvers this module replaced (DFooter's
 //   resolveLabel and DefaultLayout's resolveLocalizedValue)
@@ -55,6 +55,20 @@ describe('resolveLocaleMap', () => {
         expect(resolveLocaleMap(input, locale)).toBe(footerResolveLabel(input, locale))
         expect(resolveLocaleMap(input, locale)).toBe(layoutResolveLocalizedValue(input, locale))
       }
+    }
+  })
+})
+
+describe('isText', () => {
+  it('accepts a non-blank string or a locale map with one', () => {
+    expect(isText('Docs')).toBe(true)
+    expect(isText({ 'en-US': 'Docs' })).toBe(true)
+    expect(isText({ 'en-US': '', 'pt-BR': 'Documentação' })).toBe(true)
+  })
+
+  it('rejects blanks, empty maps, arrays and other values', () => {
+    for (const value of ['', '   ', {}, { 'en-US': '' }, { 'en-US': '  ', 'pt-BR': 7 }, ['Docs'], 7, null, undefined, true]) {
+      expect(isText(value), JSON.stringify(value)).toBe(false)
     }
   })
 })

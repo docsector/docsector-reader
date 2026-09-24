@@ -103,6 +103,8 @@
  * @param {string|null} [config.homePage.remoteReadmeUrl=null] - Absolute URL of remote README markdown when source is remote-readme
  * @param {number} [config.homePage.timeoutMs=8000] - Timeout in milliseconds for remote README fetch during build
  * @param {boolean} [config.homePage.fallbackToLocal=true] - Fallback to local Homepage.{lang}.md when remote fetch fails
+ * @param {Object} [config.header] - Main header settings; defaults live in the normalizer (src/header/config.js)
+ * @param {Array<{label: string|Object, icon?: string, href?: string, children?: Array<{label: string|Object, icon?: string, href: string}>}>} [config.header.links] - Header links, centered in the header where they fit and opened from an arrow attached to the brand elsewhere; href is an http(s) URL (new tab) or the path of a page of this site (in place, highlighted while open); a link with children is a dropdown (one level)
  * @param {Object} [config.sponsors] - Sponsor logos under the Table of Contents (follow its visibility); defaults live in the normalizer
  * @param {boolean} [config.sponsors.enabled=false] - Only the boolean true enables the panel
  * @param {string|null} [config.sponsors.fallbackUrl=null] - Target of the example slots, the "Your logo here" button and the example ad; defaults to config.links.sponsor
@@ -153,7 +155,9 @@ export function createDocsector (config = {}) {
     mcp: config.mcp || null,
 
     // ? passed through as written — the defaults live in the normalizers
-    //   (src/sponsors/config.js, src/ads/config.js)
+    //   (src/header/config.js, src/sponsors/config.js, src/ads/config.js)
+    header: config.header || null,
+
     sponsors: config.sponsors || null,
 
     ads: config.ads || null,

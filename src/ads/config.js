@@ -18,20 +18,13 @@
  */
 import { resolveAssetUrl } from '../asset-url.js'
 import { hashString } from '../hash.js'
+import { isText } from '../i18n/locale-map.js'
 import { isHomeRoute } from '../page-layout.js'
 import { isSectionEnabled, resolveFallbackLinkAttrs, resolveSponsorFallbackUrl } from '../sponsors/config.js'
 
 const HTTP_URL = /^https?:\/\/\S+$/i
 
 const isFilledString = (value) => typeof value === 'string' && value.trim() !== ''
-
-// ? a string, or a locale map with at least one non-empty string
-const isText = (value) => {
-  if (typeof value === 'string') return value.trim() !== ''
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-
-  return Object.values(value).some(isFilledString)
-}
 
 function warn (onWarning, message) {
   if (typeof onWarning === 'function') {

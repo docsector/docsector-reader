@@ -14,6 +14,10 @@ Os dados de branding vêm de `docsector.config.js`:
 - `links.github`, `links.discussions`, `links.chat`, `links.email`
 - `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore` — `links.sponsor` também alimenta o link de fallback dos [Patrocinadores](/manual/basic/sponsors/overview/)
 
+## A Marca no Header
+
+No header principal, o logo e a assinatura formam o link para a página inicial, à esquerda da barra. Com os [Links do Header](/manual/basic/header-links/overview/) configurados, uma seta fica colada a ele sempre que os links não cabem na barra, e abre os links.
+
 ## A Assinatura da Marca
 
 O header e o menu não mostram o `branding.name` sozinho — eles o renderizam como uma assinatura junto da palavra *Documentação*, para que o leitor sempre saiba em qual conjunto de docs está.

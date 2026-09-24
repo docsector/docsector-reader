@@ -14,6 +14,10 @@ Branding data comes from `docsector.config.js`:
 - `links.github`, `links.discussions`, `links.chat`, `links.email`
 - `links.changelog`, `links.roadmap`, `links.sponsor`, `links.explore` — `links.sponsor` also feeds the [Sponsors](/manual/basic/sponsors/overview/) fallback link
 
+## The Header Brand
+
+In the main header, the logo and the lockup form the home link, on the left of the bar. With [Header Links](/manual/basic/header-links/overview/) configured, an arrow is attached to it wherever the links don't fit in the bar, and opens them.
+
 ## The Brand Lockup
 
 The header and the menu do not show `branding.name` on its own — they render it as a lockup with the word *Documentation*, so a reader always knows which docs set they are in.

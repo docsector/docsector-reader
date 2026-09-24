@@ -17,29 +17,52 @@
            wrong breakpoint on SSR and shift the brand when Screen measures -->
       <q-toolbar-title
         class="d-header__brand-slot row no-wrap items-stretch self-stretch q-pa-none"
+        :class="headerFit"
       >
+        <!-- ? with header links the brand is a split button: the brand goes
+             home, the arrow opens the links whenever the centered nav does
+             not fit (a container query, CSS) -->
+        <div v-if="headerEntries.length > 0" class="d-header__bar">
+          <q-btn-dropdown
+            class="d-header__brand"
+            split
+            align="left"
+            no-caps
+            stretch
+            to="/"
+            menu-anchor="bottom start"
+            menu-self="top start"
+            content-class="d-header-links__menu"
+            :toggle-aria-label="t('header.links')"
+          >
+            <template #label>
+              <d-header-brand />
+            </template>
+            <!-- ? data-autofocus: QMenu focuses the first row on open; the
+                 arrow keys then move between rows -->
+            <q-list role="none" data-autofocus @keydown="move">
+              <template v-for="(link, index) in headerLinks" :key="index">
+                <div v-if="link.children.length > 0" role="group" :aria-label="link.label">
+                  <q-item-label class="d-header-links__group" header aria-hidden="true">
+                    <q-icon v-if="link.icon" class="q-mr-sm" :name="link.icon" size="xs" />{{ link.label }}
+                  </q-item-label>
+                  <d-header-link-item v-for="(child, childIndex) in link.children" :key="childIndex" :link="child" />
+                </div>
+                <d-header-link-item v-else :link="link" />
+              </template>
+            </q-list>
+          </q-btn-dropdown>
+          <d-header-links :links="headerLinks" />
+        </div>
         <q-btn
+          v-else
           class="filled d-header__brand"
           align="left"
           no-caps
           stretch
           to="/"
         >
-          <img
-            v-if="branding.logo"
-            :src="branding.logo"
-            :alt="brandName"
-            width="26"
-            height="26"
-            class="d-header__brand-logo q-mr-sm"
-          />
-          <span class="d-header__brand-text col column justify-center no-wrap">
-            <span class="d-header__brand-name ellipsis text-left">{{ brandLockup }}</span>
-            <span
-              v-if="brandVersion"
-              class="d-header__brand-version text-caption ellipsis text-left"
-            >{{ brandVersion }}</span>
-          </span>
+          <d-header-brand />
         </q-btn>
       </q-toolbar-title>
       <q-btn
@@ -108,8 +131,14 @@ import { useI18n } from 'vue-i18n'
 import { useMeta, useQuasar } from 'quasar'
 
 import DFooterHost from '../components/DFooterHost.vue'
+import DHeaderBrand from '../components/DHeaderBrand.vue'
+import DHeaderLinkItem from '../components/DHeaderLinkItem.vue'
+import DHeaderLinks from '../components/DHeaderLinks.vue'
+import * as MenuLink from '../components/menu-link.js'
 import docsectorConfig from 'docsector.config.js'
+import * as HeaderConfig from '../header/config.js'
 import { createMenuHydration } from '../composables/menu-hydration'
+import { move } from '../composables/menu-keys'
 import { scrollMenuToActive } from '../composables/menu-scroll'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
@@ -120,10 +149,6 @@ import { resolveRoutePageLayout } from '../page-layout'
 defineOptions({ name: 'LayoutDefault' })
 
 const branding = docsectorConfig.branding || {}
-// The brand link's accessible name comes from its visible content (logo alt +
-// lockup text) — an aria-label would fail label-content-name-mismatch.
-const brandName = branding.name || 'Docsector'
-const brandVersion = typeof branding.version === 'string' ? branding.version.trim() : ''
 const assistantConfig = normalizeAiAssistantConfig(docsectorConfig)
 const assistantEnabled = assistantConfig.enabled === true
 
@@ -151,8 +176,47 @@ const store = useStore()
 const $q = useQuasar()
 const { t, locale } = useI18n()
 
-// Localized brand lockup — each locale owns the word order around {name}
-const brandLockup = computed(() => t('system.brand', { name: brandName }))
+// ! Header links, resolved once from the static config and the static routes
+//   (like the sidebar top links), so the server markup and the hydrated
+//   header agree: a page of the site opens in place, anything else in a new tab
+const onHeaderLinkWarning = process.env.DEV ? message => console.warn(`[docsector] header.links: ${message}`) : undefined
+const headerEntries = Object.freeze(HeaderConfig.normalize(docsectorConfig).links.map(link => ({
+  ...link,
+  attrs: link.href === null ? null : MenuLink.resolve(link.href, router, { onWarning: onHeaderLinkWarning }),
+  children: link.children.map(child => ({
+    ...child,
+    attrs: MenuLink.resolve(child.href, router, { onWarning: onHeaderLinkWarning })
+  }))
+})))
+
+// : the title slot classes — with links, the smallest slot width (100px
+//   steps) that holds the estimated nav centered between two 60px brand
+//   columns; past 1600px the links only open from the brand's arrow
+const headerFit = (() => {
+  if (headerEntries.length === 0) return null
+
+  const width = Math.ceil((HeaderConfig.estimate(headerEntries) + 120) / 100) * 100
+  return ['d-header__brand-slot--links', width <= 1600 ? `d-header__brand-slot--fit-${Math.max(width, 500)}` : null]
+})()
+
+// : what the header renders — labels in the reader's locale, and the active
+//   state of every link (a dropdown is active when one of its sublinks is)
+const headerLinks = computed(() => headerEntries.map((link) => {
+  const children = link.children.map(child => ({
+    label: resolveLocaleMap(child.label, locale.value),
+    icon: child.icon ?? undefined,
+    attrs: child.attrs,
+    active: MenuLink.check(child.attrs.to, route, router)
+  }))
+
+  return {
+    label: resolveLocaleMap(link.label, locale.value),
+    icon: link.icon ?? undefined,
+    attrs: link.attrs,
+    active: children.length > 0 ? children.some(child => child.active) : MenuLink.check(link.attrs.to, route, router),
+    children
+  }
+}))
 
 const layout = ref({
   // ? open from the very first frame on desktop — waiting for show-if-above
@@ -489,6 +553,54 @@ onMounted(() => {
     padding-inline: 16px
     @media (max-width: 599px)
       padding-inline: 8px
+  // ? With header links the brand is a split QBtnDropdown: its classes land on
+  //   the QBtnGroup, so the home button gets the brand padding itself — the
+  //   toolbar must stay 52px tall, which height-hint relies on (CLS)
+  .d-header__brand.q-btn-group
+    padding-inline: 0
+    box-shadow: none
+    > .q-btn-dropdown--current
+      min-width: 0
+      padding: 13px 16px
+      @media (max-width: 599px)
+        padding-inline: 8px
+  .d-header__brand .q-btn-dropdown__arrow-container
+    padding-inline: 4px
+  // ? the centered links show only where they fit: the title slot is a size
+  //   container and its fit-N class (from the estimated nav width) switches
+  //   them on from an N px wide slot — the sidebar, the assistant and the
+  //   viewport are all accounted for. Otherwise, the brand's arrow opens them.
+  //   A grid centers them exactly; the brand truncates first, down to its logo
+  .d-header__brand-slot--links
+    container: d-header-slot / inline-size
+  .d-header__bar
+    display: flex
+    flex: 1 1 auto
+    align-items: stretch
+    min-width: 0
+    > .d-header__brand
+      justify-self: start
+  .d-header__nav
+    display: none
+    align-items: stretch
+    justify-self: center
+    .q-btn:before
+      box-shadow: none
+  @for $step from 5 through 16
+    @container d-header-slot (min-width: #{$step * 100}px)
+      .d-header__brand-slot--fit-#{$step * 100}
+        .d-header__bar
+          display: grid
+          grid-template-columns: minmax(3.75rem, 1fr) auto minmax(0, 1fr)
+        .d-header__nav
+          display: flex
+        .d-header__brand .q-btn-dropdown__arrow-container
+          display: none
+  .d-header__link
+    font-weight: 400
+  .d-header__link--active
+    background: rgba(255, 255, 255, 0.16)
+    box-shadow: inset 0 -2px 0 currentColor
   .d-header__brand-logo
     display: block
     flex-shrink: 0
@@ -529,4 +641,32 @@ onMounted(() => {
   .q-btn:before
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2), 0 0 2px rgba(0, 0, 0, 0.14), 0 0 1px -2px rgba(0, 0, 0, 0.12)
     border-radius: 0
+
+// ? the header links menus render in a portal, outside .d-header
+.d-header-links__menu
+  min-width: 200px
+  // ? the current page's row: the sidebar's active treatment, readable in
+  //   both themes (Quasar's primary text alone reads 2.4:1 in dark mode)
+  .q-item--active
+    color: inherit
+    font-weight: 500
+    background-color: rgba(189, 189, 189, 0.35)
+.body--dark .d-header-links__menu .q-item--active
+  color: var(--q-primary-in-dark-bg)
+  background-color: rgba(255, 255, 255, 0.08)
+// ? text only screen readers announce (the header links' new-tab cue)
+.d-sr-only
+  position: absolute
+  width: 1px
+  height: 1px
+  margin: -1px
+  padding: 0
+  overflow: hidden
+  clip: rect(0, 0, 0, 0)
+  white-space: nowrap
+  border: 0
+  .d-header-links__group
+    display: flex
+    align-items: center
+    padding: 12px 16px 4px
 </style>

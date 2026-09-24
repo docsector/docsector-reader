@@ -216,7 +216,7 @@ describe('SSR purity', () => {
     return found
   }
 
-  it.each(['DPageSponsors.vue', 'DPageAd.vue', 'sponsors/config.js', 'ads/config.js', 'hash.js', 'asset-url.js', 'i18n/locale-map.js'])('%s renders the same on the server and the client', (file) => {
+  it.each(['DPageSponsors.vue', 'DPageAd.vue', 'DHeaderBrand.vue', 'DHeaderLinks.vue', 'DHeaderLinkItem.vue', 'sponsors/config.js', 'ads/config.js', 'header/config.js', 'components/menu-link.js', 'hash.js', 'asset-url.js', 'i18n/locale-map.js'])('%s renders the same on the server and the client', (file) => {
     const source = scriptOf(file)
 
     expect(source.length).toBeGreaterThan(0)
@@ -456,5 +456,151 @@ describe('DMenuItem cross-book arrow', () => {
 
   it('asks MenuLink.cross with the item meta and the router', () => {
     expect(declarationsOf(scriptSetupOf('DMenuItem.vue')).crossBook).toBe('computed(()=>MenuLink.cross(props.subitem?.meta,$router))')
+  })
+})
+
+describe('header links', () => {
+  const layoutSource = readFileSync(new URL('../src/layouts/DefaultLayout.vue', import.meta.url), 'utf-8')
+  const layout = () => {
+    const { descriptor, errors } = parse(layoutSource)
+    expect(errors).toEqual([])
+    return descriptor
+  }
+  const hasAttr = (node, name) => node.props.some(prop => prop.type === ATTRIBUTE && prop.name === name)
+  const slotOf = () => find(layout().template.ast, node => node.tag === 'q-toolbar-title', 'title slot')
+
+  it('makes the brand a split dropdown only when there are header links', () => {
+    const slot = slotOf()
+    const bar = find(slot, node => node.tag === 'div' && hasClass(node, 'd-header__bar'), 'header bar')
+    const split = find(bar, node => node.tag === 'q-btn-dropdown', 'split brand')
+    const plain = find(slot, node => node.tag === 'q-btn' && directive(node, 'else'), 'plain brand')
+
+    expect(expressionOf(slot, 'bind', 'class')).toBe('headerFit')
+    expect(expressionOf(bar, 'if')).toBe('headerEntries.length>0')
+    expect(hasAttr(split, 'split')).toBe(true)
+    expect(staticAttr(split, 'to')).toBe('/')
+    expect(staticAttr(split, 'menu-anchor')).toBe('bottom start')
+    expect(staticAttr(split, 'menu-self')).toBe('top start')
+    expect(staticAttr(split, 'content-class')).toBe('d-header-links__menu')
+    expect(expressionOf(split, 'bind', 'toggle-aria-label')).toBe("t('header.links')")
+    const label = find(split, node => node.tag === 'template' && directive(node, 'slot', 'label'), 'label slot')
+    expect(findAll(label, node => node.tag === 'd-header-brand')).toHaveLength(1)
+    expect(staticAttr(plain, 'to')).toBe('/')
+    expect(findAll(plain, node => node.tag === 'd-header-brand')).toHaveLength(1)
+  })
+
+  it('lists every link and group in the brand menu, and puts the nav beside the brand', () => {
+    const bar = find(slotOf(), node => node.tag === 'div' && hasClass(node, 'd-header__bar'), 'header bar')
+    const split = find(bar, node => node.tag === 'q-btn-dropdown', 'split brand')
+    const list = find(split, node => node.tag === 'q-list', 'menu list')
+    const loop = find(list, node => node.tag === 'template' && directive(node, 'for'), 'link loop')
+    const group = find(loop, node => node.tag === 'div' && staticAttr(node, 'role') === 'group', 'menu group')
+    const heading = find(group, node => node.tag === 'q-item-label', 'group label')
+    const headingIcon = find(heading, node => node.tag === 'q-icon', 'group icon')
+    const rows = findAll(loop, node => node.tag === 'd-header-link-item')
+    const nav = find(bar, node => node.tag === 'd-header-links', 'header nav')
+
+    expect(hasAttr(list, 'data-autofocus')).toBe(true)
+    expect(expressionOf(list, 'on', 'keydown')).toBe('move')
+    expect(expressionOf(loop, 'for')).toBe('(link,index)inheaderLinks')
+    expect(expressionOf(group, 'if')).toBe('link.children.length>0')
+    expect(expressionOf(group, 'bind', 'aria-label')).toBe('link.label')
+    expect(expressionOf(headingIcon, 'if')).toBe('link.icon')
+    expect(expressionOf(headingIcon, 'bind', 'name')).toBe('link.icon')
+    expect(findAll(heading, () => true).length).toBe(1)
+    expect(heading.children.some(child => child.type === INTERPOLATION && compact(child.content.content) === 'link.label')).toBe(true)
+    expect(rows.map(row => [expressionOf(row, 'for'), expressionOf(row, 'bind', 'link')])).toEqual([
+      ['(child,childIndex)inlink.children', 'child'],
+      ['', 'link']
+    ])
+    expect(expressionOf(nav, 'bind', 'links')).toBe('headerLinks')
+  })
+
+  it('never lets the viewport reach the header through $q.screen or v-show', () => {
+    const offenders = []
+    const visit = (node) => {
+      for (const prop of node.props || []) {
+        if (prop.type === DIRECTIVE && (prop.name === 'show' || /\bscreen\b|\$q\b/.test(prop.exp?.content || ''))) offenders.push(`${node.tag}:${prop.name}`)
+      }
+      for (const child of childElements(node)) visit(child)
+    }
+    visit(slotOf())
+    for (const file of ['DHeaderLinks.vue', 'DHeaderLinkItem.vue', 'DHeaderBrand.vue']) {
+      visit(templateOf(file))
+      expect(scriptSetupOf(file), file).not.toMatch(/useQuasar|\$q\b/)
+    }
+
+    expect(offenders).toEqual([])
+  })
+
+  it('resolves every href once, estimates the fit once and derives each state from MenuLink.check', () => {
+    const declarations = declarationsOf(layout().scriptSetup.content)
+
+    expect(declarations.headerEntries).toContain('HeaderConfig.normalize(docsectorConfig).links.map(')
+    expect(declarations.headerEntries).toContain('attrs:link.href===null?null:MenuLink.resolve(link.href,router,{onWarning:onHeaderLinkWarning})')
+    expect(declarations.headerEntries).toContain('attrs:MenuLink.resolve(child.href,router,{onWarning:onHeaderLinkWarning})')
+    expect(declarations.headerFit).toContain('HeaderConfig.estimate(headerEntries)+120')
+    expect(declarations.headerFit).toContain("width<=1600?`d-header__brand-slot--fit-${Math.max(width,500)}`:null")
+    expect(declarations.headerLinks).toContain('label:resolveLocaleMap(child.label,locale.value)')
+    expect(declarations.headerLinks).toContain('icon:child.icon??undefined')
+    expect(declarations.headerLinks).toContain('active:MenuLink.check(child.attrs.to,route,router)')
+    expect(declarations.headerLinks).toContain('label:resolveLocaleMap(link.label,locale.value)')
+    expect(declarations.headerLinks).toContain('icon:link.icon??undefined')
+    expect(declarations.headerLinks).toContain('active:children.length>0?children.some(child=>child.active):MenuLink.check(link.attrs.to,route,router)')
+  })
+
+  it('renders the desktop nav with the per-kind link attributes', () => {
+    const root = templateOf('DHeaderLinks.vue')
+    const nav = find(root, node => node.tag === 'nav', 'nav')
+    const loop = find(nav, node => node.tag === 'template' && directive(node, 'for'), 'link loop')
+    const dropdown = find(nav, node => node.tag === 'q-btn-dropdown', 'dropdown')
+    const list = find(dropdown, node => node.tag === 'q-list', 'dropdown list')
+    const row = find(list, node => node.tag === 'd-header-link-item', 'dropdown row')
+    const button = find(nav, node => node.tag === 'q-btn', 'link button')
+    const external = find(button, node => node.tag === 'template' && expressionOf(node, 'if') === 'link.attrs.target', 'new-tab cue')
+    const cue = find(external, node => node.tag === 'span' && hasClass(node, 'd-sr-only'), 'screen-reader cue')
+
+    expect(expressionOf(nav, 'bind', 'aria-label')).toBe("t('header.links')")
+    expect(expressionOf(loop, 'for')).toBe('(link,index)inlinks')
+    expect(expressionOf(dropdown, 'if')).toBe('link.children.length>0')
+    expect(expressionOf(dropdown, 'bind', 'label')).toBe('link.label')
+    expect(expressionOf(dropdown, 'bind', 'icon')).toBe('link.icon')
+    expect(expressionOf(dropdown, 'bind', 'toggle-aria-label')).toBe('link.label')
+    expect(expressionOf(dropdown, 'bind', 'class')).toBe("{'d-header__link--active':link.active}")
+    expect(hasAttr(dropdown, 'no-wrap')).toBe(true)
+    expect(hasAttr(list, 'data-autofocus')).toBe(true)
+    expect(expressionOf(list, 'on', 'keydown')).toBe('move')
+    expect(expressionOf(row, 'for')).toBe('(child,childIndex)inlink.children')
+    expect(expressionOf(row, 'bind', 'link')).toBe('child')
+    expect(spreadOf(button)).toBe('link.attrs')
+    for (const name of ['href', 'to', 'target']) {
+      expect(staticAttr(button, name), `static ${name}`).toBeUndefined()
+      expect(directive(button, 'bind', name), `bound ${name}`).toBeUndefined()
+    }
+    expect(expressionOf(button, 'bind', 'label')).toBe('link.label')
+    expect(expressionOf(button, 'bind', 'icon')).toBe('link.icon')
+    expect(expressionOf(button, 'bind', 'class')).toBe("{'d-header__link--active':link.active}")
+    expect(expressionOf(button, 'bind', 'aria-current')).toBe("link.active?'page':null")
+    expect(hasAttr(button, 'no-wrap')).toBe(true)
+    expect(staticAttr(find(external, node => node.tag === 'q-icon', 'new-tab icon'), 'name')).toBe('open_in_new')
+    expect(cue.children.some(child => child.type === INTERPOLATION && compact(child.content.content) === "t('header.newTab')")).toBe(true)
+  })
+
+  it('renders each menu row with its link, icon, label, active state and role', () => {
+    const item = find(templateOf('DHeaderLinkItem.vue'), node => node.tag === 'q-item', 'row')
+    const iconSection = find(item, node => node.tag === 'q-item-section' && expressionOf(node, 'if') === 'link.icon', 'icon section')
+    const labelSection = find(item, node => node.tag === 'q-item-section' && !directive(node, 'if'), 'label section')
+    const external = find(item, node => node.tag === 'q-item-section' && expressionOf(node, 'if') === 'link.attrs.target', 'new-tab section')
+    const cue = find(external, node => node.tag === 'span' && hasClass(node, 'd-sr-only'), 'screen-reader cue')
+
+    expect(spreadOf(item)).toBe('link.attrs')
+    expect(expressionOf(item, 'bind', 'active')).toBe('link.active')
+    expect(expressionOf(item, 'bind', 'aria-current')).toBe("link.active?'page':null")
+    expect(staticAttr(item, 'role')).toBe('menuitem')
+    expect(directive(item, 'close-popup')).toBeDefined()
+    expect(expressionOf(find(iconSection, node => node.tag === 'q-icon', 'row icon'), 'bind', 'name')).toBe('link.icon')
+    expect(labelSection.children.some(child => child.type === INTERPOLATION && compact(child.content.content) === 'link.label')).toBe(true)
+    expect(staticAttr(find(external, node => node.tag === 'q-icon', 'new-tab icon'), 'name')).toBe('open_in_new')
+    expect(cue.children.some(child => child.type === INTERPOLATION && compact(child.content.content) === "t('header.newTab')")).toBe(true)
   })
 })
