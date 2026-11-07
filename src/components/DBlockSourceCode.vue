@@ -579,7 +579,7 @@ function printToLetter(number) {
       max-width: 100%
 
   .code
-    font-family: "Fira Code Nerd Font", "Consolas" !important
+    font-family: "Fira Code Nerd Font", "Fira Code", "JetBrains Mono", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", monospace !important
     position: relative
     border: 0
     border-radius: 0
@@ -613,7 +613,7 @@ function printToLetter(number) {
           visibility: hidden
 
     pre
-      font-family: "Fira Code Nerd Font", "Consolas" !important
+      font-family: "Fira Code Nerd Font", "Fira Code", "JetBrains Mono", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", monospace !important
       display: flex
       margin: 0
       border: 0
@@ -625,7 +625,7 @@ function printToLetter(number) {
       overflow-y: hidden
 
       > code
-        font-family: "Fira Code Nerd Font", "Consolas" !important
+        font-family: "Fira Code Nerd Font", "Fira Code", "JetBrains Mono", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", monospace !important
         display: block
         padding: 0
 
