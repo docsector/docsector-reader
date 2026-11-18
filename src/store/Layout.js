@@ -162,6 +162,10 @@ export default {
       state.assistant = Boolean(val)
       savePersistedAssistantLayout(state.assistant)
     },
+    // ? For this visit only: the visitor's saved choice stays as it was
+    setAssistantUnsaved (state, val) {
+      state.assistant = Boolean(val)
+    },
     setAssistantWidth (state, val) {
       state.assistantWidth = val
     }

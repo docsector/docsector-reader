@@ -591,7 +591,8 @@ body.body--dark
         left: 300px !important
       .q-page-container
         padding-left: 300px !important
-    .q-layout:has(aside.q-drawer--right)
+    // a rail the server rendered closed (a page without a ToC) stays closed
+    .q-layout:has(aside.q-drawer--right:not(.q-layout--prevent-focus))
       aside.q-drawer--right
         transform: translateX(0) !important
         top: 111px !important
@@ -608,13 +609,6 @@ body.body--dark
       padding-right: 0 !important
     aside.q-drawer
       display: none !important
-
-// * Stable scrollbar gutter
-// The vertical scrollbar appears only once the (server-rendered) content
-// lays out — everything then narrows by the scrollbar width, a full-page
-// layout shift on desktop. Reserving the gutter up-front removes it.
-html
-  scrollbar-gutter: stable
 
 // * Lazy below-fold rendering (mobile)
 // Server-rendered pages arrive whole; on throttled phones styling + laying

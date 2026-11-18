@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, inject, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -9,6 +9,7 @@ import docsectorConfig from 'docsector.config.js'
 import useNavigator from '../composables/useNavigator'
 import { getReadingProgressState } from '../composables/useReadingProgress'
 import { ANCHOR_SCROLL_EXTRA_BOTTOM_PROPERTY } from '../composables/anchor-scroll-state'
+import { HEADER_HEIGHT_KEY, resolvePageMinHeight } from '../composables/page-offset'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { getAssistantRightRailState } from '../ai-assistant/layout'
 import { resolveRoutePageLayout } from '../page-layout'
@@ -46,7 +47,6 @@ const props = defineProps({
 const pageScrollArea = ref(null)
 const pageContainer = ref(null)
 const submenu = ref(null)
-const pageMinHeight = ref('calc(100vh - 86px)')
 const submenuHeight = ref('36px')
 const readingProgress = ref(getReadingProgressState())
 const routeHashScrollTimeout = ref(null)
@@ -59,6 +59,11 @@ const showSubmenu = computed(() => pageLayout.value.submenu)
 const showToc = computed(() => pageLayout.value.toc)
 const showPageMeta = computed(() => !props.disableNav && pageLayout.value.footer)
 const isFullwidthContent = computed(() => pageLayout.value.contentWidth === 'fullwidth')
+// ? The first min-height (SSR and hydration) sits below the real header: a
+//   guessed offset left the server-rendered page taller than the viewport, so
+//   the root showed a scrollbar until the client measured the header
+const headerHeight = inject(HEADER_HEIGHT_KEY, null)
+const pageMinHeight = ref(resolvePageMinHeight(headerHeight?.value, showSubmenu.value))
 
 const getPageScrollContainer = () => {
   return pageScrollArea.value?.$el?.querySelector('.q-scrollarea__container') || null
@@ -165,6 +170,11 @@ const rightRailState = computed(() => getAssistantRightRailState({
 const rightRailOpen = computed(() => {
   return !rightRailState.value.isMobile && (rightRailState.value.showToc || rightRailState.value.showAssistant)
 })
+// ? Up to 1023px the rail overlays the page (QDrawer's mobile behavior). Width
+//   0 (SSR, hydration) assumes desktop, like rightRailState: a drawer hydrated
+//   as an open overlay takes the body's scroll lock on its mount tick — even
+//   when the measured width unmounts it first, and then nothing releases it
+const rightRailOverlay = computed(() => ($q.screen.width || 1440) <= 1023)
 // ? The right rail's top offset depends on the header height, which QLayout
 //   only learns after mount — rendering the drawer immediately paints it at
 //   top: 0 and shifts it down a frame later (CLS). Mount it once the layout
@@ -233,7 +243,12 @@ const setRightRailOpen = (value) => {
     }
 
     layoutMeta.value = false
-    layoutAssistant.value = false
+    // ? Only an assistant on screen is closed: a tablet's rail starts with it
+    //   closed for the visit, and persisting this close would overwrite the
+    //   visitor's saved choice
+    if (layoutAssistant.value) {
+      layoutAssistant.value = false
+    }
   }
 }
 
@@ -388,8 +403,9 @@ const scrollToTop = () => {
   navigate(0)
 }
 
-// ? Mobile shows the ToC as a tap-triggered dialog; never auto-open it on page
-//   entry. Decided only once the Screen plugin has MEASURED: during SSR
+// ? Mobile shows the ToC as a tap-triggered dialog and tablets as an overlay
+//   drawer; never auto-open either on page entry. Decided only once the Screen
+//   plugin has MEASURED: during SSR
 //   hydration components mount before onSSRHydrated, while width is still 0 —
 //   acting on that transient "mobile" state would permanently hide the
 //   desktop rail (layout.meta is a persisted store value).
@@ -400,8 +416,14 @@ watch(() => $q.screen.width, (width) => {
   }
 
   mobileTocRuleApplied = true
-  if (rightRailState.value.isMobile) {
+  if (rightRailState.value.isMobile || rightRailOverlay.value) {
     layoutMeta.value = false
+  }
+  // ? A tablet would open the assistant as an overlay too: close it for this
+  //   visit before the drawer leaves desktop mode — the drawer's own close
+  //   would persist and overwrite the visitor's saved choice
+  if (!rightRailState.value.isMobile && rightRailOverlay.value && layoutAssistant.value) {
+    store.commit('layout/setAssistantUnsaved', false)
   }
 }, { immediate: true })
 
@@ -551,12 +573,14 @@ watch(() => route.fullPath, () => {
     </q-btn>
   </div>
 
+  <!-- ? No show-if-above: the rail hydrates in desktop mode, where it would open
+       the drawer even with the model closed (a page without a ToC) — the model
+       alone decides -->
   <q-drawer
     v-if="layoutSettled && !rightRailState.isMobile"
     elevated
-    show-if-above
     side="right"
-    :behavior="$q.screen.width > 1023 ? 'desktop' : 'mobile'"
+    :behavior="rightRailOverlay ? 'mobile' : 'desktop'"
     :model-value="rightRailOpen"
     :width="rightRailState.totalWidth || 308"
     class="d-right-rail-drawer"
@@ -627,6 +651,9 @@ watch(() => route.fullPath, () => {
 <style lang="sass">
 #page-container
   padding-bottom: 0 !important
+  // ? One source for the submenu's height: the bar and the page's first
+  //   min-height (server-rendered, before the client measures) both read it
+  --d-submenu-min-height: 36px
 
 .content,
 .content > div.scroll
@@ -749,7 +776,7 @@ body.body--dark .d-mobile-anchor-dialog .d-mobile-anchor-dialog__panel--sponsore
     box-sizing: border-box
 
 #submenu
-  min-height: 36px
+  min-height: var(--d-submenu-min-height)
   padding: 0
   box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px rgba(0,0,0,0.14), 0 1px 6px rgba(0,0,0,0.12)
   overflow: visible
@@ -813,9 +840,10 @@ body.body--dark .d-mobile-anchor-dialog .d-mobile-anchor-dialog__panel--sponsore
 //   hold from the server-rendered first paint — $q.screen breakpoints only
 //   settle after Screen measures, shifting the bar (CLS)
 @media (max-width: 1023px)
-  #submenu
-    min-height: 40px
+  #page-container
+    --d-submenu-min-height: 40px
 
+  #submenu
     .d-submenu__content
       width: 100%
       max-width: none

@@ -60,6 +60,18 @@ describe('assistant layout persistence', () => {
     expect(storage.getItem(LAYOUT_ASSISTANT_STORAGE_KEY)).toBe('false')
   })
 
+  it('closes the assistant for the visit without touching the saved choice', () => {
+    const storage = createStorage()
+    globalThis.window = { localStorage: storage }
+
+    const state = createLayoutState()
+    layoutStore.mutations.setAssistant(state, true)
+    layoutStore.mutations.setAssistantUnsaved(state, false)
+
+    expect(state.assistant).toBe(false)
+    expect(storage.getItem(LAYOUT_ASSISTANT_STORAGE_KEY)).toBe('true')
+  })
+
   it('saves explicit layout values through the helper', () => {
     const storage = createStorage()
 

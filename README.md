@@ -330,7 +330,7 @@ Check `checks.discovery.webMcp.status` equals `"pass"`.
 
 Docsector Reader can add an opt-in assistant panel for documentation Q&A. Users open it from the global header while reading pages and subpages; it is not a dedicated documentation route. The drawer posts to a same-origin Cloudflare Pages Function, and that function calls Cloudflare AI Search so secrets, rate-limit strategy, provider errors, and future auth stay server-side.
 
-The panel is disabled by default. When enabled, desktop pages get a dedicated right-side assistant rail that can sit beside the table of contents on wide screens. Mobile uses a fullscreen dialog. Conversations restore at the latest message, reveal earlier history progressively in long chats, deduplicate repeated source links, preserve the panel open state across page reloads, and provide per-message copy actions with hover-revealed message times.
+The panel is disabled by default. When enabled, desktop pages get a dedicated right-side assistant rail that can sit beside the table of contents on wide screens. Mobile uses a fullscreen dialog. Conversations restore at the latest message, reveal earlier history progressively in long chats, deduplicate repeated source links, preserve the panel open state across page reloads, and provide per-message copy actions with hover-revealed message times. On tablets (768–1023px) the right rail overlays the page, so it starts closed on every page entry — table of contents and assistant alike — and opens from its buttons; a saved open assistant still opens on the next desktop load.
 
 ### Configure
 

@@ -7,7 +7,7 @@
   <q-header
     class="d-header"
     :class="showSidebar ? 'left-btn' : 'd-header--no-sidebar'"
-    :height-hint="sortedBooks.length > 0 ? 111 : 53"
+    :height-hint="headerHeight"
     elevated
   >
     <q-toolbar color="primary">
@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue'
+import { ref, computed, defineAsyncComponent, onBeforeUnmount, onMounted, provide, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
@@ -140,6 +140,7 @@ import * as HeaderConfig from '../header/config.js'
 import { createMenuHydration } from '../composables/menu-hydration'
 import { move } from '../composables/menu-keys'
 import { scrollMenuToActive } from '../composables/menu-scroll'
+import { HEADER_HEIGHT_KEY, resolveHeaderHeight } from '../composables/page-offset'
 import { normalizeAiAssistantConfig } from '../ai-assistant/config'
 import { allBooks, booksByVersion } from 'virtual:docsector-books'
 import { resolveSubpageMeta } from '../frontmatter.js'
@@ -355,6 +356,8 @@ const sortedBooks = computed(() => {
       return orderA - orderB
     })
 })
+const headerHeight = computed(() => resolveHeaderHeight(sortedBooks.value.length))
+provide(HEADER_HEIGHT_KEY, headerHeight)
 
 const activeBookTab = computed(() => {
   const routeBook = route.matched?.[0]?.meta?.book ?? route.meta?.book ?? null
