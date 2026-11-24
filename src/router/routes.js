@@ -3,6 +3,7 @@ import boot from 'pages/boot'
 import docsectorConfig from 'docsector.config.js'
 import { resolveHomePageLayout, resolvePageLayout } from '../page-layout'
 import { isSubpageEnabled, resolveSubpageTemplate } from '../page-template'
+import { normalize as normalizeUpdated } from '../components/page-version-status.js'
 
 const normalizeInternalLink = (linkTo) => {
   const normalized = String(linkTo || '').trim()
@@ -107,7 +108,10 @@ for (const entry of pageEntries || []) {
   const status = typeof config.status === 'string'
     ? config.status
     : (typeof linkedConfig?.status === 'string' ? linkedConfig.status : 'done')
-  const pageVersion = config.version ?? config.pageVersion ?? config.since ?? null
+  // ? A shortcut inherits the destination's release facts, like its status
+  const pageVersion = config.version ?? config.pageVersion ?? config.since ??
+    linkedConfig?.version ?? linkedConfig?.pageVersion ?? linkedConfig?.since ?? null
+  const pageUpdated = normalizeUpdated(config.updated ?? linkedConfig?.updated)
 
   // @ Construct children
   const children = hasInternalLink
@@ -163,6 +167,7 @@ for (const entry of pageEntries || []) {
       icon,
       status,
       pageVersion,
+      pageUpdated,
       menu,
       subpages,
       subpageTemplates,

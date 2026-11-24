@@ -91,7 +91,7 @@ Transform Markdown content into beautiful, navigable documentation sites — wit
 - 📐 **Responsive Subpage Toolbar** — Subpage actions align with the content column on desktop and pin to the top (below the book tabs) on mobile, with full-height active tabs
 - 🆚 **Subpage Templates** — Subpages opt into a structured template via `vs: { template: 'vs' }`; the managed/strict `vs` template owns the order and localized titles of its **Features**, **Performance** and **Security** sections (one `##` heading per section, missing sections dropped gracefully), auto-colorizes `✓`/`✗`/`➕` comparison marks, and highlights the column (by header) or row (by first cell) that matches the consumer's `branding.name`
 - ⬆️ **Reading Progress Back to Top** — Documentation subpages can show a floating back-to-top control with circular reading progress in the bottom corner
-- 🏷️ **Status Badges** — Mark pages as `done`, `draft`, `empty`, or `new` with visual indicators
+- 🏷️ **Status Badges** — `new`, `soon` and `updated` chips computed from each page's `version` and `updated` releases against the latest docs release, plus `draft` and `empty` content badges
 - ✏️ **Edit on GitHub** — Direct links to edit pages on your repository
 - 🧭 **Robust Edit Link Mapping** — Normalizes route paths (including trailing slashes) into `page.subpage.locale.md` source files for reliable GitHub edit URLs
 - 📅 **Last Updated Date** — Automatic per-page "last updated" date from git commit history, locale-formatted
@@ -1175,8 +1175,9 @@ export default {
   '/my-section/my-page': definePage({
     config: {
       icon: 'description',
-      status: 'new',         // 'done' | 'draft' | 'empty' | 'new'
-      version: 'v2.1.0',     // Optional: shown as "New in" / "Novo em"
+      status: 'done',        // 'done' | 'draft' | 'empty'
+      version: 'v2.1.0',     // Release that shipped it: "New in" + the new/soon chip
+      updated: ['v2.3.0'],   // Releases that updated it: "Updated in" + the updated/soon chip
       menu: {
         header: { label: '.my-section', icon: 'category' }
       },

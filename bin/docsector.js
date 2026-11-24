@@ -469,6 +469,9 @@ const TEMPLATE_I18N_HJSON = `\
       next: 'Next page'
     }
     newVersion: 'New in'
+    updatedVersion: 'Updated in'
+    comingVersion: 'Coming in'
+    updatingVersion: 'Will be updated in'
   }
 
   // @ Menu
@@ -494,6 +497,15 @@ const TEMPLATE_I18N_HJSON = `\
         _: 'new'
         tooltip: 'This page is new.'
         tooltipVersion: 'New in {version}'
+      }
+      soon: {
+        _: 'soon'
+        tooltipVersion: 'Coming in {version}'
+        tooltipUpdated: 'Will be updated in {version}'
+      }
+      updated: {
+        _: 'updated'
+        tooltipVersion: 'Updated in {version}'
       }
     }
 

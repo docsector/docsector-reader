@@ -15,8 +15,9 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 '/minha-pagina': &#123;
   config: &#123;
     icon: 'description',
-    status: 'new',
+    status: 'done',
     version: 'v2.1.0',
+    updated: ['v2.3.0'],
     book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
@@ -31,12 +32,26 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 ## Propriedades do Config
 
 - **book** — Prefixo da rota: `'guide'`, `'manual'` ou `'API'` (compatível com `type` legado). Um id que nenhum `*.book.js` define coloca a página fora de todos os books — veja Páginas Avulsas abaixo
-- **status** — Status da página: `'done'`, `'draft'`, `'empty'` ou `'new'`; `new` é exibido em verde
-- **version** — Versão opcional em que a página foi introduzida, exibida abaixo da data de última atualização como `Novo em: ...` (por exemplo, `'v2.1.0'`)
+- **status** — Status do conteúdo: `'done'`, `'draft'` ou `'empty'`; `draft` e `empty` mostram um chip no menu. O legado `'new'` ainda mostra um chip verde fixo numa página sem `version`; prefira `version`, que mantém o chip atualizado sozinho
+- **version** — O release que entregou o que a página documenta, como `'vX.Y'` ou `'vX.Y.Z'` (por exemplo, `'v2.1.0'`), exibido abaixo da data de última atualização como `Novo em: ...`
+- **updated** — Os releases em que a página foi atualizada (por exemplo, `['v2.3.0']`), exibidos como `Atualizado em: ...`. No frontmatter, escreva um id (`updated: 'v2.3.0'`) ou uma lista em bloco (`updated:` seguido de linhas `- 'v2.3.0'`), cada id entre aspas: uma lista em linha `[...]` e um `1.3` sem aspas (lido como número) são ignorados
 - **icon** — Nome do ícone Material Design exibido no menu lateral
 - **menu** — Objeto controlando exibição do menu (header, subheader, separators, hidden)
 - **link** — `&#123; to: '/guide/getting-started/overview/' &#125;` transforma a entrada num atalho do menu que redireciona para essa página; um atalho para outro book mostra uma seta (→) no menu
 - **subpages** — Ativar abas adicionais: `showcase`, `vs`
+
+### Chips de versão
+
+O chip de uma página no menu é calculado a partir de `version` e `updated` contra a última versão lançada da documentação — a maior entrada do seletor de versões que está lançada (veja `branding.versions` em Configuração: uma entrada com `released: false` ou status `draft`/`preview` não conta). As versões são comparadas pela minor (`X.Y`): um release de patch mantém os chips da sua minor e o próximo release minor os limpa:
+
+| A página… | Chip |
+|---|---|
+| sai numa versão mais nova que o último release | **em breve**, amarelo — "Chega na v2.2.0" |
+| saiu na última minor lançada | **novo**, verde |
+| será atualizada numa versão mais nova que o último release | **em breve**, amarelo — "Será atualizado na v2.2.0" |
+| foi atualizada na última minor lançada | **atualizado**, azul |
+
+Um status `draft` ou `empty` sempre vence, e o chip da própria página vence o das suas atualizações. Um release que ainda não saiu — incluindo um patch mais novo da minor lançada — é dito no futuro: o tooltip diz "Chega na" / "Será atualizado na", e abaixo da data de última atualização ele aparece como `Chega na: ...` e `Será atualizado na: ...` em vez de `Novo em: ...` e `Atualizado em: ...`. As páginas de uma versão arquivada são medidas contra o mesmo último release, então os chips antigos delas somem. Sem nenhuma versão lançada que dê para ler, só aparece o chip legado de `status: 'new'`.
 
 ## Nós de Categoria
 

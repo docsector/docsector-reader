@@ -15,8 +15,9 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 '/my-page': &#123;
   config: &#123;
     icon: 'description',
-    status: 'new',
+    status: 'done',
     version: 'v2.1.0',
+    updated: ['v2.3.0'],
     book: 'guide',
     menu: &#123;&#125;,
     subpages: &#123; showcase: false &#125;
@@ -31,12 +32,26 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 ## Config Properties
 
 - **book** — Route prefix: `'guide'`, `'manual'`, or `'API'` (legacy `type` is still supported). An id that no `*.book.js` defines puts the page outside every book — see Standalone Pages below
-- **status** — Page status: `'done'`, `'draft'`, `'empty'`, or `'new'`; `new` is shown in green
-- **version** — Optional version where the page was introduced, shown under the last updated date as `New in: ...` (for example, `'v2.1.0'`)
+- **status** — Content status: `'done'`, `'draft'` or `'empty'`; `draft` and `empty` show a chip in the menu. The legacy `'new'` still shows a static green chip on a page with no `version`; prefer `version`, which keeps the chip current by itself
+- **version** — The release that shipped what the page documents, as `'vX.Y'` or `'vX.Y.Z'` (for example, `'v2.1.0'`), shown under the last updated date as `New in: ...`
+- **updated** — The releases in which the page was updated (for example, `['v2.3.0']`), shown as `Updated in: ...`. In frontmatter, write one id (`updated: 'v2.3.0'`) or a block list (`updated:` followed by `- 'v2.3.0'` lines), each id quoted: an inline `[...]` list and a bare `1.3` (read as a number) are ignored
 - **icon** — Material Design icon name shown in the sidebar
 - **menu** — Object controlling menu display (header, subheader, separators, hidden)
 - **link** — `&#123; to: '/guide/getting-started/overview/' &#125;` turns the entry into a menu shortcut that redirects to that page; a shortcut into another book shows an arrow (→) in the menu
 - **subpages** — Enable additional tabs: `showcase`, `vs`
+
+### Version chips
+
+The menu chip of a page is computed from `version` and `updated` against the latest released version of the docs — the highest entry of the version selector that is released (see `branding.versions` in Configuration: an entry with `released: false` or a `draft`/`preview` status does not count). Versions are compared by minor (`X.Y`), so a patch release keeps the chips of its minor and the next minor release clears them:
+
+| The page… | Chip |
+|---|---|
+| ships in a version newer than the latest release | **soon**, yellow — "Coming in v2.2.0" |
+| ships in the latest released minor | **new**, green |
+| will be updated in a version newer than the latest release | **soon**, yellow — "Will be updated in v2.2.0" |
+| was updated in the latest released minor | **updated**, blue |
+
+A `draft` or `empty` status always wins, and the page's own chip wins over its updates. A release that is not out yet — a newer patch of the released minor included — is told in the future tense: its tooltip says "Coming in" / "Will be updated in", and under the last updated date it reads `Coming in: ...` and `Will be updated in: ...` instead of `New in: ...` and `Updated in: ...`. Pages of an archived version are measured against the same latest release, so their old chips are gone. With no released version that parses, only the legacy `status: 'new'` chip shows.
 
 ## Category Nodes
 

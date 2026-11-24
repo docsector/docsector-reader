@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 import { namespacedLabelI18nPath, routeTitleI18nPath } from '../i18n/path'
 import * as MenuLink from './menu-link.js'
 import { menuSeparatorClass, normalizeMenuSeparators } from './menu-separators'
+import { describe as describePageStatus, latest as latestReleased } from './page-version-status.js'
+import { versions } from 'virtual:docsector-books'
 
 const $route = useRoute()
 const $router = useRouter()
@@ -62,59 +64,17 @@ const getMenuItemSubheader = (meta = {}) => {
   return t(path)
 }
 
-const getPageStatusText = (status) => {
-  if (status === 'new') {
-    return t('menu.status.new._')
-  }
+// ? Latest released docs version: the chips compare each page against it
+const released = latestReleased(versions)
 
-  if (status === 'draft') {
-    return t('menu.status.draft._')
-  } else {
-    return t('menu.status.empty._')
-  }
-}
+// @ The chip the page earns from its release facts (or its manual draft/empty status)
+const pageStatus = computed(() => {
+  const chip = describePageStatus(props.subitem?.meta, released)
 
-const getPageStatusTextColor = (status) => {
-  if (status === 'new') {
-    return null
-  }
-
-  if (status === 'draft') {
-    return 'dark'
-  } else {
-    return 'white'
-  }
-}
-
-const getPageStatusStyle = (status) => {
-  return status === 'new' ? { color: '#151515' } : null
-}
-
-const getPageStatusColor = (status) => {
-  if (status === 'new') {
-    return 'positive'
-  }
-
-  if (status === 'draft') {
-    return 'orange'
-  } else {
-    return 'red'
-  }
-}
-
-const getPageStatusTooltip = (status, pageVersion) => {
-  if (status === 'new') {
-    return pageVersion
-      ? t('menu.status.new.tooltipVersion', { version: pageVersion })
-      : t('menu.status.new.tooltip')
-  }
-
-  if (status === 'draft') {
-    return t('menu.status.draft.tooltip')
-  } else {
-    return t('menu.status.empty.tooltip')
-  }
-}
+  return chip === null
+    ? null
+    : { ...chip, label: t(chip.label), tooltip: t(chip.tooltip, { version: chip.version }) }
+})
 
 const normalizePath = (path) => {
   if (!path) {
@@ -184,14 +144,13 @@ const onMenuItemClick = (event, path, currentSubpage) => {
   <q-item-section>
     {{ getMenuItemLabel(subitem) }}
   </q-item-section>
-  <q-item-section class="page-status" v-if="subitem?.meta && subitem.meta.status !== 'done'" side>
+  <q-item-section class="page-status" v-if="pageStatus" side>
     <q-badge
-      :text-color="getPageStatusTextColor(subitem.meta.status)"
-      :color="getPageStatusColor(subitem.meta.status)"
-      :label="getPageStatusText(subitem.meta.status)"
-      :style="getPageStatusStyle(subitem.meta.status)"
+      :text-color="pageStatus.textColor"
+      :color="pageStatus.color"
+      :label="pageStatus.label"
     />
-    <q-tooltip :hide-delay="3">{{ getPageStatusTooltip(subitem.meta.status, subitem.meta.pageVersion) }}</q-tooltip>
+    <q-tooltip :hide-delay="3">{{ pageStatus.tooltip }}</q-tooltip>
   </q-item-section>
   <q-item-section v-if="crossBook" class="d-menu-item__cross" side>
     <q-icon name="arrow_forward" size="xs" />

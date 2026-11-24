@@ -56,6 +56,9 @@
     },
     lastUpdated: 'Última atualização',
     newVersion: 'Novo em',
+    updatedVersion: 'Atualizado em',
+    comingVersion: 'Chega na',
+    updatingVersion: 'Será atualizado na',
     copyPage: 'Copiar página',
     copyPageCaption: 'Copiar página como Markdown para LLMs',
     copyInlineCode: 'Clique para copiar o código inline',
@@ -102,6 +105,15 @@
         _: 'novo',
         tooltip: 'Esta página é nova.',
         tooltipVersion: 'Novo na {version}'
+      },
+      soon: {
+        _: 'em breve',
+        tooltipVersion: 'Chega na {version}',
+        tooltipUpdated: 'Será atualizado na {version}'
+      },
+      updated: {
+        _: 'atualizado',
+        tooltipVersion: 'Atualizado na {version}'
       }
     },
 

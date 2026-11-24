@@ -39,6 +39,9 @@ const engineDefaults = {
     page: {
       lastUpdated: 'Last updated',
       newVersion: 'New in',
+      updatedVersion: 'Updated in',
+      comingVersion: 'Coming in',
+      updatingVersion: 'Will be updated in',
       copyPage: 'Copy page',
       copyPageCaption: 'Copy page as Markdown for LLMs',
       copyInlineCode: 'Click to copy inline code',
@@ -75,6 +78,15 @@ const engineDefaults = {
           _: 'new',
           tooltip: 'This page is new.',
           tooltipVersion: 'New in {version}'
+        },
+        soon: {
+          _: 'soon',
+          tooltipVersion: 'Coming in {version}',
+          tooltipUpdated: 'Will be updated in {version}'
+        },
+        updated: {
+          _: 'updated',
+          tooltipVersion: 'Updated in {version}'
         }
       },
       version: {
@@ -150,6 +162,9 @@ const engineDefaults = {
     page: {
       lastUpdated: 'Última atualização',
       newVersion: 'Novo em',
+      updatedVersion: 'Atualizado em',
+      comingVersion: 'Chega na',
+      updatingVersion: 'Será atualizado na',
       copyPage: 'Copiar página',
       copyPageCaption: 'Copiar página como Markdown para LLMs',
       copyInlineCode: 'Clique para copiar o código inline',
@@ -186,6 +201,15 @@ const engineDefaults = {
           _: 'novo',
           tooltip: 'Esta página é nova.',
           tooltipVersion: 'Novo na {version}'
+        },
+        soon: {
+          _: 'em breve',
+          tooltipVersion: 'Chega na {version}',
+          tooltipUpdated: 'Será atualizado na {version}'
+        },
+        updated: {
+          _: 'atualizado',
+          tooltipVersion: 'Atualizado na {version}'
         }
       },
       version: {
@@ -473,10 +497,10 @@ export function buildMessages ({ langModules, mdModules, homepageModules, pages,
     const langKey = `./languages/${lang}.hjson`
     i18n[lang] = langModules[langKey]?.default || langModules[langKey] || {}
 
-    // Merge engine defaults (consumer values take precedence)
-    if (engineDefaults[lang]) {
-      deepMerge(i18n[lang], engineDefaults[lang])
-    }
+    // Merge engine defaults (consumer values take precedence) — a locale the
+    // engine does not ship falls back to the en-US defaults, never to raw keys
+    // (cloned: two locales must never share one defaults object)
+    deepMerge(i18n[lang], structuredClone(engineDefaults[lang] ?? engineDefaults['en-US']))
 
     // @ Homepage markdown in root route
     if (i18n[lang]._ === undefined) {

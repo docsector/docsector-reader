@@ -7,8 +7,10 @@ import { copyToClipboard, useQuasar } from 'quasar'
 
 import docsectorConfig from 'docsector.config.js'
 import gitDates from 'virtual:docsector-git-dates'
+import { versions } from 'virtual:docsector-books'
 import { pageValueI18nPath } from '../i18n/path'
 import { useSsrSafeDark } from '../composables/useSsrSafeDark'
+import { latest as latestReleased, timeline } from './page-version-status.js'
 
 const $q = useQuasar()
 // ? SSR-safe theme for the chat-icon fills (serialized light on hydration)
@@ -66,10 +68,11 @@ const formattedDate = computed(() => {
   }).format(date)
 })
 
-const pageVersion = computed(() => {
-  const value = route.meta?.pageVersion
-  return typeof value === 'string' ? value.trim() : ''
-})
+// ? Latest released docs version: a release after it is announced, not past
+const released = latestReleased(versions)
+
+// @ The page's release lines: its own release and its updates, out or to come
+const pageReleases = computed(() => timeline(route.meta, released))
 
 const rawMarkdown = computed(() => {
   const absolute = store.state.i18n.absolute
@@ -240,8 +243,14 @@ const copyPage = async () => {
     <span v-if="formattedDate" class="d-page-bar__date">
       {{ t('page.lastUpdated') }}: <br class="d-page-bar__date-break"> {{ formattedDate }}
     </span>
-    <span v-if="pageVersion" class="d-page-bar__new-in">
-      {{ t('page.newVersion') }}: {{ pageVersion }}
+    <span v-if="pageReleases.version" class="d-page-bar__new-in">
+      {{ t(pageReleases.versionLabel) }}: {{ pageReleases.version }}
+    </span>
+    <span v-if="pageReleases.past" class="d-page-bar__updated-in">
+      {{ t('page.updatedVersion') }}: {{ pageReleases.past }}
+    </span>
+    <span v-if="pageReleases.future" class="d-page-bar__updated-in">
+      {{ t('page.updatingVersion') }}: {{ pageReleases.future }}
     </span>
   </div>
 
@@ -403,6 +412,10 @@ const copyPage = async () => {
     padding-top: 8px
     border-top: 1px solid rgba(0, 0, 0, 0.12)
 
+  &__updated-in
+    font-size: 0.8rem
+    opacity: 0.6
+
   &__date-break
     display: none
 
@@ -411,7 +424,8 @@ const copyPage = async () => {
 
 body.body--dark
   .d-page-bar__date,
-  .d-page-bar__new-in
+  .d-page-bar__new-in,
+  .d-page-bar__updated-in
     color: rgba(255, 255, 255, 0.7)
 
   .d-page-bar__new-in
