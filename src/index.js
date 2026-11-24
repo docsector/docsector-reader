@@ -284,7 +284,7 @@ export function defineBook (config = {}) {
  * @param {Object} options.config - Page configuration (icon, status, book, menu, subpages, link)
  * @param {string} [options.config.status] - Content status: 'done' | 'draft' | 'empty' (legacy 'new' keeps a static chip on a page with no version)
  * @param {string} [options.config.version] - Release that shipped what the page documents; the menu shows 'soon' when it is newer than the latest released docs version and 'new' in its minor
- * @param {string[]} [options.config.updated] - Releases that updated the page; the menu shows 'soon' for a future one and 'updated' for one in the latest released minor
+ * @param {string[]} [options.config.updated] - Releases that updated the page; the menu shows 'updated' for one in the latest released minor, else 'updating' for a future one
  * @param {Object} [options.config.link] - Optional internal navigation link (menu shortcut)
  * @param {string} options.config.link.to - Internal destination path (e.g. '/guide/getting-started/overview/')
  * @param {Object} options.data - Per-language titles { 'en-US': { title: '...' } }

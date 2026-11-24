@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { describe as describeChip, latest, normalize, parse, resolve, timeline, upcoming } from '../src/components/page-version-status.js'
+import { current, describe as describeChip, latest, normalize, parse, resolve, timeline, unreleased, upcoming } from '../src/components/page-version-status.js'
 
 describe('page version status — parse', () => {
   it('reads prefixed, short and prerelease ids', () => {
-    expect(parse('v1.3.0')).toEqual({ major: 1, minor: 3, patch: 0 })
-    expect(parse('1.3')).toEqual({ major: 1, minor: 3, patch: 0 })
-    expect(parse('v1.0.0-beta.6')).toEqual({ major: 1, minor: 0, patch: 0 })
-    expect(parse(' v0.18.0 ')).toEqual({ major: 0, minor: 18, patch: 0 })
+    expect(parse('v1.3.0')).toEqual({ major: 1, minor: 3, patch: 0, prerelease: null })
+    expect(parse('1.3')).toEqual({ major: 1, minor: 3, patch: 0, prerelease: null })
+    expect(parse('v1.0.0-Beta.6')).toEqual({ major: 1, minor: 0, patch: 0, prerelease: 'beta.6' })
+    expect(parse('v1.0.0-rc.1+build.5')).toEqual({ major: 1, minor: 0, patch: 0, prerelease: 'rc.1' })
+    expect(parse(' v0.18.0 ')).toEqual({ major: 0, minor: 18, patch: 0, prerelease: null })
   })
 
   it('rejects what is not a version', () => {
@@ -45,6 +46,12 @@ describe('page version status — latest', () => {
     ])).toBe('v1.2.0')
   })
 
+  it('ranks a released final above its prereleases, in any order', () => {
+    expect(latest([{ id: 'v1.4.0-beta.1', released: true }, { id: 'v1.4.0', released: true }])).toBe('v1.4.0')
+    expect(latest([{ id: 'v1.4.0', released: true }, { id: 'v1.4.0-beta.1', released: true }])).toBe('v1.4.0')
+    expect(latest([{ id: 'v1.4.0-beta.2', released: true }, { id: 'v1.4.0-beta.10', released: true }])).toBe('v1.4.0-beta.10')
+  })
+
   it('accepts plain ids and returns null when nothing released parses', () => {
     expect(latest(['v1.1.0', ' v1.2.0 '])).toBe('v1.2.0')
     expect(latest([{ id: 'current', released: true }])).toBeNull()
@@ -61,6 +68,19 @@ describe('page version status — upcoming', () => {
     expect(upcoming('v1.2.0', 'v1.3.1')).toBe(false)
     expect(upcoming('v1.4.0', null)).toBe(false)
     expect(upcoming('nope', 'v1.3.1')).toBe(false)
+  })
+
+  it('ranks a prerelease below its final release, by SemVer precedence', () => {
+    expect(upcoming('v1.4.0', 'v1.4.0-beta.1')).toBe(true)
+    expect(upcoming('v1.4.0-beta.2', 'v1.4.0-beta.1')).toBe(true)
+    expect(upcoming('v1.4.0-beta.10', 'v1.4.0-beta.2')).toBe(true)
+    expect(upcoming('v1.4.0-rc.1', 'v1.4.0-beta.9')).toBe(true)
+    expect(upcoming('v1.4.0-beta', 'v1.4.0-beta.1')).toBe(false)
+    expect(upcoming('v1.4.0-alpha.1', 'v1.4.0-1')).toBe(true)
+    expect(upcoming('v1.4.0-beta.1', 'v1.4.0')).toBe(false)
+    expect(upcoming('v1.4.0-beta.1', 'v1.4.0-BETA.1')).toBe(false)
+    // ? Numerically equal identifiers go on to the next one
+    expect(upcoming('v1.0.0-rc.01.2', 'v1.0.0-rc.1.1')).toBe(true)
   })
 })
 
@@ -88,13 +108,28 @@ describe('page version status — resolve', () => {
     expect(resolve({ version: 'v1.3.1' }, released)).toEqual({ kind: 'new', version: 'v1.3.1', reason: 'page' })
   })
 
+  it('marks a page of an unreleased patch as soon, not new', () => {
+    expect(resolve({ version: 'v1.3.2' }, released)).toEqual({ kind: 'soon', version: 'v1.3.2', reason: 'page' })
+  })
+
   it('drops the new chip once the next minor ships', () => {
     expect(resolve({ version: 'v1.3.0' }, 'v1.4.0')).toEqual({ kind: null, version: null, reason: null })
   })
 
-  it('marks an older page updated in a future release as soon (update)', () => {
-    expect(resolve({ version: 'v0.18.0', updated: ['v1.3.0', 'v1.4.0', 'v1.5.0'] }, released))
-      .toEqual({ kind: 'soon', version: 'v1.4.0', reason: 'update' })
+  it('marks an older page updated in a future release as updating', () => {
+    expect(resolve({ version: 'v0.18.0', updated: ['v1.2.0', 'v1.4.0', 'v1.5.0'] }, released))
+      .toEqual({ kind: 'updating', version: 'v1.4.0', reason: 'update' })
+  })
+
+  it('marks an update of an unreleased patch as updating, not updated', () => {
+    expect(resolve({ version: 'v0.18.0', updated: ['v1.3.2'] }, released)).toEqual({ kind: 'updating', version: 'v1.3.2', reason: 'update' })
+    expect(resolve({ version: 'v0.18.0', updated: ['v1.3.0', 'v1.3.2'] }, released)).toEqual({ kind: 'updated', version: 'v1.3.0', reason: 'update' })
+    expect(resolve({ version: 'v0.18.0', updated: ['v1.3.2', 'v1.4.0'] }, released)).toEqual({ kind: 'updating', version: 'v1.3.2', reason: 'update' })
+  })
+
+  it('lets a released update win over a future one', () => {
+    expect(resolve({ version: 'v1.2.0', updated: ['v1.3.1', 'v1.4.0'] }, released))
+      .toEqual({ kind: 'updated', version: 'v1.3.1', reason: 'update' })
   })
 
   it('marks an older page updated in the latest released minor as updated', () => {
@@ -117,7 +152,7 @@ describe('page version status — resolve', () => {
 
   it('reads the updates of a page with no usable version', () => {
     expect(resolve({ updated: ['v1.3.0'] }, released)).toEqual({ kind: 'updated', version: 'v1.3.0', reason: 'update' })
-    expect(resolve({ version: 'v0.x', updated: ['v1.4.0'] }, released)).toEqual({ kind: 'soon', version: 'v1.4.0', reason: 'update' })
+    expect(resolve({ version: 'v0.x', updated: ['v1.4.0'] }, released)).toEqual({ kind: 'updating', version: 'v1.4.0', reason: 'update' })
     expect(resolve({ status: 'new', updated: ['v1.2.0'] }, released)).toEqual({ kind: 'new', version: null, reason: 'page' })
   })
 
@@ -137,8 +172,11 @@ describe('page version status — resolve', () => {
     expect(resolve({ status: 'empty', version: 'v1.3.0' }, released)).toEqual({ kind: 'empty', version: null, reason: null })
   })
 
-  it('compares prerelease releases by their minor', () => {
-    expect(resolve({ version: 'v1.0.0' }, 'v1.0.0-beta.6').kind).toBe('new')
+  it('treats the final of a released prerelease as a future release', () => {
+    expect(resolve({ version: 'v1.0.0' }, 'v1.0.0-beta.6').kind).toBe('soon')
+    expect(resolve({ version: 'v1.0.0-beta.6' }, 'v1.0.0-beta.6').kind).toBe('new')
+    expect(resolve({ version: 'v0.24.0', updated: ['v1.0.0'] }, 'v1.0.0-rc.1')).toEqual({ kind: 'updating', version: 'v1.0.0', reason: 'update' })
+    expect(resolve({ version: 'v0.24.0', updated: ['v1.0.0-beta.6'] }, 'v1.0.0-rc.1').kind).toBe('updated')
     expect(resolve({ version: 'v0.24.0' }, 'v1.0.0-rc.1').kind).toBeNull()
   })
 })
@@ -161,7 +199,7 @@ describe('page version status — describe (menu chip)', () => {
       kind: 'soon', color: 'warning', textColor: 'dark', label: 'menu.status.soon._', tooltip: 'menu.status.soon.tooltipVersion', version: 'v1.4.0'
     })
     expect(describeChip(meta({ pageVersion: 'v0.18.0', pageUpdated: ['v1.4.0'] }), released)).toEqual({
-      kind: 'soon', color: 'warning', textColor: 'dark', label: 'menu.status.soon._', tooltip: 'menu.status.soon.tooltipUpdated', version: 'v1.4.0'
+      kind: 'updating', color: 'deep-purple', textColor: 'white', label: 'menu.status.updating._', tooltip: 'menu.status.updating.tooltipVersion', version: 'v1.4.0'
     })
     expect(describeChip(meta({ pageVersion: 'v0.18.0', pageUpdated: ['v1.3.0'] }), released)).toEqual({
       kind: 'updated', color: 'info', textColor: 'white', label: 'menu.status.updated._', tooltip: 'menu.status.updated.tooltipVersion', version: 'v1.3.0'
@@ -171,9 +209,9 @@ describe('page version status — describe (menu chip)', () => {
     expect(describeChip(meta({ status: 'new' }), released)).toMatchObject({ kind: 'new', tooltip: 'menu.status.new.tooltip', version: null })
   })
 
-  it('speaks in the future tense for an unreleased patch of the released minor', () => {
-    expect(describeChip(meta({ pageVersion: 'v1.3.2' }), released)).toMatchObject({ kind: 'new', tooltip: 'menu.status.soon.tooltipVersion' })
-    expect(describeChip(meta({ pageVersion: 'v0.18.0', pageUpdated: ['v1.3.2'] }), released)).toMatchObject({ kind: 'updated', tooltip: 'menu.status.soon.tooltipUpdated' })
+  it('gives an unreleased patch of the released minor the future chips', () => {
+    expect(describeChip(meta({ pageVersion: 'v1.3.2' }), released)).toMatchObject({ kind: 'soon', tooltip: 'menu.status.soon.tooltipVersion' })
+    expect(describeChip(meta({ pageVersion: 'v0.18.0', pageUpdated: ['v1.3.2'] }), released)).toMatchObject({ kind: 'updating', tooltip: 'menu.status.updating.tooltipVersion' })
   })
 
   it('shows only the legacy chip with nothing released to compare', () => {
@@ -201,5 +239,58 @@ describe('page version status — timeline (page bar)', () => {
       version: 'v9.0.0', versionLabel: 'page.newVersion', past: 'v9.1.0', future: ''
     })
     expect(timeline(undefined, released)).toEqual({ version: '', versionLabel: 'page.newVersion', past: '', future: '' })
+  })
+})
+
+describe('page version status — current', () => {
+  it('picks the current entry, else the first one', () => {
+    expect(current([{ id: 'v1.2.0', released: true }, { id: 'v1.3.1', current: true }])).toBe('v1.3.1')
+    expect(current([{ id: 'v1.3.1' }, { id: 'v1.2.0' }])).toBe('v1.3.1')
+    expect(current(['v1.3.1'])).toBe('v1.3.1')
+    expect(current([])).toBeNull()
+    expect(current()).toBeNull()
+  })
+})
+
+describe('page version status — unreleased (versions selector)', () => {
+  const versions = [{ id: 'v1.3.1', current: true, released: true }, { id: 'v1.2.0', released: true }]
+  const page = (fields) => ({ version: 'v1.3.1', status: 'done', ...fields })
+
+  it('lists the future versions the current docs name, newest first', () => {
+    expect(unreleased([
+      page({ pageVersion: 'v1.4.0' }),
+      page({ pageVersion: 'v0.18.0', pageUpdated: ['v1.3.0', 'v1.4.0', 'v1.3.2'] }),
+      page({ pageVersion: 'v1.5.0-Beta.1', menu: { hidden: true } }),
+      null,
+      {}
+    ], versions)).toEqual(['v1.5.0-beta.1', 'v1.4.0', 'v1.3.2'])
+  })
+
+  it('ignores the routes of other docs versions and draft or empty pages', () => {
+    expect(unreleased([
+      { version: 'next', pageVersion: 'v1.4.0' },
+      { version: 'v1.2.0', pageUpdated: ['v1.5.0'] },
+      page({ status: 'draft', pageVersion: 'v9.9.9' }),
+      page({ status: 'empty', pageUpdated: ['v9.9.8'] })
+    ], [...versions, { id: 'next', released: false }])).toEqual([])
+  })
+
+  it('dedupes spellings into one normalized id and skips what the selector lists', () => {
+    expect(unreleased([page({ pageVersion: 'V1.4' }), page({ pageUpdated: ['v1.4.0'] })], versions)).toEqual(['v1.4.0'])
+    expect(unreleased([page({ pageVersion: 'v1.4' })], [...versions, { id: '1.4.0', released: false }])).toEqual([])
+    // ? An unreleased entry of the same X.Y.Z stands for that release
+    expect(unreleased([page({ pageVersion: 'v1.4.0' })], [...versions, { id: 'v1.4.0-dev', released: false }])).toEqual([])
+    expect(unreleased([page({ pageVersion: 'v1.4.1' })], [...versions, { id: 'v1.4.0-dev', released: false }])).toEqual(['v1.4.1'])
+  })
+
+  it('keeps the final of a released prerelease in development', () => {
+    const beta = [{ id: 'v1.4.0-beta.1', current: true, released: true }]
+    expect(unreleased([{ version: 'v1.4.0-beta.1', pageVersion: 'v1.4.0' }], beta)).toEqual(['v1.4.0'])
+  })
+
+  it('lists nothing without a released version or a future one', () => {
+    expect(unreleased([{ version: 'v1.4.0', pageVersion: 'v1.4.0' }], [{ id: 'v1.4.0', current: true, released: false }])).toEqual([])
+    expect(unreleased([page({ pageVersion: 'v1.3.1', pageUpdated: ['v1.3.0'] })], versions)).toEqual([])
+    expect(unreleased(undefined, versions)).toEqual([])
   })
 })

@@ -501,7 +501,10 @@ const TEMPLATE_I18N_HJSON = `\
       soon: {
         _: 'soon'
         tooltipVersion: 'Coming in {version}'
-        tooltipUpdated: 'Will be updated in {version}'
+      }
+      updating: {
+        _: 'updating'
+        tooltipVersion: 'Will be updated in {version}'
       }
       updated: {
         _: 'updated'
@@ -514,6 +517,7 @@ const TEMPLATE_I18N_HJSON = `\
         released: 'released'
         draft: 'draft'
         deprecated: 'deprecated'
+        development: 'in development'
       }
     }
 

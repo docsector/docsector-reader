@@ -108,8 +108,11 @@
       },
       soon: {
         _: 'em breve',
-        tooltipVersion: 'Chega na {version}',
-        tooltipUpdated: 'Será atualizado na {version}'
+        tooltipVersion: 'Chega na {version}'
+      },
+      updating: {
+        _: 'atualizando',
+        tooltipVersion: 'Será atualizado na {version}'
       },
       updated: {
         _: 'atualizado',
@@ -121,7 +124,8 @@
       status: {
         released: 'publicada',
         draft: 'rascunho',
-        deprecated: 'obsoleta'
+        deprecated: 'obsoleta',
+        development: 'em desenvolvimento'
       }
     },
 

@@ -4,16 +4,21 @@
  * measured against the latest released docs version — the highest released
  * entry of the versions selector (`versions` of `virtual:docsector-books`).
  *
- * Versions are compared at minor granularity (`X.Y`): a patch release keeps the
- * chips of its minor, the next minor release drops them.
+ * A chip lasts for its whole minor (`X.Y`): a page shipped or updated in v2.1.0
+ * keeps it through every v2.1.x release and loses it at v2.2.0. A release not
+ * out yet — a newer patch, or the final of a released prerelease — is a future
+ * one.
  *
- * | Condition                               | kind      | reason   |
- * |-----------------------------------------|-----------|----------|
- * | manual `status: 'draft'` / `'empty'`    | draft/empty | —      |
- * | `version` newer than latest released    | `soon`    | `page`   |
- * | `version` in the latest released minor  | `new`     | `page`   |
- * | an `updated` newer than latest released | `soon`    | `update` |
- * | an `updated` in latest released minor   | `updated` | `update` |
+ * | Condition                               | kind       | reason   |
+ * |-----------------------------------------|------------|----------|
+ * | manual `status: 'draft'` / `'empty'`    | draft/empty | —       |
+ * | `version` newer than latest released    | `soon`     | `page`   |
+ * | `version` in the latest released minor  | `new`      | `page`   |
+ * | an `updated` released, in that minor    | `updated`  | `update` |
+ * | an `updated` newer than latest released | `updating` | `update` |
+ *
+ * `soon` is kept for a page whose feature is not out yet; a page that already
+ * exists and only gets an update in a future release is `updating`.
  */
 
 /**
@@ -21,14 +26,14 @@
  * a date (`2024-05-01`) or a wildcard (`v1.x`) is not a version.
  *
  * @param {unknown} value - Version id.
- * @returns {{ major: number, minor: number, patch: number } | null} Parsed numbers, or null when unparseable.
+ * @returns {{ major: number, minor: number, patch: number, prerelease: string | null } | null} Parsed version, or null when unparseable.
  */
 export const parse = (value) => {
   if (typeof value !== 'string') {
     return null
   }
 
-  const match = value.trim().match(/^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-[0-9a-z.-]+)?(?:\+[0-9a-z.-]+)?$/i)
+  const match = value.trim().match(/^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9a-z.-]+))?(?:\+[0-9a-z.-]+)?$/i)
   if (!match) {
     return null
   }
@@ -36,7 +41,8 @@ export const parse = (value) => {
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
-    patch: Number(match[3] ?? 0)
+    patch: Number(match[3] ?? 0),
+    prerelease: match[4]?.toLowerCase() ?? null
   }
 }
 
@@ -47,7 +53,38 @@ export const parse = (value) => {
  */
 const compareMinor = (a, b) => (a.major - b.major) || (a.minor - b.minor)
 
-const compareFull = (a, b) => compareMinor(a, b) || (a.patch - b.patch)
+/**
+ * Compare two prerelease tags by SemVer precedence, case-insensitive (`parse()`
+ * lowercases them): none ranks above any tag, numeric identifiers compare as
+ * numbers and below alphanumeric ones.
+ */
+const comparePrerelease = (a, b) => {
+  if (a === b) return 0
+  if (a === null) return 1
+  if (b === null) return -1
+
+  const left = a.split('.')
+  const right = b.split('.')
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    if (left[i] === undefined) return -1
+    if (right[i] === undefined) return 1
+    if (left[i] === right[i]) continue
+
+    const x = /^\d+$/.test(left[i]) ? Number(left[i]) : null
+    const y = /^\d+$/.test(right[i]) ? Number(right[i]) : null
+    if (x !== null && y !== null) {
+      if (x !== y) return x - y
+      continue
+    }
+    if (x !== null) return -1
+    if (y !== null) return 1
+    return left[i] < right[i] ? -1 : 1
+  }
+
+  return 0
+}
+
+const compareFull = (a, b) => compareMinor(a, b) || (a.patch - b.patch) || comparePrerelease(a.prerelease, b.prerelease)
 
 /**
  * Latest released version of the docs: the highest parseable entry of the
@@ -77,8 +114,8 @@ export const latest = (versions = []) => {
 }
 
 /**
- * Tell whether a version is not out yet: newer than the latest release, patch
- * included. It decides the tense of the texts; the chips compare by minor.
+ * Tell whether a version is not out yet: newer than the latest release, a newer
+ * patch or the final of a released prerelease included.
  *
  * @param {string} version - Version id.
  * @param {string | null} released - Latest released version id.
@@ -124,7 +161,7 @@ export const normalize = (updated) => {
  *
  * @param {{ status?: string, version?: string, updated?: string[] }} page - Page meta.
  * @param {string | null} released - Latest released version id (see `latest()`).
- * @returns {{ kind: 'soon'|'new'|'updated'|'draft'|'empty'|null, version: string|null, reason: 'page'|'update'|null }} The chip.
+ * @returns {{ kind: 'soon'|'new'|'updated'|'updating'|'draft'|'empty'|null, version: string|null, reason: 'page'|'update'|null }} The chip.
  */
 export const resolve = (page = {}, released = null) => {
   const status = page?.status
@@ -146,25 +183,24 @@ export const resolve = (page = {}, released = null) => {
 
   // @ The page itself
   if (shipped) {
-    const order = compareMinor(shipped, current)
-    if (order > 0) {
+    if (compareFull(shipped, current) > 0) {
       return { kind: 'soon', version, reason: 'page' }
     }
-    if (order === 0) {
+    if (compareMinor(shipped, current) === 0) {
       return { kind: 'new', version, reason: 'page' }
     }
   }
 
-  // @ Its updates — the next upcoming one, else the newest of the released minor
+  // @ Its updates — the newest released one of the latest minor, else the next upcoming one
   const updates = normalize(page?.updated)
-  const future = updates.filter(id => compareMinor(parse(id), current) > 0)
-  if (future.length > 0) {
-    return { kind: 'soon', version: future[0], reason: 'update' }
-  }
-
-  const recent = updates.filter(id => compareMinor(parse(id), current) === 0)
+  const recent = updates.filter(id => compareMinor(parse(id), current) === 0 && compareFull(parse(id), current) <= 0)
   if (recent.length > 0) {
     return { kind: 'updated', version: recent.at(-1), reason: 'update' }
+  }
+
+  const future = updates.filter(id => compareFull(parse(id), current) > 0)
+  if (future.length > 0) {
+    return { kind: 'updating', version: future[0], reason: 'update' }
   }
 
   // ? A stale manual 'new' on a page whose version says otherwise is dropped
@@ -176,14 +212,14 @@ const COLORS = {
   new: ['positive', 'white'],
   soon: ['warning', 'dark'],
   updated: ['info', 'white'],
+  updating: ['deep-purple', 'white'],
   draft: ['orange', 'dark'],
   empty: ['red', 'white']
 }
 
 /**
  * Describe the menu chip of a route: kind, colours and the i18n keys of its
- * label and tooltip. The tooltip speaks in the future tense for a release that
- * is not out yet (a newer patch of the released minor included).
+ * label and tooltip. `soon` and `updating` speak in the future tense.
  *
  * @param {{ status?: string, pageVersion?: string, pageUpdated?: string[] }} meta - Route meta.
  * @param {string | null} released - Latest released version id (see `latest()`).
@@ -199,13 +235,9 @@ export const describe = (meta, released) => {
     return null
   }
 
-  const ahead = chip.version !== null && upcoming(chip.version, released)
-  let tooltip = `menu.status.${chip.kind}.tooltip`
-  if (chip.kind === 'soon' || ((chip.kind === 'new' || chip.kind === 'updated') && ahead)) {
-    tooltip = chip.reason === 'update' ? 'menu.status.soon.tooltipUpdated' : 'menu.status.soon.tooltipVersion'
-  } else if (chip.version !== null && chip.kind !== 'draft' && chip.kind !== 'empty') {
-    tooltip = `menu.status.${chip.kind}.tooltipVersion`
-  }
+  const tooltip = chip.version === null
+    ? `menu.status.${chip.kind}.tooltip`
+    : `menu.status.${chip.kind}.tooltipVersion`
 
   const [color, textColor] = COLORS[chip.kind]
 
@@ -230,4 +262,70 @@ export const timeline = (meta, released) => {
     past: updates.filter(id => !upcoming(id, released)).join(', '),
     future: updates.filter(id => upcoming(id, released)).join(', ')
   }
+}
+
+/**
+ * Current docs version: the selector entry marked `current`, else the first one.
+ *
+ * @param {Array<{ id?: string, current?: boolean } | string>} [versions] - Normalized version descriptors.
+ * @returns {string | null} Version id, or null with no entry.
+ */
+export const current = (versions = []) => {
+  const entries = (Array.isArray(versions) ? versions : []).filter(Boolean)
+  const entry = entries.find(item => typeof item === 'object' && item.current === true) ?? entries[0]
+
+  return (typeof entry === 'string' ? entry : entry?.id) ?? null
+}
+
+/**
+ * Versions in development: the releases newer than the latest release that the
+ * current docs already name — as the release that ships a page (`pageVersion`)
+ * or as one that updates it (`pageUpdated`). Only routes of the current docs
+ * version count (an archived or preview version has docs of its own), and a
+ * `draft` or `empty` page does not. A release the selector already lists — an
+ * unreleased entry of the same `X.Y.Z` (`v1.4.0-dev`) included — is skipped.
+ * Ids are written `vX.Y.Z[-prerelease]`.
+ *
+ * @param {Array<{ version?: string, status?: string, pageVersion?: string, pageUpdated?: string[] } | null | undefined>} metas - Route metas.
+ * @param {Array<{ id?: string, released?: boolean, current?: boolean } | string>} [versions] - Normalized version descriptors.
+ * @returns {string[]} Version ids, newest first; empty with no released version to compare.
+ */
+export const unreleased = (metas, versions = []) => {
+  const released = latest(versions)
+  if (released === null) {
+    return []
+  }
+
+  const docs = current(versions)
+  const configured = (Array.isArray(versions) ? versions : [])
+    .map(entry => ({
+      parsed: parse(typeof entry === 'string' ? entry : entry?.id),
+      released: typeof entry === 'string' || entry?.released === true
+    }))
+    .filter(entry => entry.parsed !== null)
+  const listed = (parsed) => configured.some(entry => entry.released
+    ? compareFull(entry.parsed, parsed) === 0
+    : (compareMinor(entry.parsed, parsed) === 0 && entry.parsed.patch === parsed.patch))
+  const found = []
+
+  for (const meta of Array.isArray(metas) ? metas : []) {
+    if (!meta || meta.version !== docs || meta.status === 'draft' || meta.status === 'empty') {
+      continue
+    }
+
+    for (const candidate of [meta.pageVersion, ...normalize(meta.pageUpdated)]) {
+      if (typeof candidate !== 'string' || !upcoming(candidate, released)) {
+        continue
+      }
+
+      const parsed = parse(candidate)
+      if (!listed(parsed) && !found.some(other => compareFull(other, parsed) === 0)) {
+        found.push(parsed)
+      }
+    }
+  }
+
+  return found
+    .sort((a, b) => compareFull(b, a))
+    .map(v => `v${v.major}.${v.minor}.${v.patch}${v.prerelease ? `-${v.prerelease}` : ''}`)
 }

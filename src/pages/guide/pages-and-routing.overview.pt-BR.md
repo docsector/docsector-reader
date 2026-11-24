@@ -42,16 +42,16 @@ No manual atual, é comum manter referências centrais de UI sob `/basic`, bloco
 
 ### Chips de versão
 
-O chip de uma página no menu é calculado a partir de `version` e `updated` contra a última versão lançada da documentação — a maior entrada do seletor de versões que está lançada (veja `branding.versions` em Configuração: uma entrada com `released: false` ou status `draft`/`preview` não conta). As versões são comparadas pela minor (`X.Y`): um release de patch mantém os chips da sua minor e o próximo release minor os limpa:
+O chip de uma página no menu é calculado a partir de `version` e `updated` contra a última versão lançada da documentação — a maior entrada do seletor de versões que está lançada (veja `branding.versions` em Configuração: uma entrada com `released: false` ou status `draft`/`preview` não conta). Um chip dura a minor inteira (`X.Y`): uma página lançada ou atualizada na v2.1.0 o mantém em todos os releases v2.1.x e o perde na v2.2.0. Um release que ainda não saiu — um patch mais novo, ou a versão final de um prerelease lançado (a v2.2.0 enquanto a v2.2.0-beta.1 é a última) — conta como futuro (as tags de prerelease seguem a precedência do SemVer, sem diferenciar maiúsculas):
 
 | A página… | Chip |
 |---|---|
 | sai numa versão mais nova que o último release | **em breve**, amarelo — "Chega na v2.2.0" |
 | saiu na última minor lançada | **novo**, verde |
-| será atualizada numa versão mais nova que o último release | **em breve**, amarelo — "Será atualizado na v2.2.0" |
 | foi atualizada na última minor lançada | **atualizado**, azul |
+| será atualizada numa versão mais nova que o último release | **atualizando**, roxo — "Será atualizado na v2.2.0" |
 
-Um status `draft` ou `empty` sempre vence, e o chip da própria página vence o das suas atualizações. Um release que ainda não saiu — incluindo um patch mais novo da minor lançada — é dito no futuro: o tooltip diz "Chega na" / "Será atualizado na", e abaixo da data de última atualização ele aparece como `Chega na: ...` e `Será atualizado na: ...` em vez de `Novo em: ...` e `Atualizado em: ...`. As páginas de uma versão arquivada são medidas contra o mesmo último release, então os chips antigos delas somem. Sem nenhuma versão lançada que dê para ler, só aparece o chip legado de `status: 'new'`.
+**em breve** fica só para uma página cuja feature ainda não saiu; uma página que já existe e só será atualizada num release futuro mostra **atualizando**. Um status `draft` ou `empty` sempre vence, o chip da própria página vence o das suas atualizações, e uma atualização da última minor lançada vence uma futura. Um release que ainda não saiu é dito no futuro: o tooltip diz "Chega na" / "Será atualizado na", e abaixo da data de última atualização ele aparece como `Chega na: ...` e `Será atualizado na: ...` em vez de `Novo em: ...` e `Atualizado em: ...`. As páginas de uma versão arquivada são medidas contra o mesmo último release, então os chips antigos delas somem. Sem nenhuma versão lançada que dê para ler, só aparece o chip legado de `status: 'new'`. Todo release futuro que a documentação atual cita também entra no seletor de versões como **em desenvolvimento** (veja o Seletor de Versões).
 
 ## Nós de Categoria
 

@@ -81,8 +81,11 @@ const engineDefaults = {
         },
         soon: {
           _: 'soon',
-          tooltipVersion: 'Coming in {version}',
-          tooltipUpdated: 'Will be updated in {version}'
+          tooltipVersion: 'Coming in {version}'
+        },
+        updating: {
+          _: 'updating',
+          tooltipVersion: 'Will be updated in {version}'
         },
         updated: {
           _: 'updated',
@@ -93,7 +96,8 @@ const engineDefaults = {
         status: {
           released: 'released',
           draft: 'draft',
-          deprecated: 'deprecated'
+          deprecated: 'deprecated',
+          development: 'in development'
         }
       }
     },
@@ -204,8 +208,11 @@ const engineDefaults = {
         },
         soon: {
           _: 'em breve',
-          tooltipVersion: 'Chega na {version}',
-          tooltipUpdated: 'Será atualizado na {version}'
+          tooltipVersion: 'Chega na {version}'
+        },
+        updating: {
+          _: 'atualizando',
+          tooltipVersion: 'Será atualizado na {version}'
         },
         updated: {
           _: 'atualizado',
@@ -216,7 +223,8 @@ const engineDefaults = {
         status: {
           released: 'publicada',
           draft: 'rascunho',
-          deprecated: 'obsoleta'
+          deprecated: 'obsoleta',
+          development: 'em desenvolvimento'
         }
       }
     },

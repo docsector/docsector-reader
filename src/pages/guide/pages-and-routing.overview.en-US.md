@@ -42,16 +42,16 @@ In the current manual, it is common to keep core UI references under `/basic`, e
 
 ### Version chips
 
-The menu chip of a page is computed from `version` and `updated` against the latest released version of the docs — the highest entry of the version selector that is released (see `branding.versions` in Configuration: an entry with `released: false` or a `draft`/`preview` status does not count). Versions are compared by minor (`X.Y`), so a patch release keeps the chips of its minor and the next minor release clears them:
+The menu chip of a page is computed from `version` and `updated` against the latest released version of the docs — the highest entry of the version selector that is released (see `branding.versions` in Configuration: an entry with `released: false` or a `draft`/`preview` status does not count). A chip lasts for its whole minor (`X.Y`): a page shipped or updated in v2.1.0 keeps it through every v2.1.x release and loses it at v2.2.0. A release not out yet — a newer patch, or the final of a released prerelease (v2.2.0 while v2.2.0-beta.1 is the latest) — counts as a future one (prerelease tags follow SemVer precedence, ignoring letter case):
 
 | The page… | Chip |
 |---|---|
 | ships in a version newer than the latest release | **soon**, yellow — "Coming in v2.2.0" |
 | ships in the latest released minor | **new**, green |
-| will be updated in a version newer than the latest release | **soon**, yellow — "Will be updated in v2.2.0" |
 | was updated in the latest released minor | **updated**, blue |
+| will be updated in a version newer than the latest release | **updating**, purple — "Will be updated in v2.2.0" |
 
-A `draft` or `empty` status always wins, and the page's own chip wins over its updates. A release that is not out yet — a newer patch of the released minor included — is told in the future tense: its tooltip says "Coming in" / "Will be updated in", and under the last updated date it reads `Coming in: ...` and `Will be updated in: ...` instead of `New in: ...` and `Updated in: ...`. Pages of an archived version are measured against the same latest release, so their old chips are gone. With no released version that parses, only the legacy `status: 'new'` chip shows.
+**soon** is only for a page whose feature is not out yet; a page that already exists and is only updated in a future release shows **updating**. A `draft` or `empty` status always wins, the page's own chip wins over its updates, and an update of the latest released minor wins over a future one. A release that is not out yet is told in the future tense: its tooltip says "Coming in" / "Will be updated in", and under the last updated date it reads `Coming in: ...` and `Will be updated in: ...` instead of `New in: ...` and `Updated in: ...`. Pages of an archived version are measured against the same latest release, so their old chips are gone. With no released version that parses, only the legacy `status: 'new'` chip shows. Every future release the current docs name also joins the version selector as **in development** (see the Version Switcher).
 
 ## Category Nodes
 

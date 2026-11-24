@@ -109,8 +109,11 @@
       },
       soon: {
         _: 'soon',
-        tooltipVersion: 'Coming in {version}',
-        tooltipUpdated: 'Will be updated in {version}'
+        tooltipVersion: 'Coming in {version}'
+      },
+      updating: {
+        _: 'updating',
+        tooltipVersion: 'Will be updated in {version}'
       },
       updated: {
         _: 'updated',
@@ -122,7 +125,8 @@
       status: {
         released: 'released',
         draft: 'draft',
-        deprecated: 'deprecated'
+        deprecated: 'deprecated',
+        development: 'in development'
       }
     },
 

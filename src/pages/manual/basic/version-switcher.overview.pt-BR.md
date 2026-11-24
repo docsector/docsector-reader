@@ -22,6 +22,10 @@ O seletor pode mostrar badges como:
 
 Também é possível configurar labels e cores customizadas por versão.
 
+## Versões em Desenvolvimento
+
+Um release mais novo que a última versão lançada e que a documentação atual já cita — como a `version` que lança uma página ou como um dos seus releases em `updated` — entra sozinho no seletor, acima das versões configuradas, com um badge azul **em desenvolvimento**. Só contam as páginas da documentação atual, nunca as de uma versão arquivada ou de preview, nem uma página `draft` ou `empty`. Escolhê-lo abre a documentação atual, que já descreve o que está por vir; a partir dela, você continua onde está. Uma entrada configurada do mesmo release — `v1.4.0-dev` para a v1.4.0 — toma o lugar dele. Ela sai do seletor quando uma entrada configurada passa a listá-la e, depois de lançada, simplesmente deixa de ser mais nova que o último release. Veja Chips de versão em Páginas e Rotas.
+
 ## Observações
 
 - Uma entrada de versão também pode apontar para uma URL externa.

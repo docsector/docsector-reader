@@ -8,6 +8,7 @@ import { fabGithub, fasAt, fasComment, fasComments, fasGlobe } from '@quasar/ext
 import DMenuItem from './DMenuItem.vue'
 import * as MenuLink from './menu-link.js'
 import { scrollMenuToActive } from '../composables/menu-scroll'
+import { current, unreleased } from './page-version-status.js'
 import { stripFrontmatter } from '../frontmatter.js'
 import { omitFaqTokens } from '../page-faq.js'
 import docsectorConfig from 'docsector.config.js'
@@ -134,8 +135,23 @@ const normalizeVersionBadge = (item) => {
   return { label: versionStatusLabel(releaseStatus, releaseStatus), color: defaultColor, textColor: defaultTextColor }
 }
 
+// ! Versions in development: the future releases the current docs already name
+//   (`version` / `updated`) — computed once from the static routes, so the
+//   server markup and the hydrated menu agree; choosing one opens the current docs
+const developmentVersions = Object.freeze(unreleased(($router.options.routes || []).map(route => route?.meta), versions))
+const currentVersionId = current(versions)
+
 const versionOptions = computed(() => {
-  return (versions || [])
+  const development = developmentVersions.map(id => ({
+    label: id,
+    value: id,
+    badge: { label: t('menu.version.status.development'), color: 'info', textColor: 'white' },
+    released: false,
+    deprecated: false,
+    releaseStatus: 'development'
+  }))
+
+  return development.concat((versions || [])
     .filter(item => item && item.id)
     .map(item => ({
       label: item.label || item.id,
@@ -144,7 +160,7 @@ const versionOptions = computed(() => {
       released: item.released !== false,
       deprecated: item.deprecated === true || item.releaseStatus === 'deprecated' || item.status === 'deprecated',
       releaseStatus: item.releaseStatus || item.status || (item.released === false ? 'draft' : 'released')
-    }))
+    })))
 })
 
 const activeVersionOption = computed(() => {
@@ -254,6 +270,11 @@ const getEquivalentRoutePath = (versionId) => {
 }
 
 function onVersionChange (versionId) {
+  // ? A version in development has no docs of its own: it opens the current ones
+  if (developmentVersions.includes(versionId)) {
+    versionId = currentVersionId
+  }
+
   if (!versionId || versionId === activeVersionId.value) return
 
   const targetVersion = (versions || []).find(item => item.id === versionId)

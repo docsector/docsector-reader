@@ -101,6 +101,18 @@ describe('page version chip — component wiring', () => {
     })
   })
 
+  it('DMenu lists the versions in development above the selector entries', () => {
+    const script = sfc('DMenu.vue').scriptSetup.content
+
+    expect(script).toContain("import { current, unreleased } from './page-version-status.js'")
+    expect(script).toContain('const currentVersionId = current(versions)')
+    expect(script).toContain('unreleased(($router.options.routes || []).map(route => route?.meta), versions)')
+    expect(script).toContain("badge: { label: t('menu.version.status.development'), color: 'info', textColor: 'white' }")
+    expect(script).toContain('return development.concat(')
+    // ? Choosing one opens the current docs
+    expect(script).toMatch(/if \(developmentVersions\.includes\(versionId\)\) \{\s*versionId = currentVersionId/)
+  })
+
   it('DPageBar lays out the release lines with timeline()', () => {
     const descriptor = sfc('DPageBar.vue')
 
@@ -120,21 +132,43 @@ describe('page version chip — i18n keys', () => {
   it.each(['en-US', 'pt-BR'])('%s ships every chip and page bar key', (locale) => {
     const messages = read(locale)
 
-    for (const kind of ['new', 'soon', 'updated']) {
+    for (const kind of ['new', 'soon', 'updated', 'updating']) {
       expect(messages.menu.status[kind]._).toEqual(expect.any(String))
       expect(messages.menu.status[kind].tooltipVersion).toContain('{version}')
     }
-    expect(messages.menu.status.soon.tooltipUpdated).toContain('{version}')
+    // ? The future-update tooltip moved from soon to updating
+    expect(messages.menu.status.soon.tooltipUpdated).toBeUndefined()
+    expect(messages.menu.version.status.development).toEqual(expect.any(String))
     for (const key of ['newVersion', 'updatedVersion', 'comingVersion', 'updatingVersion']) {
       expect(messages.page[key]).toEqual(expect.any(String))
     }
   })
 
+  it.each([
+    ['en-US', { soon: 'soon', updating: 'updating', updated: 'updated' }, 'Will be updated in {version}', 'in development'],
+    ['pt-BR', { soon: 'em breve', updating: 'atualizando', updated: 'atualizado' }, 'Será atualizado na {version}', 'em desenvolvimento']
+  ])('%s pins the chip labels it ships', (locale, labels, updatingTooltip, development) => {
+    const messages = read(locale)
+
+    for (const [kind, label] of Object.entries(labels)) {
+      expect(messages.menu.status[kind]._).toBe(label)
+    }
+    expect(messages.menu.status.updating.tooltipVersion).toBe(updatingTooltip)
+    expect(messages.menu.version.status.development).toBe(development)
+  })
+
+  it('keeps the removed soon.tooltipUpdated out of the defaults and the scaffold', () => {
+    expect(helpers).not.toContain('tooltipUpdated')
+    expect(scaffold).not.toContain('tooltipUpdated')
+  })
+
   it('keeps the engine defaults and the scaffold in step', () => {
-    for (const key of ["tooltipUpdated: 'Will be updated in {version}'", "updatingVersion: 'Will be updated in'", "comingVersion: 'Coming in'"]) {
+    for (const key of ["_: 'updating',", "_: 'atualizando',", "tooltipVersion: 'Will be updated in {version}'", "updatingVersion: 'Will be updated in'", "comingVersion: 'Coming in'"]) {
       expect(helpers).toContain(key)
     }
-    for (const key of ["tooltipUpdated: 'Will be updated in {version}'", "updatingVersion: 'Will be updated in'"]) {
+    expect(helpers).toContain("development: 'in development'")
+    expect(helpers).toContain("development: 'em desenvolvimento'")
+    for (const key of ["_: 'updating'", "tooltipVersion: 'Will be updated in {version}'", "updatingVersion: 'Will be updated in'", "development: 'in development'"]) {
       expect(scaffold).toContain(key)
     }
   })
@@ -156,6 +190,7 @@ describe('page version chip — third locale', () => {
 
     expect(messages['es-ES'].menu.status.new._).toBe('nuevo')
     expect(messages['es-ES'].menu.status.soon._).toBe('soon')
+    expect(messages['es-ES'].menu.status.updating._).toBe('updating')
     expect(messages['es-ES'].page.updatedVersion).toBe('Updated in')
     // ? Cloned defaults: no locale shares an object with another
     expect(messages['es-ES'].menu.status.soon).not.toBe(messages['en-US'].menu.status.soon)
