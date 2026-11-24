@@ -211,7 +211,7 @@ export const resolve = (page = {}, released = null) => {
 const COLORS = {
   new: ['positive', 'white'],
   soon: ['warning', 'dark'],
-  updated: ['info', 'white'],
+  updated: ['info', 'dark'],
   updating: ['deep-purple', 'white'],
   draft: ['orange', 'dark'],
   empty: ['red', 'white']

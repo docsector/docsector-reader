@@ -202,7 +202,7 @@ describe('page version status — describe (menu chip)', () => {
       kind: 'updating', color: 'deep-purple', textColor: 'white', label: 'menu.status.updating._', tooltip: 'menu.status.updating.tooltipVersion', version: 'v1.4.0'
     })
     expect(describeChip(meta({ pageVersion: 'v0.18.0', pageUpdated: ['v1.3.0'] }), released)).toEqual({
-      kind: 'updated', color: 'info', textColor: 'white', label: 'menu.status.updated._', tooltip: 'menu.status.updated.tooltipVersion', version: 'v1.3.0'
+      kind: 'updated', color: 'info', textColor: 'dark', label: 'menu.status.updated._', tooltip: 'menu.status.updated.tooltipVersion', version: 'v1.3.0'
     })
     expect(describeChip(meta({ status: 'draft' }), released)).toMatchObject({ color: 'orange', textColor: 'dark', tooltip: 'menu.status.draft.tooltip' })
     expect(describeChip(meta({ status: 'empty' }), released)).toMatchObject({ color: 'red', textColor: 'white', tooltip: 'menu.status.empty.tooltip' })
